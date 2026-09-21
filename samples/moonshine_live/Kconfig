@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# samples/modelblaster_pext's Kconfig, for the same reason and with the same meaning: this
+# app links THE SAME generated kernels.c, which reads CONFIG_MB_PEXT out of autoconf.h to
+# decide whether pext.h emits real custom-0 encodings or its bit-identical software model.
+# A live transcript must be the same arithmetic as the measured one, so this is =y here.
+
+mainmenu "Moonshine, live -- record from the microphone and transcribe on the board"
+
+config MB_PEXT
+	bool "Build the ModelBlaster kernels against the MBP extension"
+	default y
+	help
+	  Emit the real MBP.DOT8 / MBP.MAX8 / MBP.QMUL / MBP.CLIP8 encodings
+	  (custom-0, opcode 0x0b) instead of pext.h's software model.
+
+	  THE EXTENSION EXISTS ON HART 0 ONLY.  Any thread that reaches a curated
+	  pext kernel must be on CPU 0 or it takes an illegal-instruction trap.
+	  See PEXT_SPEC.md section 7.
+
+source "Kconfig.zephyr"

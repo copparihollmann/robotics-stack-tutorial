@@ -1,0 +1,14 @@
+identifier: chipyard_pynqz1_cam
+name: Chipyard dual-core Rocket + TACIT + MBP P-ext + PDM mic + RGB LEDs + RoCC engine + HM01B0 camera on PYNQ-Z1
+type: hardware
+arch: riscv
+toolchain:
+  - zephyr
+supported:
+  - dmic
+  - gpio
+  - i2c
+testing:
+  ignore_tags:
+    - net
+    - bluetooth

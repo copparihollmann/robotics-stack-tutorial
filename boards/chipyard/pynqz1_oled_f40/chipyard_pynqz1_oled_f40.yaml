@@ -1,0 +1,14 @@
+identifier: chipyard_pynqz1_oled_f40
+name: Chipyard dual-core Rocket + TACIT + MBP P-ext + PDM mic + RGB LEDs + RoCC engine (Nch8) + SSD1306 I2C on PYNQ-Z1, FCLK0 40 MHz
+type: hardware
+arch: riscv
+toolchain:
+  - zephyr
+supported:
+  - dmic
+  - gpio
+  - i2c
+testing:
+  ignore_tags:
+    - net
+    - bluetooth

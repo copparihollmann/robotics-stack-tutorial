@@ -1,0 +1,6 @@
+board:
+  name: chipyard_pynqz1_cam
+  full_name: Chipyard dual-core Rocket + TACIT + MBP P-ext + PDM mic + RGB LEDs + RoCC engine + HM01B0 camera on PYNQ-Z1
+  vendor: chipyard
+  socs:
+    - name: rocketchip_virt_riscv64

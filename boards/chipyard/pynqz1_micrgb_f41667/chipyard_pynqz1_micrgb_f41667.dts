@@ -1,0 +1,158 @@
+/dts-v1/;
+
+/*
+ * chipyard_pynqz1_micrgb.dts, BYTE FOR BYTE, except for the `model` string.
+ *
+ * THE CLOCK IS NOT IN THE DEVICETREE.  dts/riscv/chipyard/chipyard-riscv64.dtsi carries no
+ * clock-frequency, timebase-frequency or cpu-frequency property: on this port the PL's clock
+ * reaches software through exactly one symbol, CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC, which is
+ * why the whole of this board variant's difference lives in the defconfig and why copying
+ * this file unchanged is correct rather than lazy.  If a clock property is ever added to the
+ * shared dtsi, it has to be overridden HERE as well, and the defconfig says so too.
+ *
+ * chipyard_pynqz1_mic plus the board's two RGB LEDs on a stock sifive GPIO controller.
+ *
+ * THE CPU AND MICROPHONE HALVES OF THIS FILE ARE chipyard_pynqz1_mic.dts VERBATIM, and
+ * must stay that way: the SoC is PynqZ2RocketBigLittlePextTacitMicRgbConfig, which is
+ * PynqZ2RocketBigLittlePextTacitMicConfig plus one more peripheral on the periphery bus.
+ * Read boards/chipyard/pynqz1_pext/chipyard_pynqz1_pext.dts for why each cpu/clint/plic
+ * line is what it is, and boards/chipyard/pynqz1_mic for the microphone; none of that
+ * reasoning changes here.
+ *
+ * WHAT IS NEW is the gpio0 node and the rgbleds node below.
+ *
+ * TRANSCRIBED FROM THE GENERATED DTS, which is ground truth and is emitted next to the
+ * Verilog at
+ *   generated-src/chipyard.harness.TestHarness.PynqZ2RocketBigLittlePextTacitMicRgbConfig/*.dts
+ * It says, verbatim:
+ *
+ *     gpio@10010000 {
+ *         compatible = "sifive,gpio0", "sifive,gpio1";
+ *         reg = <0x10010000 0x1000>;   reg-names = "control";
+ *         gpio-controller;  #gpio-cells = <2>;
+ *         interrupt-controller;  #interrupt-cells = <2>;
+ *         interrupt-parent = <&L22>;  interrupts = <2 3 4 5 6 7>;
+ *     };
+ *     interrupt-controller@c000000 { riscv,ndev = <7>; }
+ *     serial@10020000 { interrupts = <1>; }
+ *
+ * THE UART DID NOT MOVE. sifive's GPIO declares one interrupt per pin, so the PLIC grew
+ * from one source to seven -- but the six new ones were appended ABOVE the UART, which
+ * keeps source 1. So the `interrupts = <1 1>` below is pynqz1_mic's line unchanged, and
+ * the console could not have been disturbed by this. That was checked, not assumed; it
+ * is the kind of thing that would otherwise present as a dead console on a board that
+ * looks fine.
+ *
+ * riscv,ndev is left at the shared dtsi's 1024 rather than cut to 7. Zephyr's PLIC driver
+ * sizes its tables from it and 1024 is what every other board here uses; the hardware
+ * simply has fewer sources than the driver is prepared for, which is the harmless
+ * direction.
+ *
+ * WHAT THE SIX PINS ARE. Bit order is the VENDOR'S -- Digilent's Arty-Z7-20-Master.xdc
+ * (schematic net names Sch=LED4_B .. Sch=LED5_R) and, independently, Xilinx's PYNQ RGBLED
+ * class (RGB_BLUE=1, RGB_GREEN=2, RGB_RED=4, three bits per LED, LD4 first) read against
+ * PYNQ's own Pynq-Z1 base.xdc:
+ *
+ *     pin 0 -> L15  LD4 blue       pin 3 -> G14  LD5 blue
+ *     pin 1 -> G17  LD4 green      pin 4 -> L14  LD5 green
+ *     pin 2 -> N15  LD4 red        pin 5 -> M15  LD5 red
+ *
+ * ACTIVE HIGH. PYNQ-Z1 Reference Manual section 12.1: the FPGA drives the tri-colour
+ * LED's cathodes through an INVERTING transistor, so "to light up the tri-color LED, the
+ * corresponding signals need to be driven high".
+ *
+ * BRIGHTNESS IS NOT SOFTWARE'S PROBLEM HERE. The same section asks for no more than a 50%
+ * duty cycle, and fpga/pynq-z2/src/pynqz2_rocket_top.v chops all six signals at a fixed
+ * RGB_DUTY/256 = 12.5% in the PL. A pin written to 1 is on at 12.5% duty, always. See
+ * fpga/pynq-z2/docs/RGB_LEDS.md section 2.
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <chipyard/chipyard-riscv64.dtsi>
+
+/ {
+	model = "Chipyard dual-core Rocket + TACIT + MBP P-ext + PDM microphone + RGB LEDs (PYNQ-Z1, FCLK0 41.6667 MHz)";
+	compatible = "ucb-bar,chipyard-dev";
+
+	chosen {
+		zephyr,console = &uart0;
+		zephyr,shell-uart = &uart0;
+		zephyr,sram = &ram0;
+	};
+
+	soc {
+		dmic_dev: pdm-mic@10090000 {
+			compatible = "iiswc,pdm-mic";
+			reg = <0x10090000 0x1000>;
+			status = "okay";
+		};
+
+		gpio0: gpio@10010000 {
+			compatible = "sifive,gpio0";
+			reg = <0x10010000 0x1000>;
+			reg-names = "control";
+			interrupt-parent = <&plic>;
+			/*
+			 * One PLIC source per pin, <source priority>, in pin order. Nothing
+			 * here uses them -- the LEDs are outputs -- but sifive,gpio0.yaml
+			 * makes `interrupts` required and gpio_sifive.c IRQ_CONNECTs one per
+			 * entry, so they have to be right rather than plausible. These six
+			 * numbers are the generated DTS's `interrupts = <2 3 4 5 6 7>`.
+			 */
+			interrupts = <2 1>, <3 1>, <4 1>, <5 1>, <6 1>, <7 1>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			/*
+			 * Six, not the binding's default 32. GPIO_PORT_PIN_MASK_FROM_DT_INST
+			 * builds the driver's port_pin_mask from this, so a stray write to
+			 * pin 6 comes back -EINVAL instead of reaching a register bit the
+			 * hardware does not have.
+			 */
+			ngpios = <6>;
+			status = "okay";
+		};
+	};
+
+	/*
+	 * gpio-leds, so an application gets a gpio_dt_spec per colour with the polarity
+	 * attached, and never has to know a pin number. GPIO_ACTIVE_HIGH is the board's
+	 * real polarity (section 12.1, above), so gpio_pin_set_dt(spec, 1) means "on".
+	 */
+	rgbleds: rgbleds {
+		compatible = "gpio-leds";
+		ld4_blue:  ld4_blue  { gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>; label = "LD4 blue";  };
+		ld4_green: ld4_green { gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>; label = "LD4 green"; };
+		ld4_red:   ld4_red   { gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>; label = "LD4 red";   };
+		ld5_blue:  ld5_blue  { gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>; label = "LD5 blue";  };
+		ld5_green: ld5_green { gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>; label = "LD5 green"; };
+		ld5_red:   ld5_red   { gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>; label = "LD5 red";   };
+	};
+
+	aliases {
+		led0 = &ld4_blue;
+		led1 = &ld4_green;
+		led2 = &ld4_red;
+		led3 = &ld5_blue;
+		led4 = &ld5_green;
+		led5 = &ld5_red;
+	};
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	/*
+	 * PLIC source 1, still -- see the header. The GPIO's six sources are 2..7.
+	 */
+	interrupts = <1 1>;
+};
+
+/* HTIF is a simulator transport: it needs a host polling tohost/fromhost. On the FPGA the
+ * console is a real UART, so leave it off. */
+&htif {
+	status = "disabled";
+};
+
+&flash0 {
+	status = "disabled";
+};

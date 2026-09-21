@@ -1,0 +1,147 @@
+/dts-v1/;
+
+/*
+ * 0x5A5A0036, variant `roccmoonnch8f40b98boled`, FCLK0 40 MHz.  Config
+ * PynqZ2RocketBigLittlePextTacitMicRgbRoccMoonAllNch8I2cConfig (Lab B135).
+ *
+ * THE SMALLER SIBLING OF chipyard_pynqz1_panel_f40, and the difference is ONLY the four
+ * buttons: this SoC's GPIO controller is six pins (the two RGB LEDs) as on 0x5A5A0035,
+ * where the panel's is ten.  Everything else -- the TLI2C at 0x1004_0000, the OLED, the
+ * microphone, the engine, the clock, the console -- is identical.
+ *
+ * READ chipyard_pynqz1_panel_f40.dts FOR THE REASONING.  Only the numbers that differ are
+ * restated here; the panel file carries the pin table, the polarity evidence, the
+ * deferred-init argument and the explanation of why a wrong interrupt number looks like a
+ * dead board rather than a failure.
+ *
+ * THE NUMBERS, verified the same way -- from the boot ROM DTB compiled into this variant's
+ * own gen-collateral (TLROM.sv, unpacked and run through `dtc -I dtb`), which is the
+ * directory build_rocket_micrgb_roccmoonnch8f40b98boled_z1/proj/*.xpr names:
+ *
+ *     i2c@10040000                  interrupts = <0x01>;
+ *     serial@10020000               interrupts = <0x02>;
+ *     gpio@10010000                 interrupts = <0x03 0x04 0x05 0x06 0x07 0x08>;
+ *     interrupt-controller@c000000  riscv,ndev = <0x08>;
+ *
+ * So the GPIO block here is numbered EXACTLY as chipyard_pynqz1_cam's -- 3..8 -- while the
+ * panel's is 3..12.  The UART is 2 on all three.
+ *
+ * THE I2C PINS ARE THE SAME TWO BALLS: SCL = P16 (J6 "SCL"), SDA = P15 (J6 "SDA"), bank 34,
+ * with the Z1's own 2.2 k pull-ups.  See the panel board's header for the header row and
+ * where ground and 3V3 are.
+ *
+ * WHEN TO USE THIS BOARD RATHER THAN THE PANEL: only when the bitstream on the board is
+ * 0x5A5A0036.  0x5A5A0037 is the deliverable of B135 and is a superset; this variant was
+ * the step-1 fit probe and is kept because it is the machine to run if the buttons turn
+ * out not to be wanted.  An image built for THIS board runs on 0x5A5A0037 unharmed (it
+ * simply never configures pins 6..9), but an image built for the PANEL board and run on
+ * 0x5A5A0036 would IRQ_CONNECT four PLIC sources the hardware does not have -- and only if
+ * it enables CONFIG_INPUT, since nothing else touches the GPIO interrupts.  The MAGIC gate
+ * is what actually keeps the pair apart; this note says which way the asymmetry runs.
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <chipyard/chipyard-riscv64.dtsi>
+
+/ {
+	model = "Chipyard dual-core Rocket + TACIT + MBP P-ext + PDM mic + RGB LEDs + RoCC engine (Nch8) + SSD1306 I2C (PYNQ-Z1, FCLK0 40 MHz)";
+	compatible = "ucb-bar,chipyard-dev";
+
+	chosen {
+		zephyr,console = &uart0;
+		zephyr,shell-uart = &uart0;
+		zephyr,sram = &ram0;
+	};
+
+	soc {
+		dmic_dev: pdm-mic@10090000 {
+			compatible = "iiswc,pdm-mic";
+			reg = <0x10090000 0x1000>;
+			status = "okay";
+		};
+
+		gpio0: gpio@10010000 {
+			compatible = "sifive,gpio0";
+			reg = <0x10010000 0x1000>;
+			reg-names = "control";
+			interrupt-parent = <&plic>;
+			/* the bootrom DTB's `interrupts = <3 4 5 6 7 8>` -- one higher than
+			 * chipyard_pynqz1_micrgb_f40's 2..7, because the TLI2C took source 1 */
+			interrupts = <3 1>, <4 1>, <5 1>, <6 1>, <7 1>, <8 1>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			ngpios = <6>;
+			status = "okay";
+		};
+	};
+
+	/* chipyard_pynqz1_micrgb_f40's six lamps, unchanged -- see that file and the panel
+	 * board's header for the bit order and the active-high evidence. */
+	rgbleds: rgbleds {
+		compatible = "gpio-leds";
+		ld4_blue:  ld4_blue  { gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>; label = "LD4 blue";  };
+		ld4_green: ld4_green { gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>; label = "LD4 green"; };
+		ld4_red:   ld4_red   { gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>; label = "LD4 red";   };
+		ld5_blue:  ld5_blue  { gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>; label = "LD5 blue";  };
+		ld5_green: ld5_green { gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>; label = "LD5 green"; };
+		ld5_red:   ld5_red   { gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>; label = "LD5 red";   };
+	};
+
+	aliases {
+		/* LOAD-BEARING: samples/mic_led_record and samples/moonshine_live reach the
+		 * lamps only through these six names. */
+		led0 = &ld4_blue;
+		led1 = &ld4_green;
+		led2 = &ld4_red;
+		led3 = &ld5_blue;
+		led4 = &ld5_green;
+		led5 = &ld5_red;
+		/* NO sw0..sw3 HERE, and that is the point of this board: this SoC has no
+		 * button pins.  An application that wants a button must be built for
+		 * chipyard_pynqz1_panel_f40, and DT_HAS_ALIAS/COND_CODE_1 on sw0 is how it
+		 * can tell at compile time. */
+	};
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	/* PLIC source 2, not 1: the TLI2C is 1 on this SoC.  A console that looks hung is
+	 * what a wrong number here produces. */
+	interrupts = <2 1>;
+};
+
+&i2c0 {
+	status = "okay";
+	/* source 1 in the bootrom DTB; the shared dtsi's <52 1> is another SoC's */
+	interrupts = <1 1>;
+	/* 100 kHz nominal.  The prescaler comes from SIFIVE_PERIPHERAL_CLOCK_FREQUENCY =
+	 * 40,000,000 here, so the actual SCL rate is NOT docs/OLED_SSD1306.md 7.3's measured
+	 * 112.69 kHz (that was a 34.4828 MHz pbus) and has not been measured at 40 MHz. */
+	clock-frequency = <100000>;
+
+	oled_3c: ssd1306@3c {
+		compatible = "solomon,ssd1306fb";
+		reg = <0x3c>;
+		width = <128>;
+		height = <64>;
+		segment-offset = <0>;
+		page-offset = <0>;
+		display-offset = <0>;
+		multiplex-ratio = <63>;
+		segment-remap;
+		com-invdir;
+		prechargep = <0x22>;
+		/* deferred: nothing touches the bus before an application asks.  See the
+		 * panel board's header for why this is not optional. */
+		zephyr,deferred-init;
+	};
+};
+
+&htif {
+	status = "disabled";
+};
+
+&flash0 {
+	status = "disabled";
+};

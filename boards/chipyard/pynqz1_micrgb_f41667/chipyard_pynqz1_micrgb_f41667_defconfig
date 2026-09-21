@@ -1,0 +1,108 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# chipyard_pynqz1_micrgb_defconfig WITH EXACTLY ONE VALUE CHANGED:
+# CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC 34483 -> 41667.  Every other line below is that file's,
+# copied verbatim and to be kept that way; if any line other than the clock ever disagrees
+# with chipyard_pynqz1_micrgb_defconfig, that is a bug HERE.  `diff` the two.
+#
+# chipyard_pynqz1_mic_defconfig plus the GPIO driver. Everything about the CPUs, the
+# clock and the console is identical and is copied here verbatim, deliberately: the SoC
+# is PynqZ2RocketBigLittlePextTacitMicConfig with one extra MMIO peripheral hung off the
+# periphery bus, so nothing else in the software view can change. If a line here ever
+# disagrees with chipyard_pynqz1_mic_defconfig, that is a bug here.
+#
+# The lines at the bottom are the whole difference.
+
+CONFIG_PRIVILEGED_STACK_SIZE=2048
+CONFIG_REBOOT=y
+CONFIG_UART_HTIF=n
+CONFIG_CONSOLE=y
+CONFIG_UART_CONSOLE=y
+CONFIG_SERIAL=y
+CONFIG_PRINTK=y
+CONFIG_EARLY_CONSOLE=y
+CONFIG_STACK_SENTINEL=y
+CONFIG_XIP=n
+CONFIG_RISCV_PMP=n
+CONFIG_SMP=y
+CONFIG_IDLE_STACK_SIZE=1024
+CONFIG_PINCTRL=n
+CONFIG_UART_SIFIVE_PORT_0=y
+
+# Two harts, not one -- same as chipyard_pynqz1_smp, and for the same reason.
+#
+# PynqZ2RocketBigLittlePextTacitConfig is PynqZ2RocketBigLittleTacitConfig plus
+# WithPExtOnTiles(0), so the hardware still has exactly two harts: cpu@0 (big, 16 KB L1s,
+# sv39, and the MBP datapath) and cpu@1 (little, 4 KB L1s, no MMU, NO MBP datapath).
+#
+# With CONFIG_SMP=y and MP_MAX_NUM_CPUS=1 Zephyr compiles the secondary-hart path out of
+# reset.S entirely, so hart 1 spins in wfi forever and the image is silently single-core.
+# That would also make the heterogeneity test vacuous: with hart 1 never running, nothing
+# would ever prove the extension is absent there.
+CONFIG_MP_MAX_NUM_CPUS=2
+
+# CHANGED vs arty: this config has NO FPU.
+# The generated DTS reports riscv,isa = "rv64imaczicsr_zifencei_zihpm_xrocket" for BOTH
+# harts -- no f, no d. MBP is in the custom-0 opcode space and does not appear in the ISA
+# string at all (there is no standard extension letter for it), so the two harts remain
+# indistinguishable to anything that reads riscv,isa. That is deliberate and it is why
+# samples/pext_hart_proof has to EXECUTE an instruction to tell them apart.
+CONFIG_FPU=n
+
+# THE ONE LINE THIS BOARD EXISTS FOR: the PL runs at 41.6667 MHz, not 34.4828.
+#
+# WHICH SILICON: 0x5A5A0032 (fpga/pynq-z2/tcl/build_rocket.tcl, variant roccmoonint6f41667)
+# -- 0x5A5A002F's SoC, the int6 weight unpacker at the engine's read port, engine RTL pinned
+# by md5 to src/lanes_engine_002f/, TIMED AND BUILT at FCLK0 = 41.6667 MHz.  Lab B83.
+#
+# 41.6667 IS NOT THE CEILING B79 REPORTED, AND THAT IS WHY THIS BOARD EXISTS.  B79 swept
+# FCLK0 over ten values and concluded 40.0000 (1000/25) was the highest that closes, with
+# 41.6667 (1000/24) missing by -0.267 ns on 2 endpoints.  B81 falsified that: the 41.6667
+# arm had been CONTAMINATED -- `add_files` reads RTL at synth_design time, and the int6
+# workstream edited rtl_study/roccmoon/merge/ mid-sweep, so five of B79's ten arms silently
+# changed design.  Rebuilt from an md5-pinned tree with ROCKET_POSTROUTE_PHYSOPT=1,
+# 41.6667 closes.  archive/runs/b81_fclk40_silicon/RESULT.md.
+#
+# 41.6667 IS EXACT ON THIS PS7, in the only sense that matters.  FCLK0 = IO PLL /
+# (DIVISOR0 * DIVISOR1) with both divisors integers and the IO PLL at 50 MHz * 20 =
+# 1000 MHz, so the deliverable clocks are 1000/N MHz for integer N.  N = 24 gives
+# 41,666,666.67 Hz.  The labs derive the Hz they divide cycles by from N -- round(1e9/24) =
+# 41,666,667 -- rather than from the rounded MHz, so the timed clock, the clock PYNQ's
+# Clocks.fclk0_mhz setter lands on, and the divisor in the RTF are one number.
+#
+# THE KCONFIG SYMBOL IS IN kHz AND ROUNDS: round(1e6/24) = 41667, i.e. 41,667,000 Hz
+# against a real 41,666,667.  That is +8 ppm and it moves nothing measurable -- mtime's
+# tick and the UART divisor are both integer-divided well before that digit.
+#
+# mtime ticks at the digital-top clock divided by CONFIG_RTC_CLOCK_DIVIDER_VALUE (1000), so
+# 41.6667 MHz -> 41.667 kHz here. This value ALSO sets the SiFive UART's baud divisor:
+# SIFIVE_PERIPHERAL_CLOCK_FREQUENCY = SYS_CLOCK_HW_CYCLES_PER_SEC * RTC_CLOCK_DIVIDER_VALUE
+#   41667 -> divisor 41667000/115200 - 1 = 360 -> 41666667/361 = 115,420 baud  (+0.19%)
+#   40000 on this PL -> divisor 346      -> 41666667/347 = 120,077 baud (+4.2%)   GARBLED
+#   34483 on this PL -> divisor 298      -> 41666667/299 = 139,353 baud (+21.0%)  GARBLED
+# THOSE LAST TWO ROWS ARE THE HAZARD THIS BOARD EXISTS TO REMOVE.  Note that the f40 guest
+# is ALSO wrong here: this variant is one rung above 0x5A5A0030/0x5A5A0031 and has its own
+# board for the same reason they have theirs.  It does not fail and it does not crash: it
+# produces a console full of noise, which FPGA_END_TO_END.md section 4.1 warns does not
+# look like a clock problem, plus an mtime running fast while mcycle stays right --
+# wall-clock numbers wrong, cycle counts right.
+CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=41667
+CONFIG_SYS_CLOCK_TICKS_PER_SEC=1000
+
+CONFIG_TIMING_FUNCTIONS=y
+CONFIG_SPEED_OPTIMIZATIONS=y
+CONFIG_RISCV_ISA_EXT_V_LAZY=n
+
+# The microphone. CONFIG_AUDIO_DMIC_PDM_MMIO is default-y once the devicetree node is
+# enabled, so only the two framework symbols need saying.
+CONFIG_AUDIO=y
+CONFIG_AUDIO_DMIC=y
+
+# The RGB LEDs, which are six pins on a stock sifive GPIO controller at 0x1001_0000.
+#
+# CONFIG_GPIO_SIFIVE is default-y once DT_HAS_SIFIVE_GPIO0_ENABLED is true, which the
+# gpio@10010000 node in the DTS makes it, so only the framework symbol needs saying. That
+# is the whole software cost of this feature: Zephyr has shipped drivers/gpio/gpio_sifive.c
+# and dts/bindings/gpio/sifive,gpio0.yaml since 2017 and neither needed a patch. Contrast
+# the microphone, which needed patches/0011 to add a driver and a binding.
+CONFIG_GPIO=y

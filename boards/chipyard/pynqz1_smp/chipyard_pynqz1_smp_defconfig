@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The dual-core sibling of chipyard_pynqz1_defconfig. Everything here is identical to the
+# single-core board except CONFIG_MP_MAX_NUM_CPUS, which is the only knob that decides
+# whether hart 1 is ever brought online.
+
+CONFIG_PRIVILEGED_STACK_SIZE=2048
+CONFIG_REBOOT=y
+CONFIG_UART_HTIF=n
+CONFIG_CONSOLE=y
+CONFIG_UART_CONSOLE=y
+CONFIG_SERIAL=y
+CONFIG_PRINTK=y
+CONFIG_EARLY_CONSOLE=y
+CONFIG_STACK_SENTINEL=y
+CONFIG_XIP=n
+CONFIG_RISCV_PMP=n
+CONFIG_SMP=y
+CONFIG_IDLE_STACK_SIZE=1024
+CONFIG_PINCTRL=n
+CONFIG_UART_SIFIVE_PORT_0=y
+
+# CHANGED vs chipyard_pynqz1: two harts, not one.
+#
+# The hardware has exactly two: PynqZ2RocketBigLittleTacitConfig is
+# WithNBigCores(1) ++ WithNSmallCores(1), and the generated DTS shows cpu@0 (big, 16 KB
+# L1s, sv39) and cpu@1 (little, 4 KB L1s, no MMU).
+#
+# With CONFIG_SMP=y and MP_MAX_NUM_CPUS=1 -- the single-core board's setting -- Zephyr
+# compiles the secondary-hart path out of reset.S entirely (`#if CONFIG_MP_MAX_NUM_CPUS >
+# 1`), so hart 1 lands in `loop_unconfigured_cores` and spins in wfi forever. It boots,
+# it prints, and it is silently single-core. This line is the difference.
+CONFIG_MP_MAX_NUM_CPUS=2
+
+# CHANGED vs arty: this config has NO FPU.
+# The generated DTS reports riscv,isa = "rv64imaczicsr_zifencei_zihpm_xrocket" for BOTH
+# harts -- no f, no d. Building with CONFIG_FPU=y emits floating-point instructions that
+# trap as illegal on either core.
+CONFIG_FPU=n
+
+# CHANGED vs arty: the PL runs at 40 MHz, not 50.
+# mtime ticks at the digital-top clock divided by CONFIG_RTC_CLOCK_DIVIDER_VALUE (1000),
+# so 40 MHz -> 40 kHz here. This value also sets the SiFive UART's baud divisor, via
+# SIFIVE_PERIPHERAL_CLOCK_FREQUENCY = SYS_CLOCK_HW_CYCLES_PER_SEC * RTC_CLOCK_DIVIDER_VALUE
+# = 40 MHz. Getting it wrong yields a working-but-garbled console.
+#
+# The dual-core bitstream is built and TIMED at the same 40 MHz as the single-core one, so
+# this value is shared. If the PL clock ever moves, this line moves with it.
+CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=40000
+CONFIG_SYS_CLOCK_TICKS_PER_SEC=1000
+
+CONFIG_TIMING_FUNCTIONS=y
+CONFIG_SPEED_OPTIMIZATIONS=y
+CONFIG_RISCV_ISA_EXT_V_LAZY=n

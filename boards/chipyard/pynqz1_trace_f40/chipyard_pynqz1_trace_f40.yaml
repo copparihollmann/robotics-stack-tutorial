@@ -1,0 +1,14 @@
+identifier: chipyard_pynqz1_trace_f40
+name: Chipyard dual-core Rocket + TACIT on both harts + MBP P-ext + PDM mic + RGB LEDs + SSD1306 I2C + 4 buttons + HM01B0 capture DMA, no RoCC engine, on PYNQ-Z1, FCLK0 40 MHz
+type: hardware
+arch: riscv
+toolchain:
+  - zephyr
+supported:
+  - dmic
+  - gpio
+  - i2c
+testing:
+  ignore_tags:
+    - net
+    - bluetooth

@@ -1,0 +1,6 @@
+board:
+  name: chipyard_pynqz1_trace_f40
+  full_name: Chipyard dual-core Rocket + TACIT on BOTH harts + MBP P-ext + PDM mic + RGB LEDs + SSD1306 I2C + 4 buttons + HM01B0 capture DMA, no RoCC engine, on PYNQ-Z1, FCLK0 40 MHz
+  vendor: chipyard
+  socs:
+    - name: rocketchip_virt_riscv64

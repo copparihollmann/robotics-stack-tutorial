@@ -1,0 +1,72 @@
+/dts-v1/;
+
+/*
+ * chipyard_pynqz1_pext with the PL-side PDM microphone decimator attached.
+ *
+ * THE CPU HALF OF THIS FILE IS chipyard_pynqz1_pext.dts VERBATIM, and must stay that
+ * way: the SoC is PynqZ2RocketBigLittlePextTacitMicConfig, which is
+ * PynqZ2RocketBigLittlePextTacitConfig plus one peripheral on the periphery bus. Read
+ * boards/chipyard/pynqz1_pext/chipyard_pynqz1_pext.dts for why each cpu/clint/plic line
+ * is what it is; none of that reasoning changes here.
+ *
+ * WHAT IS NEW is the pdm_mic node below.
+ *
+ * Address. 0x1009_0000 is on the periphery bus alongside the UART at 0x1002_0000, and
+ * clear of everything else in this SoC's map (bootrom 0x1_0000, CLINT 0x200_0000, L2
+ * control 0x201_0000, TACIT 0x300_0000/0x301_0000, PLIC 0xC00_0000, DRAM 0x8000_0000)
+ * and of 0x1008_0000, which docs/CAMERA_PCB_SPEC.md reserves for the camera capture
+ * core. Ground truth is the DTS Chipyard emits next to the Verilog; if that disagrees
+ * with this, that file wins.
+ *
+ * Sample rate. The decimator produces 15993.859 Hz, NOT 16000. It cannot produce 16000:
+ * the chain divides FCLK0 = 1000/29 MHz by 2*7 (PDM clock) then 22 (CIC) then 7 (FIR),
+ * and 16 kHz would need an integer divisor of 34482758.6/16000 = 2155.17. The driver
+ * reads the exact rate out of the hardware's RATE register in millihertz and writes it
+ * back into struct pcm_stream_cfg, so an application that asks for 16 kHz gets told what
+ * it actually got. -0.038% is inaudible and is far inside what a keyword-spotting model
+ * trained at 16 kHz tolerates. See fpga/pynq-z2/docs/MICROPHONE.md.
+ *
+ * No interrupt. The core has a level-sensitive `irq` output driven from a watermark
+ * register, but it is not wired to the PLIC in this config: the PLIC here has exactly one
+ * source (the UART, riscv,ndev = <1>), and adding a second is an SoC change with no
+ * benefit at this data rate. 16 kHz x 2 bytes is 32 kB/s and the FIFO holds 64 ms, so the
+ * driver polls.
+ */
+
+#include <chipyard/chipyard-riscv64.dtsi>
+
+/ {
+	model = "Chipyard dual-core Rocket + TACIT + MBP P-ext + PDM microphone (PYNQ-Z1)";
+	compatible = "ucb-bar,chipyard-dev";
+
+	chosen {
+		zephyr,console = &uart0;
+		zephyr,shell-uart = &uart0;
+		zephyr,sram = &ram0;
+	};
+
+	soc {
+		dmic_dev: pdm-mic@10090000 {
+			compatible = "iiswc,pdm-mic";
+			reg = <0x10090000 0x1000>;
+			status = "okay";
+		};
+	};
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	/* PLIC source 1, not 3 -- see chipyard_pynqz1_pext.dts. */
+	interrupts = <1 1>;
+};
+
+/* HTIF is a simulator transport: it needs a host polling tohost/fromhost. On the FPGA the
+ * console is a real UART, so leave it off. */
+&htif {
+	status = "disabled";
+};
+
+&flash0 {
+	status = "disabled";
+};

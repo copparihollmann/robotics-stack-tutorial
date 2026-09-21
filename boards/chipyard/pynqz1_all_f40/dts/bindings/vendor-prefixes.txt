@@ -1,0 +1,3 @@
+# The prefix Chipyard's generator emits for the HM01B0 capture peripheral (OspiChipyard.scala:
+# SimpleDevice("ospi", Seq("ucbbar,ospi-hm01b0"))).
+ucbbar	UC Berkeley Architecture Research

@@ -1,0 +1,8 @@
+if BOARD_CHIPYARD_PYNQZ1
+
+# The PS loads a raw image straight into DDR at Rocket's ExtMem base, so the build must
+# emit zephyr.bin -- there is no bootloader here to parse an ELF.
+config BUILD_OUTPUT_BIN
+	default y
+
+endif # BOARD_CHIPYARD_PYNQZ1

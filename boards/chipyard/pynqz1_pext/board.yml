@@ -1,0 +1,6 @@
+board:
+  name: chipyard_pynqz1_pext
+  full_name: Chipyard dual-core big.LITTLE Rocket + TACIT + MBP P-ext on PYNQ-Z1
+  vendor: chipyard
+  socs:
+    - name: rocketchip_virt_riscv64

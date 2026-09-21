@@ -1,0 +1,121 @@
+/dts-v1/;
+
+/*
+ * chipyard_pynqz1_micrgb plus the HM01B0 camera shield: a sifive TLI2C and the ospi capture
+ * peripheral.  For 0x5A5A001E, PynqZ2RocketBigLittlePextTacitMicRgbRoccMoonCamConfig
+ * (fpga/pynq-z2/docs/CAMERA_Z1.md).  The RoCC engine on hart 1 is a custom-1 instruction and a
+ * pair of bus masters; it has no node.
+ *
+ * TRANSCRIBED FROM THE GENERATED DTS, which is ground truth:
+ *   generated-src/chipyard.harness.TestHarness.PynqZ2RocketBigLittlePextTacitMicRgbRoccMoonCamConfig/*.dts
+ * It says, against 0x5A5A0010's:
+ *
+ *     i2c@10040000     compatible = "sifive,i2c0"; interrupts = <1>;  reg = <0x10040000 0x1000>;
+ *     serial@10020000  interrupts = <2>;                  (was <1>)
+ *     gpio@10010000    interrupts = <3 4 5 6 7 8>;        (was <2 3 4 5 6 7>)
+ *     ospi@10080000    compatible = "ucbbar,ospi-hm01b0"; interrupts = <9>; reg = <0x10080000 0x1000>;
+ *     pdm-mic@10090000 no interrupts                      (unchanged)
+ *     interrupt-controller@c000000  riscv,ndev = <9>;     (was <7>)
+ *
+ * THE UART MOVED.  DigitalTop mixes in HasPeripheryI2C before HasPeripheryUART, so the new I2C
+ * source is numbered first and everything after it shifts by one.  This is the reason this board
+ * exists rather than an overlay on chipyard_pynqz1_micrgb: that board's `interrupts = <1 1>` on
+ * the UART is the I2C controller here.
+ *
+ * THE I2C BUS SPEED IS NOT IN THE GENERATED DTS.  Chipyard's i2c node carries no
+ * clock-frequency; Zephyr's i2c_sifive.c needs one for the bus rate (DT_INST_PROP(n,
+ * clock_frequency)) and takes the input clock from SIFIVE_PERIPHERAL_CLOCK_FREQUENCY
+ * (34,483,000 Hz from this board's defconfig).  The i2c0 node in dts/riscv/chipyard/
+ * chipyard-riscv.dtsi already says 100 kHz and "disabled"; this file enables it and corrects
+ * its interrupt.  The HM01B0 allows 400 kHz; 100 kHz is kept, as the 200T did not record one.
+ *
+ * riscv,ndev stays at the shared dtsi's 1024, as on every board here.
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <chipyard/chipyard-riscv64.dtsi>
+
+/ {
+	model = "Chipyard dual-core Rocket + TACIT + MBP P-ext + PDM mic + RGB LEDs + RoCC engine + HM01B0 camera (PYNQ-Z1)";
+	compatible = "ucb-bar,chipyard-dev";
+
+	chosen {
+		zephyr,console = &uart0;
+		zephyr,shell-uart = &uart0;
+		zephyr,sram = &ram0;
+	};
+
+	soc {
+		dmic_dev: pdm-mic@10090000 {
+			compatible = "iiswc,pdm-mic";
+			reg = <0x10090000 0x1000>;
+			status = "okay";
+		};
+
+		gpio0: gpio@10010000 {
+			compatible = "sifive,gpio0";
+			reg = <0x10010000 0x1000>;
+			reg-names = "control";
+			interrupt-parent = <&plic>;
+			/* the generated DTS's `interrupts = <3 4 5 6 7 8>` -- one higher than micrgb */
+			interrupts = <3 1>, <4 1>, <5 1>, <6 1>, <7 1>, <8 1>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			ngpios = <6>;
+			status = "okay";
+		};
+
+		ospi0: ospi@10080000 {
+			compatible = "ucbbar,ospi-hm01b0";
+			reg = <0x10080000 0x1000>;
+			interrupt-parent = <&plic>;
+			interrupts = <9 1>;
+			frame-buffer-depth = <512>;
+			sensor-i2c = <&i2c0>;
+			status = "okay";
+		};
+	};
+
+	rgbleds: rgbleds {
+		compatible = "gpio-leds";
+		ld4_blue:  ld4_blue  { gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>; label = "LD4 blue";  };
+		ld4_green: ld4_green { gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>; label = "LD4 green"; };
+		ld4_red:   ld4_red   { gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>; label = "LD4 red";   };
+		ld5_blue:  ld5_blue  { gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>; label = "LD5 blue";  };
+		ld5_green: ld5_green { gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>; label = "LD5 green"; };
+		ld5_red:   ld5_red   { gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>; label = "LD5 red";   };
+	};
+
+	aliases {
+		led0 = &ld4_blue;
+		led1 = &ld4_green;
+		led2 = &ld4_red;
+		led3 = &ld5_blue;
+		led4 = &ld5_green;
+		led5 = &ld5_red;
+		camera-i2c = &i2c0;
+		camera0 = &ospi0;
+	};
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	/* PLIC source 2 on this SoC -- see the header. A wrong number here is a console that looks hung. */
+	interrupts = <2 1>;
+};
+
+&i2c0 {
+	status = "okay";
+	/* source 1 in the generated DTS; the shared dtsi's <52 1> is another SoC's.  i2c_sifive polls. */
+	interrupts = <1 1>;
+	clock-frequency = <100000>;
+};
+
+&htif {
+	status = "disabled";
+};
+
+&flash0 {
+	status = "disabled";
+};

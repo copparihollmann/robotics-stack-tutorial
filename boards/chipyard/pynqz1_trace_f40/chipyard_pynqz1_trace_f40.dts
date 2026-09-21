@@ -1,0 +1,333 @@
+/dts-v1/;
+
+/*
+ * THE TRACE BITSTREAM: 0x5A5A0039, variant `tracepanelcam`, FCLK0 40 MHz.
+ * Config PynqZ2RocketBigLittlePextTacitMicRgbI2cBtnCamConfig (Lab B138).
+ *
+ * It is chipyard_pynqz1_panel_f40 (0x5A5A0037's board) PLUS the HM01B0 capture peripheral
+ * at 0x1008_0000 -- that node and its two aliases are chipyard_pynqz1_cam's, with one
+ * number changed -- and the silicon behind it has NO RoCC ENGINE.  Neither change touches
+ * the console, and only one of them moves an interrupt number:
+ *
+ *   ospi@10080000 added   -> PLIC source 13; riscv,ndev 12 -> 13.  NOTHING BEFORE IT MOVES:
+ *                            the I2C is still 1, THE CONSOLE IS STILL 2 and the GPIO is
+ *                            still 3..12, because the capture peripheral is mixed in after
+ *                            all three.
+ *   RoCC engine removed   -> NOT VISIBLE IN DEVICETREE AT ALL, and that is the trap.  A RoCC
+ *                            accelerator has no DT node; it is reached by executing a
+ *                            custom-1 instruction.  On this silicon hart 1 has no RoCC
+ *                            decode table, so EVERY ModelBlaster dispatch raises an illegal
+ *                            instruction (mcause 2) instead of running the engine.  An image
+ *                            that expects the engine must not be run here, and devicetree
+ *                            cannot stop it -- only the MAGIC gate can.
+ *
+ * WHAT THIS BOARD HAS THAT chipyard_pynqz1_all_f40 (0x5A5A0038) DOES NOT: TACIT.  Both harts
+ * carry a trace encoder and a DMA sink, at 0x300_0000 / 0x300_1000 and 0x301_0000 /
+ * 0x301_1000.  They have NO devicetree node and NO PLIC source here for the same reason they
+ * have none on any other board in this tree: Zephyr reaches them through
+ * soc/rocketchip/virt_riscv/common/tacit/tacit.h, which computes `base + hart_id * 0x1000`
+ * from constants.  They are listed here so the record says which silicon has them.
+ *
+ * ---------------------------------------------------------------------------------------
+ * THE NUMBERS, AND HOW THEY WERE VERIFIED
+ *
+ * Read out of THE BOOTROM DTB THAT IS COMPILED INTO THIS BITSTREAM, the way B136 had to
+ * after getting a console wrong by trusting a comment:
+ *
+ *   1. TLROM.sv in this config's gen-collateral holds the boot ROM as a 1,024-entry packed
+ *      SystemVerilog array literal, `wire [1023:0][63:0] _GEN = '{...}`, so the words appear
+ *      in DESCENDING index order and must be REVERSED before unpacking little-endian.
+ *   2. Done that way the ROM is 8,192 bytes, byte 0xC0 is the FDT magic d00dfeed and the
+ *      blob is 5,124 bytes.  `dtc -I dtb -O dts` on it says, verbatim:
+ *
+ *          i2c@10040000                  interrupts = <0x01>;
+ *          serial@10020000               interrupts = <0x02>;
+ *          gpio@10010000                 interrupts = <0x03 ... 0x0c>;   (ten)
+ *          ospi@10080000                 interrupts = <0x0d>;
+ *          interrupt-controller@c000000  riscv,ndev = <0x0d>;
+ *          trace-encoder-controller@3000000, @3001000
+ *          trace-sink-dma@3010000,         @3011000
+ *
+ *      The last two lines are also the evidence that BOTH TILES carry an encoder and a sink:
+ *      chipyard.WithTacitEncoder maps over every tile with
+ *      `encoderBaseAddr = 0x3000000 + tileId * 0x1000`, and here is the result in the
+ *      silicon's own ROM rather than in the fragment's name.
+ *   3. The config's own generated .dts next to that collateral says the same thing, and so
+ *      does tcl/build_rocket.tcl's variant comment.  Three statements, one of which is the
+ *      bootrom; the numbers below are that one.
+ *
+ * riscv,ndev is left at the shared dtsi's 1024 rather than cut to 13, as on every other
+ * board here: Zephyr's PLIC driver sizes its tables from it, and a driver prepared for more
+ * sources than the hardware has is the harmless direction.
+ *
+ * THE NUMBERING IS THE SAME AS chipyard_pynqz1_all_f40's, and that is not a coincidence:
+ * that SoC has the same four peripherals in the same order.  TACIT contributes no interrupt
+ * and the RoCC never did either, so the two boards' PLIC maps coincide.  An image built for
+ * either board gets a correct console on the other silicon -- but only this one names a
+ * machine where the TACIT MMIO answers and the engine does not.
+ *
+ * ---------------------------------------------------------------------------------------
+ * ONE I2C BUS, TWO DEVICES ON IT, AND THAT IS THE BOARD'S DOING RATHER THAN A COMPROMISE.
+ * The SSD1306 at 0x3c and the HM01B0's control port at 0x24 are both on i2c0 (0x1004_0000),
+ * because the camera shield hangs its J4 OLED row straight on PL_SDA/PL_SCL and puts the
+ * sensor behind a PCA9306 on the same pair.  P16 = SCL, P15 = SDA -- the only two PL balls
+ * on this board with pull-ups fitted (2.2 k to 3V3, R49/R50).  B136 MEASURED an SSD1306
+ * answering at 0x3c on exactly those balls, on 0x5A5A0037, on this bench.
+ *
+ * NOBODY HAS RUN THE TWO TOGETHER.  Sharing a bus is a software problem -- the sensor's
+ * control writes and the display's frame writes must not interleave inside a transfer -- and
+ * no image here does both yet.
+ *
+ * ---------------------------------------------------------------------------------------
+ * WHICH PHYSICAL PINS, because the OLED and the camera are wired to the PL by hand.  From
+ * src/pynqz2_i2c.xdc and src/pynqz2_ospi.xdc, the constraints this build used:
+ *
+ *     SCL  ball P16  bank 34   PYNQ-Z1 shield row J6, pin marked "SCL"
+ *     SDA  ball P15  bank 34   PYNQ-Z1 shield row J6, pin marked "SDA"
+ *
+ *     cam_d[0..7]  T14 U12 V13 V15 T15 R16 U17 V17      (shield IO0,1,3..8)
+ *     cam_pclk U10   cam_fvld W11   cam_lvld V11   cam_int T5     (shield A5,A2,A3,A4)
+ *     cam_mclk V18   cam_trig T16                                 (shield IO9, IO10)
+ *
+ * U13 is PUDC_B, tied to 3V3 on the shield; tcl/build_rocket.tcl checks after route that no
+ * port landed on it.  The buttons need no wiring -- BTN0..BTN3 are the board's own:
+ *
+ *     btn[0] BTN0  D19   btn[1] BTN1  D20   btn[2] BTN2  L20   btn[3] BTN3  L19
+ *
+ * ACTIVE HIGH -- PYNQ-Z1 Reference Manual section 12, quoted in docs/RGB_LEDS.md section 8.
+ * NOBODY HAS PRESSED ONE (B136 phase C scored UNPRESSED); that is still true here.
+ */
+
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <chipyard/chipyard-riscv64.dtsi>
+
+/ {
+	model = "Chipyard dual-core Rocket + TACIT on both harts + MBP P-ext + PDM mic + RGB LEDs + SSD1306 I2C + 4 buttons + HM01B0 capture DMA, no RoCC engine (PYNQ-Z1, FCLK0 40 MHz)";
+	compatible = "ucb-bar,chipyard-dev";
+
+	chosen {
+		zephyr,console = &uart0;
+		zephyr,shell-uart = &uart0;
+		zephyr,sram = &ram0;
+	};
+
+	soc {
+		dmic_dev: pdm-mic@10090000 {
+			compatible = "iiswc,pdm-mic";
+			reg = <0x10090000 0x1000>;
+			status = "okay";
+		};
+
+		gpio0: gpio@10010000 {
+			compatible = "sifive,gpio0";
+			reg = <0x10010000 0x1000>;
+			reg-names = "control";
+			interrupt-parent = <&plic>;
+			/*
+			 * TEN entries, <source priority>, in pin order -- the bootrom DTB's
+			 * `interrupts = <3 4 5 6 7 8 9 10 11 12>`.  sifive,gpio0.yaml makes
+			 * `interrupts` required and gpio_sifive.c IRQ_CONNECTs one per entry
+			 * (its cfg function has slots for twelve), so these have to be right
+			 * rather than plausible.  Nothing here uses them today: the LEDs are
+			 * outputs and the buttons are polled.
+			 */
+			interrupts = <3 1>, <4 1>, <5 1>, <6 1>, <7 1>, <8 1>,
+				     <9 1>, <10 1>, <11 1>, <12 1>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			/*
+			 * Ten, not six and not the binding's default 32.
+			 * GPIO_PORT_PIN_MASK_FROM_DT_INST builds the driver's port_pin_mask
+			 * from this, so a write to pin 10 comes back -EINVAL instead of
+			 * reaching a register bit the hardware does not have.
+			 */
+			ngpios = <10>;
+			status = "okay";
+		};
+
+		/*
+		 * THE HM01B0 CAPTURE PERIPHERAL AND ITS TileLink DMA MASTER.  Node shape and every
+		 * property are chipyard_pynqz1_cam's, character for character, except the interrupt:
+		 * source 9 there (that SoC has a six-pin GPIO and no I2C ahead of the UART), source
+		 * 13 here.  Read from this bitstream's own bootrom DTB -- see the header.
+		 *
+		 * THERE IS NO ZEPHYR DRIVER.  samples/cam_capture drives these registers through
+		 * fpga/pynq-z2/sw/cam/ospi_cam.c and POLLS, so `interrupts` is recorded because the
+		 * binding requires it and because a wrong number in the record is a lie, not because
+		 * anything connects it.
+		 *
+		 * frame-buffer-depth is 512 BEATS AND THAT IS A LINE, NOT A FRAME: the DMA drains
+		 * into DDR while the sensor reads out, so software must have a transfer armed before
+		 * a frame starts (fpga/pynq-z2/docs/CAMERA_Z1.md section 5).  It is the CAPACITY
+		 * register's value in this build, not a tunable here.
+		 *
+		 * sensor-i2c points at the SAME controller the OLED is on.  See the header.
+		 */
+		ospi0: ospi@10080000 {
+			compatible = "ucbbar,ospi-hm01b0";
+			reg = <0x10080000 0x1000>;
+			interrupt-parent = <&plic>;
+			interrupts = <13 1>;
+			frame-buffer-depth = <512>;
+			sensor-i2c = <&i2c0>;
+			status = "okay";
+		};
+	};
+
+	/*
+	 * UNCHANGED FROM chipyard_pynqz1_micrgb_f40, deliberately and to be kept that way:
+	 * pins 0..5 of this controller are the same six RGB signals on the same six balls
+	 * (L15/G17/N15 = LD4 blue/green/red, G14/L14/M15 = LD5), and samples/mic_led_record
+	 * and samples/moonshine_live reach them only through the led0..led5 aliases below.
+	 * Widening the controller did not move them; that is what makes those two samples
+	 * build for this board with no source change.
+	 *
+	 * ACTIVE HIGH: the FPGA drives the tri-colour LED cathodes through an INVERTING
+	 * transistor (PYNQ-Z1 Reference Manual 12.1).  The PL chops all six at a fixed
+	 * 12.5 % duty (src/pynqz2_rocket_top.v), so a pin written to 1 is on at 12.5 %.
+	 */
+	rgbleds: rgbleds {
+		compatible = "gpio-leds";
+		ld4_blue:  ld4_blue  { gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>; label = "LD4 blue";  };
+		ld4_green: ld4_green { gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>; label = "LD4 green"; };
+		ld4_red:   ld4_red   { gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>; label = "LD4 red";   };
+		ld5_blue:  ld5_blue  { gpios = <&gpio0 3 GPIO_ACTIVE_HIGH>; label = "LD5 blue";  };
+		ld5_green: ld5_green { gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>; label = "LD5 green"; };
+		ld5_red:   ld5_red   { gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>; label = "LD5 red";   };
+	};
+
+	/*
+	 * THE FOUR BUTTONS, AS gpio-keys WITH sw0..sw3 ALIASES.  Two reasons for that shape
+	 * rather than bare aliases onto the controller:
+	 *
+	 *   1. An application that only wants to POLL still gets a gpio_dt_spec with the
+	 *      polarity attached -- GPIO_DT_SPEC_GET(DT_ALIAS(sw0), gpios) -- which is
+	 *      EXACTLY the led0..led5 pattern samples/moonshine_live already uses.  Nobody
+	 *      has to know that BTN0 is pin 6, and nobody can get the polarity wrong.
+	 *   2. gpio-keys costs nothing unless an image asks for it.  CONFIG_INPUT is not
+	 *      default-y (subsys/input/Kconfig), and CONFIG_INPUT_GPIO_KEYS lives inside
+	 *      `if INPUT`, so on an image that does not set CONFIG_INPUT=y these nodes bind
+	 *      no driver, connect no IRQ and cost no bytes.  An image that DOES want edge
+	 *      events later gets them for one Kconfig line, using the PLIC sources above.
+	 *
+	 * zephyr,code is filled in so that path works when somebody takes it; it is ignored
+	 * by polling code.
+	 *
+	 * INPUT ONLY, AND input_en MATTERS.  Nothing in the PL drives these four balls; the
+	 * top level feeds the controller's i_ival from the pad gated by the controller's own
+	 * input_en.  A guest that never calls gpio_pin_configure_dt(..., GPIO_INPUT) reads
+	 * EVERY BUTTON AS 0 FOREVER -- it does not error, it just reads 0.  gpio_sifive.c
+	 * sets in_en from the GPIO_INPUT flag, so configure before you read.
+	 *
+	 * NO DEBOUNCE IN HARDWARE, and the board has none either.  A polling reader should
+	 * require two agreeing samples a few ms apart, or use debounce-interval-ms here.
+	 */
+	buttons: buttons {
+		compatible = "gpio-keys";
+		debounce-interval-ms = <30>;
+		btn0: btn0 { gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>; label = "BTN0"; zephyr,code = <INPUT_KEY_0>; };
+		btn1: btn1 { gpios = <&gpio0 7 GPIO_ACTIVE_HIGH>; label = "BTN1"; zephyr,code = <INPUT_KEY_1>; };
+		btn2: btn2 { gpios = <&gpio0 8 GPIO_ACTIVE_HIGH>; label = "BTN2"; zephyr,code = <INPUT_KEY_2>; };
+		btn3: btn3 { gpios = <&gpio0 9 GPIO_ACTIVE_HIGH>; label = "BTN3"; zephyr,code = <INPUT_KEY_3>; };
+	};
+
+	aliases {
+		/*
+		 * led0..led5 ARE LOAD-BEARING and must not be renumbered: samples/mic_led_record
+		 * and samples/moonshine_live take them with DT_ALIAS(led0..led5) and nothing
+		 * else identifies a lamp.  These six lines are chipyard_pynqz1_micrgb_f40's,
+		 * character for character.
+		 */
+		led0 = &ld4_blue;
+		led1 = &ld4_green;
+		led2 = &ld4_red;
+		led3 = &ld5_blue;
+		led4 = &ld5_green;
+		led5 = &ld5_red;
+		sw0 = &btn0;
+		sw1 = &btn1;
+		sw2 = &btn2;
+		sw3 = &btn3;
+		/* chipyard_pynqz1_cam's two alias names, unchanged, so samples/cam_capture builds
+		 * for this board with no source edit. */
+		camera-i2c = &i2c0;
+		camera0 = &ospi0;
+	};
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	/*
+	 * PLIC SOURCE 2 ON THIS SoC.  On chipyard_pynqz1_micrgb_f40 it is 1, and 1 here is
+	 * the I2C controller.  A wrong number here is a console that looks hung: the guest
+	 * runs, the UART transmits nothing an interrupt ever completes, and the bench sees a
+	 * dead board.  Read from the bootrom DTB, not from this comment -- see the header.
+	 */
+	interrupts = <2 1>;
+};
+
+&i2c0 {
+	status = "okay";
+	/* source 1 in the bootrom DTB; the shared dtsi's <52 1> is another SoC's.
+	 * i2c_sifive.c polls -- it never enables this interrupt -- but the property is
+	 * required by the binding and a wrong value would be a lie in the record. */
+	interrupts = <1 1>;
+	/*
+	 * 100 kHz, as chipyard_pynqz1_cam and the shared dtsi both set.  i2c_sifive derives
+	 * the prescaler from SIFIVE_PERIPHERAL_CLOCK_FREQUENCY, which is
+	 * CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC * CONFIG_RTC_CLOCK_DIVIDER_VALUE = 40,000,000
+	 * here against 34,483,000 on the cam board, SO THE ACTUAL SCL RATE IS NOT THE ONE
+	 * MEASURED IN docs/OLED_SSD1306.md 7.3 (112.69 kHz on a 34.4828 MHz pbus).  Nobody
+	 * has measured it at 40 MHz.  It is well inside the SSD1306's 400 kHz either way,
+	 * so this is a number to re-measure, not a hazard.
+	 */
+	clock-frequency = <100000>;
+
+	/*
+	 * THE OLED.  0x3c is the strap the module on this bench uses (0x3d exists on some
+	 * modules; samples/oled_status's own overlay adds that second node and probes both).
+	 *
+	 * zephyr,deferred-init IS NOT OPTIONAL HERE.  Without it the SSD1306 driver would
+	 * run its init sequence at boot on every image built for this board, and on a board
+	 * with no display fitted that is a failing device init before main() -- on a bus
+	 * whose controller has no timeout (docs/OLED_SSD1306.md F2).  With it, nothing
+	 * touches the bus until an application calls device_init(), which is what
+	 * samples/oled_status does after it has NOP-probed the address.
+	 *
+	 * Panel properties are Zephyr's own ssd1306_128x64 shield values, the same ones
+	 * samples/oled_status/oled.overlay sets; that overlay merges with this node rather
+	 * than conflicting with it.
+	 */
+	/*
+	 * THE SENSOR'S CONTROL PORT IS ALSO ON THIS BUS, at 0x24, and has no node: it is
+	 * reached by fpga/pynq-z2/sw/cam/ospi_cam.c through the i2c0 device, the same way
+	 * chipyard_pynqz1_cam does it.  The `camera-i2c` alias above is how that code finds
+	 * the controller.
+	 */
+	oled_3c: ssd1306@3c {
+		compatible = "solomon,ssd1306fb";
+		reg = <0x3c>;
+		width = <128>;
+		height = <64>;
+		segment-offset = <0>;
+		page-offset = <0>;
+		display-offset = <0>;
+		multiplex-ratio = <63>;
+		segment-remap;
+		com-invdir;
+		prechargep = <0x22>;
+		zephyr,deferred-init;
+	};
+};
+
+/* HTIF is a simulator transport: it needs a host polling tohost/fromhost. On the FPGA the
+ * console is a real UART, so leave it off. */
+&htif {
+	status = "disabled";
+};
+
+&flash0 {
+	status = "disabled";
+};

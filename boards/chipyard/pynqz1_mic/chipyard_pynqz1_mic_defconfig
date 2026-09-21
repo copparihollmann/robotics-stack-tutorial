@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# chipyard_pynqz1_pext_defconfig plus the microphone. Everything about the CPUs, the
+# clock and the console is identical and is copied here verbatim, deliberately: the SoC
+# is PynqZ2RocketBigLittlePextTacitConfig with one extra MMIO peripheral hung off the
+# periphery bus, so nothing else in the software view can change. If a line here ever
+# disagrees with chipyard_pynqz1_pext_defconfig, that is a bug here.
+#
+# The three lines at the bottom are the whole difference.
+
+CONFIG_PRIVILEGED_STACK_SIZE=2048
+CONFIG_REBOOT=y
+CONFIG_UART_HTIF=n
+CONFIG_CONSOLE=y
+CONFIG_UART_CONSOLE=y
+CONFIG_SERIAL=y
+CONFIG_PRINTK=y
+CONFIG_EARLY_CONSOLE=y
+CONFIG_STACK_SENTINEL=y
+CONFIG_XIP=n
+CONFIG_RISCV_PMP=n
+CONFIG_SMP=y
+CONFIG_IDLE_STACK_SIZE=1024
+CONFIG_PINCTRL=n
+CONFIG_UART_SIFIVE_PORT_0=y
+
+# Two harts, not one -- same as chipyard_pynqz1_smp, and for the same reason.
+#
+# PynqZ2RocketBigLittlePextTacitConfig is PynqZ2RocketBigLittleTacitConfig plus
+# WithPExtOnTiles(0), so the hardware still has exactly two harts: cpu@0 (big, 16 KB L1s,
+# sv39, and the MBP datapath) and cpu@1 (little, 4 KB L1s, no MMU, NO MBP datapath).
+#
+# With CONFIG_SMP=y and MP_MAX_NUM_CPUS=1 Zephyr compiles the secondary-hart path out of
+# reset.S entirely, so hart 1 spins in wfi forever and the image is silently single-core.
+# That would also make the heterogeneity test vacuous: with hart 1 never running, nothing
+# would ever prove the extension is absent there.
+CONFIG_MP_MAX_NUM_CPUS=2
+
+# CHANGED vs arty: this config has NO FPU.
+# The generated DTS reports riscv,isa = "rv64imaczicsr_zifencei_zihpm_xrocket" for BOTH
+# harts -- no f, no d. MBP is in the custom-0 opcode space and does not appear in the ISA
+# string at all (there is no standard extension letter for it), so the two harts remain
+# indistinguishable to anything that reads riscv,isa. That is deliberate and it is why
+# samples/pext_hart_proof has to EXECUTE an instruction to tell them apart.
+CONFIG_FPU=n
+
+# CHANGED vs chipyard_pynqz1_smp: the PL runs at 34.4828 MHz, not 40.
+#
+# WHY IT MOVED: the depth-3 DOT8 and the 32x32 QMUL do not fit a 25 ns EX stage.
+# PEXT_FEASIBILITY.md section 2.6 measures the integrated P-ext ALU at +9.38 ns against an
+# ALU-cone budget of 7.49 ns at 40 MHz and 11.12 ns at 35 MHz.
+#
+# WHY IT IS 34483 AND NOT 35000: FCLK0 = IO PLL / (DIVISOR0 * DIVISOR1) with both divisors
+# integers, and the IO PLL on this board is 50 MHz * 20 = 1000 MHz. 1000/40 = 25 = 5*5, so
+# 40 MHz was exact. 1000/35 = 28.571 is not an integer -- MEASURED, by querying the
+# configured PS7 IP, a request for 35 MHz yields DIVISOR0=29, DIVISOR1=1 and
+# PCW_CLK0_FREQ = 34,482,761 Hz. PYNQ's Clocks.fclk0_mhz setter searches the same integer
+# space and picks 29 as well. So the clock this design is timed at, and the clock the board
+# runs it at, are both 1000/29 MHz.
+#
+# mtime ticks at the digital-top clock divided by CONFIG_RTC_CLOCK_DIVIDER_VALUE (1000),
+# so 34.4828 MHz -> 34.4828 kHz here. This value ALSO sets the SiFive UART's baud divisor:
+# SIFIVE_PERIPHERAL_CLOCK_FREQUENCY = SYS_CLOCK_HW_CYCLES_PER_SEC * RTC_CLOCK_DIVIDER_VALUE
+#   34483 -> divisor 34483000/115200 - 1 = 298 -> 34482761/299 = 115,327 baud  (+0.11%)
+#   35000 -> divisor 35000000/115200 - 1 = 302 -> 34482761/303 = 113,804 baud  (-1.21%)
+# Both are inside what a UART receiver tolerates, so 35000 would have "worked" and been
+# wrong by 11x. Getting this badly wrong yields a working-but-garbled console, not a
+# silent one -- see FPGA_END_TO_END.md section 4.1.
+CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=34483
+CONFIG_SYS_CLOCK_TICKS_PER_SEC=1000
+
+CONFIG_TIMING_FUNCTIONS=y
+CONFIG_SPEED_OPTIMIZATIONS=y
+CONFIG_RISCV_ISA_EXT_V_LAZY=n
+
+# The microphone. CONFIG_AUDIO_DMIC_PDM_MMIO is default-y once the devicetree node is
+# enabled, so only the two framework symbols need saying.
+CONFIG_AUDIO=y
+CONFIG_AUDIO_DMIC=y

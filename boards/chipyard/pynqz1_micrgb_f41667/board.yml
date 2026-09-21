@@ -1,0 +1,6 @@
+board:
+  name: chipyard_pynqz1_micrgb_f41667
+  full_name: Chipyard dual-core Rocket + TACIT + MBP P-ext + PDM microphone + RGB LEDs on PYNQ-Z1, FCLK0 41.6667 MHz
+  vendor: chipyard
+  socs:
+    - name: rocketchip_virt_riscv64

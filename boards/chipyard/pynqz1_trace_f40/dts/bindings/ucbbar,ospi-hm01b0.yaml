@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+description: |
+  HM01B0 parallel-video capture peripheral with a TileLink DMA master
+  (Chipyard generators/chipyard/src/main/scala/ospi/OspiChipyard.scala), as elaborated in
+  PynqZ2RocketBigLittlePextTacitMicRgbRoccMoonCamConfig (0x5A5A001E).  The register map is in
+  fpga/pynq-z2/sw/cam/ospi_cam.h.  There is no Zephyr driver: samples/cam_capture drives it
+  through sw/cam/ospi_cam.c and polls, so `interrupts` is recorded but not connected.
+
+compatible: "ucbbar,ospi-hm01b0"
+
+include: base.yaml
+
+properties:
+  reg:
+    required: true
+  interrupts:
+    required: true
+  frame-buffer-depth:
+    type: int
+    description: CAPACITY register value, in beats (512 in this build)
+  sensor-i2c:
+    type: phandle
+    description: the I2C controller the sensor's control port is on (address 0x24)

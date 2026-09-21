@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Derived from chipyard_arty_defconfig, which is the closest known-good configuration.
+# Only the values this hardware actually forces are changed; each is noted.
+
+CONFIG_PRIVILEGED_STACK_SIZE=2048
+CONFIG_REBOOT=y
+CONFIG_UART_HTIF=n
+CONFIG_CONSOLE=y
+CONFIG_UART_CONSOLE=y
+CONFIG_SERIAL=y
+CONFIG_PRINTK=y
+CONFIG_EARLY_CONSOLE=y
+CONFIG_STACK_SENTINEL=y
+CONFIG_XIP=n
+CONFIG_RISCV_PMP=n
+CONFIG_SMP=y
+CONFIG_MP_MAX_NUM_CPUS=1
+CONFIG_IDLE_STACK_SIZE=1024
+CONFIG_PINCTRL=n
+CONFIG_UART_SIFIVE_PORT_0=y
+
+# CHANGED vs arty: this config has NO FPU.
+# The generated DTS reports riscv,isa = "rv64imaczicsr_zifencei_zihpm_xrocket" -- no f, no
+# d. Building with CONFIG_FPU=y emits floating-point instructions that trap as illegal on
+# this core.
+CONFIG_FPU=n
+
+# CHANGED vs arty: the PL runs at 40 MHz, not 50.
+# mtime ticks at the digital-top clock divided by CONFIG_RTC_CLOCK_DIVIDER_VALUE (1000),
+# so 40 MHz -> 40 kHz here. This value also sets the SiFive UART's baud divisor, via
+# SIFIVE_PERIPHERAL_CLOCK_FREQUENCY = SYS_CLOCK_HW_CYCLES_PER_SEC * RTC_CLOCK_DIVIDER_VALUE
+# = 40 MHz. Getting it wrong yields a working-but-garbled console.
+CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=40000
+CONFIG_SYS_CLOCK_TICKS_PER_SEC=1000
+
+CONFIG_TIMING_FUNCTIONS=y
+CONFIG_SPEED_OPTIMIZATIONS=y
+CONFIG_RISCV_ISA_EXT_V_LAZY=n

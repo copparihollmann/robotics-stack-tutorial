@@ -1,0 +1,13 @@
+identifier: chipyard_pynqz1_micrgb_f41667
+name: Chipyard dual-core Rocket + TACIT + MBP P-ext + PDM microphone + RGB LEDs on PYNQ-Z1, FCLK0 41.6667 MHz
+type: hardware
+arch: riscv
+toolchain:
+  - zephyr
+supported:
+  - dmic
+  - gpio
+testing:
+  ignore_tags:
+    - net
+    - bluetooth

@@ -1,0 +1,30 @@
+# The physical boards THIS CHECKOUT measures on.  A row here is what makes a results.csv row
+# attributable to a machine.
+#
+# THIS FILE SHIPS EMPTY, ON PURPOSE.  It is a per-bench register, not a list anyone has to
+# join.  Add one row for each board you own.  If you would rather not keep a register at
+# all, leave it empty and export IISWC_BOARD=<short-name> instead -- scripts/lib/board_id.sh
+# accepts either, and refuses to record a run under a blank or guessed board name.
+#
+# WHY THIS FILE EXISTS.  Two boards running the SAME bitstream md5 blend perfectly under a
+# join on (config + bitstream_md5): two machines under one key, averaging into a number
+# neither produced.  The board name is what keeps them apart.
+#
+# WHAT IDENTIFIES A BOARD, and why it is not something read from the silicon.  Nothing on a
+# stock PYNQ-Z1 identifies the die from Linux (measured on a stock PYNQ-Z1):
+#   /proc/cpuinfo Serial   0000000000000000     always zero on Zynq-7000
+#   /etc/machine-id        identical on every card written from one image
+#   hostname               "pynq" on every stock card
+#   eth0 MAC               RANDOM, regenerated every boot -- the PS GEM has none in hardware
+#   Zynq Device DNA        needs a DNA_PORT primitive in the bitstream; ours have none
+# So `board` is a SHORT LOGICAL NAME, assigned here, and `sd_card_cid` is a device-read
+# corroborator: unique per SD card, stable across reboots, and it changes if a card is moved
+# between boards -- which makes it a tripwire for a mislabelled run rather than the identity.
+#
+# board        the name that goes in results.csv and run.json. Stable forever once used.
+# pynq_host    what PYNQ_HOST is set to for that board (how scripts/lib/board_id.sh resolves it)
+# sd_card_cid  /sys/block/mmcblk0/device/cid -- blank until read on that board
+# notes        where it lives and how it is reached
+board,pynq_host,sd_card_cid,notes
+# board,pynq_host,sd_card_cid,notes
+# example,xilinx@10.0.0.7,,"the board on my desk"

@@ -1,0 +1,34 @@
+{
+  "system": "chipyard-pynqz1-rocket-biglittle",
+  "description": "The dual-core big.LITTLE Rocket on the PYNQ-Z1 (Chipyard PynqZ2RocketBigLittleTacitConfig, 40 MHz PL clock, MP_MAX_NUM_CPUS=2). BOTH harts are rv64imac -- WithoutFPU, no vector unit, no Gemmini -- so the only kind either of them can run is 'scalar' and the only quantization that is not soft-float emulation is int8/int32. This is NOT one of ModelBlaster's stock scalar registries: those advertise isa 'rv64imafdc', which has F and D this hardware does not implement. Copy this file into modelblaster/cores/ to use it with the registry-driven (XPU-RT) path; the single-model flow that scripts/24_rocket_modelblaster.sh drives never reads a registry.",
+  "default_dispatch_target": "any",
+  "notes": {
+    "isa_string_is_documentation": "pipeline/core_registry.py parses 'isa' into Core.isa and NOTHING reads it back -- not kernel selection, not codegen flags, not the spike arguments. Kernel selection is by Backend.name against AlgorithmCandidate.target_affinity; the -march/-mabi that reach the compiler come from Backend.kernel_cflags in pipeline/backends.py, and the scalar backend declares none, so kernels.c is built with whatever -march the Zephyr board emits (here rv64imac_zicsr_zifencei / lp64). Getting 'isa' wrong therefore misleads a reader rather than mis-building a binary -- which is exactly why it is worth stating correctly.",
+    "no_fpu": "riscv,isa = 'rv64imaczicsr_zifencei_zihpm_xrocket' for both harts, from the DTS Chipyard emits next to the Verilog. Rocket's FPU measured 13,878 LUT and does not fit on an XC7Z020 beside a 64 KB L2, two tiles and the TACIT encoders. Any fp32/fp16 op becomes a libgcc soft-float call.",
+    "asymmetry": "The two cores are microarchitecturally different and the ISA string is identical, which is what lets one image cover both. hart 0 (WithNBigCores): 16 KB 4-way L1I/L1D, BTB, sv39 MMU, and MulDivParams(mulUnroll=8, mulEarlyOut=true). hart 1 (WithNSmallCores): 4 KB 1-way L1I/L1D, no BTB, no MMU, 1-set/4-way TLBs, and the DEFAULT MulDivParams -- mulUnroll=1, mulEarlyOut=false, i.e. a 1-bit-per-cycle iterative multiplier. Measured on LeNet int8: hart 1 is 2.07x hart 0 end to end, and the gap is ~32 cycles per multiply. See fpga/pynq-z2/docs/MODELBLASTER_ON_ROCKET.md.",
+    "placement": "Both cores are kind 'scalar' and can run every op, so the registry offers no correctness constraint -- only a cost one. Anything latency-sensitive belongs on rocket_big; rocket_little is a throughput core for whatever can tolerate ~2-3x.",
+    "capabilities": "Listed as the int8 op kinds this tutorial has actually built and run, plus their fp32 counterparts. The fp32 entries are reachable but every one of them is soft-float on this hardware; they are declared because the core CAN execute them, not because it should."
+  },
+  "cores": [
+    {
+      "name": "rocket_big",
+      "kind": "scalar",
+      "isa": "rv64imac_zicsr_zifencei",
+      "harts": [0],
+      "description": "hart 0, the boot hart. WithNBigCores: 16 KB 4-way L1I and L1D, BTB, sv39 MMU, MulDivParams(mulUnroll=8, mulEarlyOut=true). This is the hart CustomBootPin wakes and the one Zephyr's CONFIG_RV_BOOT_HART defaults to.",
+      "capabilities": [
+        "linear_s8", "conv2d_s8", "maxpool2d_s8", "avgpool2d_s8", "relu_s8",
+        "add_s8", "batchnorm2d_s8",
+        "linear", "conv2d", "maxpool2d", "relu", "add", "batchnorm2d"
+      ]
+    },
+    {
+      "name": "rocket_little",
+      "kind": "scalar",
+      "isa": "rv64imac_zicsr_zifencei",
+      "harts": [1],
+      "description": "hart 1. WithNSmallCores: 4 KB 1-way L1I and L1D, no BTB, no supervisor mode (useVM=false, so no S-mode PLIC context either), 1-set/4-way TLBs, and the default 1-bit-per-cycle multiplier. Same ISA and same ABI as hart 0 -- one image covers both.",
+      "capabilities_ref": "rocket_big"
+    }
+  ]
+}

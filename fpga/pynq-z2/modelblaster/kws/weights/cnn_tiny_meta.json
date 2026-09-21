@@ -1,0 +1,52 @@
+{
+  "arch": "cnn_tiny",
+  "macs": 679616,
+  "params": 61340,
+  "val_acc": 0.9133183765041811,
+  "test_acc_fp32": 0.9144861585134623,
+  "test_acc_before_bn_fold": 0.9144861585134623,
+  "labels": [
+    "_silence_",
+    "_unknown_",
+    "yes",
+    "no",
+    "up",
+    "down",
+    "left",
+    "right",
+    "on",
+    "off",
+    "stop",
+    "go"
+  ],
+  "nframes": 49,
+  "ncoef": 10,
+  "feature": "mfcc",
+  "geometry": "kws",
+  "off_q8": [
+    8382,
+    2342,
+    -306,
+    687,
+    -1266,
+    -254,
+    -181,
+    -270,
+    -223,
+    -94
+  ],
+  "shift": [
+    6,
+    7,
+    6,
+    6,
+    5,
+    5,
+    5,
+    5,
+    5,
+    4
+  ],
+  "epochs": 40,
+  "seed": 0
+}

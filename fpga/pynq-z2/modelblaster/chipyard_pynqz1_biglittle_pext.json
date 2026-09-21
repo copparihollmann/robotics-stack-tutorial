@@ -1,0 +1,36 @@
+{
+  "system": "chipyard-pynqz1-biglittle-mbp",
+  "description": "The dual-core big.LITTLE Rocket on the PYNQ-Z1 with MBP, the four-instruction packed-integer extension of fpga/pynq-z2/docs/PEXT_SPEC.md, present on hart 0 ONLY. THE EXTENSION IS NOT UNIFORM ACROSS HARTS: hart 0 decodes MBP.DOT8 / MBP.MAX8 / MBP.QMUL / MBP.CLIP8 in custom-0 (opcode 0x0b, funct7 0, funct3 0/1/2/3); hart 1 does not, and executing one there raises an illegal-instruction exception which Zephyr reports as \"Illegal instruction\" and then halts. Any kernel built with MB_PEXT_HW=1 MUST be pinned (k_thread_cpu_pin(tid, 0)) to hart 0 or it traps. This is the same shape of contract chipyard_quad_hetero_gemmini_q31.json already states for RVV and Gemmini, on a two-hart SoC instead of a four-hart one. Copy this file into modelblaster/cores/ to use it with the registry-driven (XPU-RT) path; the single-model flow that scripts/28_rocket_modelblaster_pext.sh drives never reads a registry. The plain-scalar description of the same board, with no extension, is chipyard_pynqz1_rocket_biglittle.json.",
+  "default_dispatch_target": "any",
+  "notes": {
+    "a_cost_gradient_not_a_capability_wall": "BOTH cores list every op, and that is deliberate (PEXT_SPEC.md section 7.4). The difference between them is not what they can execute but which kernels/<kind>/ directory the dispatch resolves to and therefore how long it takes: 'pext' resolves to the curated MBP kernels, 'scalar' to ModelBlaster's reference implementations. Measured on LeNet int8 with spike minstret, the same graph costs 6,247,648 instructions on the scalar core and 419,490 on the pext core -- 14.89x end to end, 9.4x on conv1, 25.6x on conv2, 12.0x on fc1. That gives XPU-RT a real placement problem (a ~15x per-dispatch cost difference on this model) rather than a list of things one core is forbidden to do, which is the better scheduling problem of the two.",
+    "isa_string_is_documentation": "pipeline/core_registry.py parses 'isa' into Core.isa and NOTHING reads it back. The 'xmbp' suffix on hart 0 below is honest documentation and nothing more; it must NOT be fed to the toolchain, where it would break the exact multilib match (rv64imac_zicsr_zifencei/lp64/medany) the Zephyr SDK selects. The instructions are emitted with GAS's `.insn r` directive and assemble under the base -march with no extension string at all -- see pipeline/backends.py PEXT, and PEXT_SPEC.md section 9 question 6, which asks for exactly this call.",
+    "discovery_is_not_the_isa_string": "PEXT_SPEC.md section 7.1 checked and rejected the devicetree riscv,isa string as the discovery mechanism: zephyr/dts/riscv/chipyard/chipyard-riscv64.dtsi hardcodes 'rv64gc' for all eight cpu nodes -- wrong for this hardware since WithoutFPU went in -- and no Zephyr C code reads it. The mechanism is three layers instead: CONFIG_MB_PEXT at build time (samples/modelblaster_pext/Kconfig), a per-cpu devicetree boolean rather than a parsed string, and mhartid plus k_thread_cpu_pin at runtime.",
+    "kernels": "kind 'pext' resolves to fpga/pynq-z2/modelblaster/kernels/pext/ in THIS repo, not to modelblaster/kernels/ in the submodule -- pass it with --global-curated-dir. conv2d_s8 is pext_patch_dot8, linear_s8 is pext_row_dot8, maxpool2d_s8 is pext_max8_rows; all three are accuracy_class bit_exact and every one of them falls through to ModelBlaster's reference expression, verbatim, on any shape it cannot accelerate. Every other op resolves to the reference implementation on both cores.",
+    "what_is_not_accelerated": "batchnorm2d_s8 and add_s8 are listed on both cores and are the same speed on both, because neither has an MBP kernel and neither can have one. PEXT_SPEC.md section 1.5 measured them at 649 and 734 instructions per element -- they dequantize to float in the reference and this SoC is WithoutFPU, so that is libgcc soft-float. On DroNet they are 11% of the frame today and 72% after a 22x conv speedup. The answers are a per-channel LUT and an integer rescale-add, both software, neither needing an instruction. LeNet uses neither op, so nothing here measures them.",
+    "no_fpu": "riscv,isa = 'rv64imaczicsr_zifencei_zihpm_xrocket' for both harts. Rocket's FPU measured 13,878 LUT and does not fit on an XC7Z020 beside a 64 KB L2, two tiles and the TACIT encoders. Any fp32/fp16 op becomes a libgcc soft-float call on either core.",
+    "asymmetry_beyond_the_extension": "The microarchitectural gap is unchanged and is separate from MBP: hart 0 has 16 KB 4-way L1s, a BTB, sv39, and MulDivParams(mulUnroll=8, mulEarlyOut=true); hart 1 has 4 KB 1-way L1s, no BTB, no MMU, and the default 1-bit-per-cycle multiplier. Measured 2.07x on LeNet int8 with the scalar kernels. MBP claims none of that gap -- it goes on the hart whose multiplier is already fast (PEXT_SPEC.md section 5.6)."
+  },
+  "cores": [
+    {
+      "name": "rocket_big_pext",
+      "kind": "pext",
+      "isa": "rv64imac_zicsr_zifencei_zihpm_xrocket_xmbp",
+      "harts": [0],
+      "description": "hart 0, the boot hart, and the ONLY hart that decodes MBP. WithNBigCores: 16 KB 4-way L1I and L1D, BTB, sv39 MMU, MulDivParams(mulUnroll=8, mulEarlyOut=true). A thread running an MB_PEXT_HW=1 kernel must be created K_FOREVER, pinned with k_thread_cpu_pin(tid, 0), and only then started -- k_thread_cpu_pin requires a thread that has not begun running. CONFIG_SCHED_CPU_MASK=y is required for that to exist.",
+      "capabilities": [
+        "linear_s8", "conv2d_s8", "maxpool2d_s8", "avgpool2d_s8", "relu_s8",
+        "add_s8", "batchnorm2d_s8", "sigmoid_s8",
+        "linear", "conv2d", "maxpool2d", "relu", "add", "batchnorm2d"
+      ]
+    },
+    {
+      "name": "rocket_little",
+      "kind": "scalar",
+      "isa": "rv64imac_zicsr_zifencei_zihpm_xrocket",
+      "harts": [1],
+      "description": "hart 1. WithNSmallCores: 4 KB 1-way L1I and L1D, no BTB, no supervisor mode, 1-set/4-way TLBs, the default 1-bit-per-cycle multiplier, and NO MBP decode. Runs the same ops from ModelBlaster's reference kernels. The software model in pext.h (MB_PEXT_HW=0) also runs correctly here, but should not be used in production: it is far slower than the plain scalar reference, and it exists so the semantics are executable off-target and the same source builds for both harts during bring-up (PEXT_SPEC.md section 7.5).",
+      "capabilities_ref": "rocket_big_pext"
+    }
+  ]
+}

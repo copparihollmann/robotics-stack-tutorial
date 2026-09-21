@@ -1,0 +1,30 @@
+{
+  "arch": "cnn_rgb",
+  "feed": "rgb",
+  "in_shape": [
+    3,
+    96,
+    96
+  ],
+  "macs": 7485824,
+  "params": 100426,
+  "val_acc": 0.8563287066825995,
+  "test_acc_fp32": 0.8553257686676428,
+  "test_acc_before_bn_fold": 0.8553257686676428,
+  "n_test": 10928,
+  "labels": [
+    "non_person",
+    "person"
+  ],
+  "corpus": "vw_coco2014_96",
+  "int8_map": "clamp(box_average - 128, -127, 127)",
+  "epochs": 80,
+  "seed": 0,
+  "augment": true,
+  "n_calib": 64,
+  "calib_class_balance": [
+    33,
+    31
+  ],
+  "calib_selection": "evenly spaced over the held-out split"
+}

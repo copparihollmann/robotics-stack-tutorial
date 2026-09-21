@@ -1,0 +1,101 @@
+# ---------------------------------------------------------------------------------------
+# What must never be committed.
+#
+# The rule that bit this repo: an anchored pattern only matches at the root. `/out/` let
+# `fpga/out/` (148 MB, written by a script that ran with fpga/ as its cwd) escape entirely.
+# Every rule below that names a build product is therefore UNANCHORED, so it matches at any
+# depth, and the few that really are root-only are marked as such.
+# ---------------------------------------------------------------------------------------
+
+# --- run artifacts -----------------------------------------------------------------------
+# Labs write run directories, consoles, traces and captures here. Large, regenerable, and
+# never evidence on their own -- the evidence is the committed results row plus the archive.
+out/
+runs/
+
+# --- the evidence archive ------------------------------------------------------------------
+# A symlink to a directory outside the repo, so `git clean` and a lab that wipes its own run
+# directory cannot reach it.
+/archive
+
+# --- Vivado ---------------------------------------------------------------------------------
+# Project trees, checkpoints, journals and logs: hundreds of files and hundreds of MB per
+# build, all reproducible from tcl/ + the vendored Verilog. The .bit files ARE tracked (see
+# fpga/pynq-z2/bitstreams.csv) so the hardware labs run without a Vivado licence.
+.Xil/
+proj/
+*.dcp
+*.jou
+*.str
+*.rpt
+*.pb
+*.wdb
+*.vcd.gz
+vivado*.log
+vivado_pid*.str
+hs_err_pid*.log
+.Xil*/
+NA/
+fpga/pynq-z2/build_*/proj/
+fpga/pynq-z2/build_*/reports/
+# ps7_init.{h,html,tcl} are Vivado exports regenerated with every block design write; only
+# ps7_init.c is tracked, because the host loader reads it.
+ps7_init.h
+ps7_init.html
+ps7_init.tcl
+
+# --- Verilator / C++ sim ----------------------------------------------------------------
+# obj_dir is Verilator's default; this repo also uses obj_<name> per testbench. Both carry
+# generated C++, objects, archives and linked executables -- these HAVE been committed here
+# by accident before.
+obj_dir/
+obj_*/
+*.o
+*.a
+*.so
+*.d
+
+# --- Zephyr / CMake / west ----------------------------------------------------------------
+build/
+build-*/
+twister-out*/
+.west/
+zephyr-chipyard-sw/tools/
+zephyr-chipyard-sw/tools-manual/
+zephyr-chipyard-sw/zephyr_ws/modules/
+zephyr-chipyard-sw/zephyr_ws/tools/
+zephyr-chipyard-sw/zephyr_ws/bootloader/
+CMakeCache.txt
+CMakeFiles/
+compile_commands.json
+
+# --- third-party build trees --------------------------------------------------------------
+/third_party/riscv-isa-sim/build/
+/third_party/tacit-decoder/target/
+
+# --- Python ---------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- which board THIS checkout drives -----------------------------------------------------
+# Per-machine and deliberately untracked: env.sh reads it when PYNQ_HOST is unset.
+# board.conf.example IS tracked and is the documentation.
+/board.conf
+
+# --- locks ----------------------------------------------------------------------------------
+/.locks/
+.board*.lock
+.board*.lock.queue/
+
+# --- editor / OS noise ----------------------------------------------------------------------
+*.swp
+*.swo
+*~
+.DS_Store
+.idea/
+.vscode/

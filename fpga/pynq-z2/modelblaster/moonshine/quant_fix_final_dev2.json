@@ -1,0 +1,480 @@
+{
+ "what": "step 2 candidates, FLOAT SIMULATION (estimates), selected on dev-clean only",
+ "tune": {
+  "utterances": 765,
+  "speakers": 40,
+  "float_wer_vs_reference": 0.07301480484522208
+ },
+ "calibration_windows": 64,
+ "candidates": {
+  "FINAL R: split stem (1, 64), stem weights 1 group(s), adds per-channel + o_proj/fc2 rows": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {},
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      64
+     ],
+     "stem_conv2": [
+      1,
+      64
+     ],
+     "stem_conv3": [
+      1,
+      64
+     ]
+    }
+   },
+   "sqnr_db": 12.335856612514684,
+   "cosine": 0.9706297077237455,
+   "wer_vs_float": {
+    "wer": 0.055667675748402284,
+    "errors": 331,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.09471736204576044,
+    "errors": 563,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "FINAL R: split stem (1, 16, 256), stem weights 1 group(s), adds per-channel + o_proj/fc2 rows": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {},
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv2": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv3": [
+      1,
+      16,
+      256
+     ]
+    }
+   },
+   "sqnr_db": 14.671373080036629,
+   "cosine": 0.982916132204892,
+   "wer_vs_float": {
+    "wer": 0.04994954591321897,
+    "errors": 297,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.09185733512786003,
+    "errors": 546,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "FINAL R: split stem (1, 64), stem weights 2 group(s), adds per-channel + o_proj/fc2 rows": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 2,
+     "stem.conv2": 2,
+     "stem.conv3": 2
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      64
+     ],
+     "stem_conv2": [
+      1,
+      64
+     ],
+     "stem_conv3": [
+      1,
+      64
+     ]
+    }
+   },
+   "sqnr_db": 13.684172748409111,
+   "cosine": 0.9784931252461627,
+   "wer_vs_float": {
+    "wer": 0.042717793474604776,
+    "errors": 254,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.08310901749663527,
+    "errors": 494,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "FINAL R: split stem (1, 16, 256), stem weights 2 group(s), adds per-channel + o_proj/fc2 rows": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 2,
+     "stem.conv2": 2,
+     "stem.conv3": 2
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv2": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv3": [
+      1,
+      16,
+      256
+     ]
+    }
+   },
+   "sqnr_db": 15.88022397356632,
+   "cosine": 0.9870993248118494,
+   "wer_vs_float": {
+    "wer": 0.03464513958964009,
+    "errors": 206,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.08209959623149395,
+    "errors": 488,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "FINAL R: split stem (1, 64), stem weights 4 group(s), adds per-channel + o_proj/fc2 rows": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 4,
+     "stem.conv2": 4,
+     "stem.conv3": 4
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      64
+     ],
+     "stem_conv2": [
+      1,
+      64
+     ],
+     "stem_conv3": [
+      1,
+      64
+     ]
+    }
+   },
+   "sqnr_db": 13.761322680480909,
+   "cosine": 0.9788701211966517,
+   "wer_vs_float": {
+    "wer": 0.03548604103599058,
+    "errors": 211,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.08209959623149395,
+    "errors": 488,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "FINAL R: split stem (1, 16, 256), stem weights 4 group(s), adds per-channel + o_proj/fc2 rows": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 4,
+     "stem.conv2": 4,
+     "stem.conv3": 4
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv2": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv3": [
+      1,
+      16,
+      256
+     ]
+    }
+   },
+   "sqnr_db": 16.04988994511471,
+   "cosine": 0.9876004039050806,
+   "wer_vs_float": {
+    "wer": 0.03144971409350824,
+    "errors": 187,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.08142664872139974,
+    "errors": 484,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  }
+ }
+}

@@ -1,0 +1,966 @@
+{
+ "what": "step 2 candidates, FLOAT SIMULATION (estimates), selected on dev-clean only",
+ "tune": {
+  "utterances": 765,
+  "speakers": 40,
+  "float_wer_vs_reference": 0.07301480484522208
+ },
+ "calibration_windows": 64,
+ "candidates": {
+  "ABL S4W: the finalist": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 4,
+     "stem.conv2": 4,
+     "stem.conv3": 4,
+     "layers.0.self_attn.q_proj": 4,
+     "layers.0.self_attn.k_proj": 4,
+     "layers.0.self_attn.v_proj": 4,
+     "layers.0.self_attn.o_proj": 4,
+     "layers.0.mlp.fc1": 4,
+     "layers.0.mlp.fc2": 4,
+     "layers.1.self_attn.q_proj": 4,
+     "layers.1.self_attn.k_proj": 4,
+     "layers.1.self_attn.v_proj": 4,
+     "layers.1.self_attn.o_proj": 4,
+     "layers.1.mlp.fc1": 4,
+     "layers.1.mlp.fc2": 4,
+     "layers.2.self_attn.q_proj": 4,
+     "layers.2.self_attn.k_proj": 4,
+     "layers.2.self_attn.v_proj": 4,
+     "layers.2.self_attn.o_proj": 4,
+     "layers.2.mlp.fc1": 4,
+     "layers.2.mlp.fc2": 4,
+     "layers.3.self_attn.q_proj": 4,
+     "layers.3.self_attn.k_proj": 4,
+     "layers.3.self_attn.v_proj": 4,
+     "layers.3.self_attn.o_proj": 4,
+     "layers.3.mlp.fc1": 4,
+     "layers.3.mlp.fc2": 4,
+     "layers.4.self_attn.q_proj": 4,
+     "layers.4.self_attn.k_proj": 4,
+     "layers.4.self_attn.v_proj": 4,
+     "layers.4.self_attn.o_proj": 4,
+     "layers.4.mlp.fc1": 4,
+     "layers.4.mlp.fc2": 4,
+     "layers.5.self_attn.q_proj": 4,
+     "layers.5.self_attn.k_proj": 4,
+     "layers.5.self_attn.v_proj": 4,
+     "layers.5.self_attn.o_proj": 4,
+     "layers.5.mlp.fc1": 4,
+     "layers.5.mlp.fc2": 4
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv2": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv3": [
+      1,
+      16,
+      256
+     ]
+    }
+   },
+   "sqnr_db": 16.190160070739896,
+   "cosine": 0.9879617852896331,
+   "wer_vs_float": {
+    "wer": 0.030272452068617558,
+    "errors": 180,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.08159488559892328,
+    "errors": 485,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "ABL S4W - o_proj/fc2 rows": {
+   "knobs": {
+    "rows": {},
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 4,
+     "stem.conv2": 4,
+     "stem.conv3": 4,
+     "layers.0.self_attn.q_proj": 4,
+     "layers.0.self_attn.k_proj": 4,
+     "layers.0.self_attn.v_proj": 4,
+     "layers.0.self_attn.o_proj": 4,
+     "layers.0.mlp.fc1": 4,
+     "layers.0.mlp.fc2": 4,
+     "layers.1.self_attn.q_proj": 4,
+     "layers.1.self_attn.k_proj": 4,
+     "layers.1.self_attn.v_proj": 4,
+     "layers.1.self_attn.o_proj": 4,
+     "layers.1.mlp.fc1": 4,
+     "layers.1.mlp.fc2": 4,
+     "layers.2.self_attn.q_proj": 4,
+     "layers.2.self_attn.k_proj": 4,
+     "layers.2.self_attn.v_proj": 4,
+     "layers.2.self_attn.o_proj": 4,
+     "layers.2.mlp.fc1": 4,
+     "layers.2.mlp.fc2": 4,
+     "layers.3.self_attn.q_proj": 4,
+     "layers.3.self_attn.k_proj": 4,
+     "layers.3.self_attn.v_proj": 4,
+     "layers.3.self_attn.o_proj": 4,
+     "layers.3.mlp.fc1": 4,
+     "layers.3.mlp.fc2": 4,
+     "layers.4.self_attn.q_proj": 4,
+     "layers.4.self_attn.k_proj": 4,
+     "layers.4.self_attn.v_proj": 4,
+     "layers.4.self_attn.o_proj": 4,
+     "layers.4.mlp.fc1": 4,
+     "layers.4.mlp.fc2": 4,
+     "layers.5.self_attn.q_proj": 4,
+     "layers.5.self_attn.k_proj": 4,
+     "layers.5.self_attn.v_proj": 4,
+     "layers.5.self_attn.o_proj": 4,
+     "layers.5.mlp.fc1": 4,
+     "layers.5.mlp.fc2": 4
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv2": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv3": [
+      1,
+      16,
+      256
+     ]
+    }
+   },
+   "sqnr_db": 11.894087303819841,
+   "cosine": 0.9677633609917078,
+   "wer_vs_float": {
+    "wer": 0.03800874537504204,
+    "errors": 226,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.08092193808882907,
+    "errors": 481,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "ABL S4W - residual adds per-channel": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 4,
+     "stem.conv2": 4,
+     "stem.conv3": 4,
+     "layers.0.self_attn.q_proj": 4,
+     "layers.0.self_attn.k_proj": 4,
+     "layers.0.self_attn.v_proj": 4,
+     "layers.0.self_attn.o_proj": 4,
+     "layers.0.mlp.fc1": 4,
+     "layers.0.mlp.fc2": 4,
+     "layers.1.self_attn.q_proj": 4,
+     "layers.1.self_attn.k_proj": 4,
+     "layers.1.self_attn.v_proj": 4,
+     "layers.1.self_attn.o_proj": 4,
+     "layers.1.mlp.fc1": 4,
+     "layers.1.mlp.fc2": 4,
+     "layers.2.self_attn.q_proj": 4,
+     "layers.2.self_attn.k_proj": 4,
+     "layers.2.self_attn.v_proj": 4,
+     "layers.2.self_attn.o_proj": 4,
+     "layers.2.mlp.fc1": 4,
+     "layers.2.mlp.fc2": 4,
+     "layers.3.self_attn.q_proj": 4,
+     "layers.3.self_attn.k_proj": 4,
+     "layers.3.self_attn.v_proj": 4,
+     "layers.3.self_attn.o_proj": 4,
+     "layers.3.mlp.fc1": 4,
+     "layers.3.mlp.fc2": 4,
+     "layers.4.self_attn.q_proj": 4,
+     "layers.4.self_attn.k_proj": 4,
+     "layers.4.self_attn.v_proj": 4,
+     "layers.4.self_attn.o_proj": 4,
+     "layers.4.mlp.fc1": 4,
+     "layers.4.mlp.fc2": 4,
+     "layers.5.self_attn.q_proj": 4,
+     "layers.5.self_attn.k_proj": 4,
+     "layers.5.self_attn.v_proj": 4,
+     "layers.5.self_attn.o_proj": 4,
+     "layers.5.mlp.fc1": 4,
+     "layers.5.mlp.fc2": 4
+    },
+    "pc": {},
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv2": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv3": [
+      1,
+      16,
+      256
+     ]
+    }
+   },
+   "sqnr_db": 10.18332596388682,
+   "cosine": 0.9527068088266474,
+   "wer_vs_float": {
+    "wer": 0.04944500504540868,
+    "errors": 294,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.08882907133243607,
+    "errors": 528,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "ABL S4W - rows - adds per-channel": {
+   "knobs": {
+    "rows": {},
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 4,
+     "stem.conv2": 4,
+     "stem.conv3": 4,
+     "layers.0.self_attn.q_proj": 4,
+     "layers.0.self_attn.k_proj": 4,
+     "layers.0.self_attn.v_proj": 4,
+     "layers.0.self_attn.o_proj": 4,
+     "layers.0.mlp.fc1": 4,
+     "layers.0.mlp.fc2": 4,
+     "layers.1.self_attn.q_proj": 4,
+     "layers.1.self_attn.k_proj": 4,
+     "layers.1.self_attn.v_proj": 4,
+     "layers.1.self_attn.o_proj": 4,
+     "layers.1.mlp.fc1": 4,
+     "layers.1.mlp.fc2": 4,
+     "layers.2.self_attn.q_proj": 4,
+     "layers.2.self_attn.k_proj": 4,
+     "layers.2.self_attn.v_proj": 4,
+     "layers.2.self_attn.o_proj": 4,
+     "layers.2.mlp.fc1": 4,
+     "layers.2.mlp.fc2": 4,
+     "layers.3.self_attn.q_proj": 4,
+     "layers.3.self_attn.k_proj": 4,
+     "layers.3.self_attn.v_proj": 4,
+     "layers.3.self_attn.o_proj": 4,
+     "layers.3.mlp.fc1": 4,
+     "layers.3.mlp.fc2": 4,
+     "layers.4.self_attn.q_proj": 4,
+     "layers.4.self_attn.k_proj": 4,
+     "layers.4.self_attn.v_proj": 4,
+     "layers.4.self_attn.o_proj": 4,
+     "layers.4.mlp.fc1": 4,
+     "layers.4.mlp.fc2": 4,
+     "layers.5.self_attn.q_proj": 4,
+     "layers.5.self_attn.k_proj": 4,
+     "layers.5.self_attn.v_proj": 4,
+     "layers.5.self_attn.o_proj": 4,
+     "layers.5.mlp.fc1": 4,
+     "layers.5.mlp.fc2": 4
+    },
+    "pc": {},
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv2": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv3": [
+      1,
+      16,
+      256
+     ]
+    }
+   },
+   "sqnr_db": 8.58834861491764,
+   "cosine": 0.9310208809621415,
+   "wer_vs_float": {
+    "wer": 0.08846283215607131,
+    "errors": 526,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.12264468371467026,
+    "errors": 729,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "ABL S4W with 2-range stem outputs (1, 64)": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 4,
+     "stem.conv2": 4,
+     "stem.conv3": 4,
+     "layers.0.self_attn.q_proj": 4,
+     "layers.0.self_attn.k_proj": 4,
+     "layers.0.self_attn.v_proj": 4,
+     "layers.0.self_attn.o_proj": 4,
+     "layers.0.mlp.fc1": 4,
+     "layers.0.mlp.fc2": 4,
+     "layers.1.self_attn.q_proj": 4,
+     "layers.1.self_attn.k_proj": 4,
+     "layers.1.self_attn.v_proj": 4,
+     "layers.1.self_attn.o_proj": 4,
+     "layers.1.mlp.fc1": 4,
+     "layers.1.mlp.fc2": 4,
+     "layers.2.self_attn.q_proj": 4,
+     "layers.2.self_attn.k_proj": 4,
+     "layers.2.self_attn.v_proj": 4,
+     "layers.2.self_attn.o_proj": 4,
+     "layers.2.mlp.fc1": 4,
+     "layers.2.mlp.fc2": 4,
+     "layers.3.self_attn.q_proj": 4,
+     "layers.3.self_attn.k_proj": 4,
+     "layers.3.self_attn.v_proj": 4,
+     "layers.3.self_attn.o_proj": 4,
+     "layers.3.mlp.fc1": 4,
+     "layers.3.mlp.fc2": 4,
+     "layers.4.self_attn.q_proj": 4,
+     "layers.4.self_attn.k_proj": 4,
+     "layers.4.self_attn.v_proj": 4,
+     "layers.4.self_attn.o_proj": 4,
+     "layers.4.mlp.fc1": 4,
+     "layers.4.mlp.fc2": 4,
+     "layers.5.self_attn.q_proj": 4,
+     "layers.5.self_attn.k_proj": 4,
+     "layers.5.self_attn.v_proj": 4,
+     "layers.5.self_attn.o_proj": 4,
+     "layers.5.mlp.fc1": 4,
+     "layers.5.mlp.fc2": 4
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      64
+     ],
+     "stem_conv2": [
+      1,
+      64
+     ],
+     "stem_conv3": [
+      1,
+      64
+     ]
+    }
+   },
+   "sqnr_db": 13.999237687781152,
+   "cosine": 0.9799346478009882,
+   "wer_vs_float": {
+    "wer": 0.03666330306088127,
+    "errors": 218,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.08243606998654104,
+    "errors": 490,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "ABL S4W with 2 row groups": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 2,
+     "stem.conv2": 2,
+     "stem.conv3": 2,
+     "layers.0.self_attn.q_proj": 2,
+     "layers.0.self_attn.k_proj": 2,
+     "layers.0.self_attn.v_proj": 2,
+     "layers.0.self_attn.o_proj": 2,
+     "layers.0.mlp.fc1": 2,
+     "layers.0.mlp.fc2": 2,
+     "layers.1.self_attn.q_proj": 2,
+     "layers.1.self_attn.k_proj": 2,
+     "layers.1.self_attn.v_proj": 2,
+     "layers.1.self_attn.o_proj": 2,
+     "layers.1.mlp.fc1": 2,
+     "layers.1.mlp.fc2": 2,
+     "layers.2.self_attn.q_proj": 2,
+     "layers.2.self_attn.k_proj": 2,
+     "layers.2.self_attn.v_proj": 2,
+     "layers.2.self_attn.o_proj": 2,
+     "layers.2.mlp.fc1": 2,
+     "layers.2.mlp.fc2": 2,
+     "layers.3.self_attn.q_proj": 2,
+     "layers.3.self_attn.k_proj": 2,
+     "layers.3.self_attn.v_proj": 2,
+     "layers.3.self_attn.o_proj": 2,
+     "layers.3.mlp.fc1": 2,
+     "layers.3.mlp.fc2": 2,
+     "layers.4.self_attn.q_proj": 2,
+     "layers.4.self_attn.k_proj": 2,
+     "layers.4.self_attn.v_proj": 2,
+     "layers.4.self_attn.o_proj": 2,
+     "layers.4.mlp.fc1": 2,
+     "layers.4.mlp.fc2": 2,
+     "layers.5.self_attn.q_proj": 2,
+     "layers.5.self_attn.k_proj": 2,
+     "layers.5.self_attn.v_proj": 2,
+     "layers.5.self_attn.o_proj": 2,
+     "layers.5.mlp.fc1": 2,
+     "layers.5.mlp.fc2": 2
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv2": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv3": [
+      1,
+      16,
+      256
+     ]
+    }
+   },
+   "sqnr_db": 15.933703352523878,
+   "cosine": 0.9872293528506679,
+   "wer_vs_float": {
+    "wer": 0.03094517322569795,
+    "errors": 184,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.08411843876177658,
+    "errors": 500,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "ABL S4W with row groups on the stem only": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 4,
+     "stem.conv2": 4,
+     "stem.conv3": 4
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv2": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv3": [
+      1,
+      16,
+      256
+     ]
+    }
+   },
+   "sqnr_db": 16.04988994511471,
+   "cosine": 0.9876004039050806,
+   "wer_vs_float": {
+    "wer": 0.03144971409350824,
+    "errors": 187,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.08142664872139974,
+    "errors": 484,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "ABL S4W with row groups on the transformer only": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "layers.0.self_attn.q_proj": 4,
+     "layers.0.self_attn.k_proj": 4,
+     "layers.0.self_attn.v_proj": 4,
+     "layers.0.self_attn.o_proj": 4,
+     "layers.0.mlp.fc1": 4,
+     "layers.0.mlp.fc2": 4,
+     "layers.1.self_attn.q_proj": 4,
+     "layers.1.self_attn.k_proj": 4,
+     "layers.1.self_attn.v_proj": 4,
+     "layers.1.self_attn.o_proj": 4,
+     "layers.1.mlp.fc1": 4,
+     "layers.1.mlp.fc2": 4,
+     "layers.2.self_attn.q_proj": 4,
+     "layers.2.self_attn.k_proj": 4,
+     "layers.2.self_attn.v_proj": 4,
+     "layers.2.self_attn.o_proj": 4,
+     "layers.2.mlp.fc1": 4,
+     "layers.2.mlp.fc2": 4,
+     "layers.3.self_attn.q_proj": 4,
+     "layers.3.self_attn.k_proj": 4,
+     "layers.3.self_attn.v_proj": 4,
+     "layers.3.self_attn.o_proj": 4,
+     "layers.3.mlp.fc1": 4,
+     "layers.3.mlp.fc2": 4,
+     "layers.4.self_attn.q_proj": 4,
+     "layers.4.self_attn.k_proj": 4,
+     "layers.4.self_attn.v_proj": 4,
+     "layers.4.self_attn.o_proj": 4,
+     "layers.4.mlp.fc1": 4,
+     "layers.4.mlp.fc2": 4,
+     "layers.5.self_attn.q_proj": 4,
+     "layers.5.self_attn.k_proj": 4,
+     "layers.5.self_attn.v_proj": 4,
+     "layers.5.self_attn.o_proj": 4,
+     "layers.5.mlp.fc1": 4,
+     "layers.5.mlp.fc2": 4
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv2": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv3": [
+      1,
+      16,
+      256
+     ]
+    }
+   },
+   "sqnr_db": 14.749083420488407,
+   "cosine": 0.9831829749210306,
+   "wer_vs_float": {
+    "wer": 0.0480995627312479,
+    "errors": 286,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.09101615074024226,
+    "errors": 541,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "ABL S4W with GN/GELU2 (conv2/conv3 inputs) int8, no hi/lo split": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 4,
+     "stem.conv2": 4,
+     "stem.conv3": 4,
+     "layers.0.self_attn.q_proj": 4,
+     "layers.0.self_attn.k_proj": 4,
+     "layers.0.self_attn.v_proj": 4,
+     "layers.0.self_attn.o_proj": 4,
+     "layers.0.mlp.fc1": 4,
+     "layers.0.mlp.fc2": 4,
+     "layers.1.self_attn.q_proj": 4,
+     "layers.1.self_attn.k_proj": 4,
+     "layers.1.self_attn.v_proj": 4,
+     "layers.1.self_attn.o_proj": 4,
+     "layers.1.mlp.fc1": 4,
+     "layers.1.mlp.fc2": 4,
+     "layers.2.self_attn.q_proj": 4,
+     "layers.2.self_attn.k_proj": 4,
+     "layers.2.self_attn.v_proj": 4,
+     "layers.2.self_attn.o_proj": 4,
+     "layers.2.mlp.fc1": 4,
+     "layers.2.mlp.fc2": 4,
+     "layers.3.self_attn.q_proj": 4,
+     "layers.3.self_attn.k_proj": 4,
+     "layers.3.self_attn.v_proj": 4,
+     "layers.3.self_attn.o_proj": 4,
+     "layers.3.mlp.fc1": 4,
+     "layers.3.mlp.fc2": 4,
+     "layers.4.self_attn.q_proj": 4,
+     "layers.4.self_attn.k_proj": 4,
+     "layers.4.self_attn.v_proj": 4,
+     "layers.4.self_attn.o_proj": 4,
+     "layers.4.mlp.fc1": 4,
+     "layers.4.mlp.fc2": 4,
+     "layers.5.self_attn.q_proj": 4,
+     "layers.5.self_attn.k_proj": 4,
+     "layers.5.self_attn.v_proj": 4,
+     "layers.5.self_attn.o_proj": 4,
+     "layers.5.mlp.fc1": 4,
+     "layers.5.mlp.fc2": 4
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "stem_tanh": 16,
+     "stem_gelu3": 16,
+     "x": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv2": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv3": [
+      1,
+      16,
+      256
+     ]
+    }
+   },
+   "sqnr_db": 5.20856573149935,
+   "cosine": 0.8456383972718984,
+   "wer_vs_float": {
+    "wer": 0.5607130844265052,
+    "errors": 3334,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.5698183041722745,
+    "errors": 3387,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  }
+ }
+}

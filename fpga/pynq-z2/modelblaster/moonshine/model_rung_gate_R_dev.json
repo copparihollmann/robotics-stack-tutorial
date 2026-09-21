@@ -1,0 +1,178 @@
+{
+ "what": "The accuracy gate for ONE rung of the variable-length IR ladder (MOONSHINE_MODEL.md section 2.4).",
+ "set": "dev_clean",
+ "device": "cuda",
+ "rungs": {
+  "R_2.0s": {
+   "ir": "<repo>/out/rungs/R_2.0/ir",
+   "gen": "<repo>/out/rungs/R_2.0/gen_nl",
+   "window_samples": 32000,
+   "window_s": 2.0,
+   "frames": 82,
+   "hidden": 288,
+   "input_dtype": "i16",
+   "input_scale": 1.6817996445613252e-05,
+   "output_scale": 0.05858209940392201,
+   "utterances_served": 38,
+   "speakers": 21,
+   "words": 146,
+   "fraction_of_set": 0.014058453570107288,
+   "wer_c_vs_reference": 0.0958904109589041,
+   "wer_float_same_window_vs_reference": 0.0547945205479452,
+   "c_minus_float_same_window": {
+    "delta_wer": 0.0410958904109589,
+    "ci95": [
+     -0.006757905865048723,
+     0.10793321864247721
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "wer_c_vs_float_transcripts": {
+    "wer": 0.05442176870748299,
+    "errors": 8,
+    "words": 147,
+    "utterances": 38
+   },
+   "sqnr_db": 14.240891722821207,
+   "host_seconds": 28.3
+  },
+  "R_2.5s": {
+   "ir": "<repo>/out/rungs/R_2.5/ir",
+   "gen": "<repo>/out/rungs/R_2.5/gen_nl",
+   "window_samples": 40000,
+   "window_s": 2.5,
+   "frames": 102,
+   "hidden": 288,
+   "input_dtype": "i16",
+   "input_scale": 1.6817996445613252e-05,
+   "output_scale": 0.05858209940392201,
+   "utterances_served": 183,
+   "speakers": 36,
+   "words": 930,
+   "fraction_of_set": 0.06770255271920089,
+   "wer_c_vs_reference": 0.12150537634408602,
+   "wer_float_same_window_vs_reference": 0.110752688172043,
+   "c_minus_float_same_window": {
+    "delta_wer": 0.010752688172043012,
+    "ci95": [
+     -0.004343936877668408,
+     0.02771922797244167
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "wer_c_vs_float_transcripts": {
+    "wer": 0.05907626208378088,
+    "errors": 55,
+    "words": 931,
+    "utterances": 183
+   },
+   "sqnr_db": 14.634114763634013,
+   "host_seconds": 81.5
+  },
+  "R_3.0s": {
+   "ir": "<repo>/out/rungs/R_3.0/ir",
+   "gen": "<repo>/out/rungs/R_3.0/gen_nl",
+   "window_samples": 48000,
+   "window_s": 3.0,
+   "frames": 123,
+   "hidden": 288,
+   "input_dtype": "i16",
+   "input_scale": 1.6817996445613252e-05,
+   "output_scale": 0.05858209940392201,
+   "utterances_served": 400,
+   "speakers": 39,
+   "words": 2494,
+   "fraction_of_set": 0.14798372179060304,
+   "wer_c_vs_reference": 0.09623095429029671,
+   "wer_float_same_window_vs_reference": 0.08340016038492382,
+   "c_minus_float_same_window": {
+    "delta_wer": 0.012830793905372895,
+    "ci95": [
+     0.0027849927611805656,
+     0.023050564097115013
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "wer_c_vs_float_transcripts": {
+    "wer": 0.05357856857257097,
+    "errors": 134,
+    "words": 2501,
+    "utterances": 400
+   },
+   "sqnr_db": 14.525914378174956,
+   "host_seconds": 185.0
+  },
+  "R_3.5s": {
+   "ir": "<repo>/out/rungs/R_3.5/ir",
+   "gen": "<repo>/out/rungs/R_3.5/gen_nl",
+   "window_samples": 56000,
+   "window_s": 3.5,
+   "frames": 144,
+   "hidden": 288,
+   "input_dtype": "i16",
+   "input_scale": 1.6817996445613252e-05,
+   "output_scale": 0.05858209940392201,
+   "utterances_served": 591,
+   "speakers": 39,
+   "words": 4159,
+   "fraction_of_set": 0.21864594894561598,
+   "wer_c_vs_reference": 0.09208944457802357,
+   "wer_float_same_window_vs_reference": 0.07814378456359702,
+   "c_minus_float_same_window": {
+    "delta_wer": 0.013945660014426545,
+    "ci95": [
+     0.0026239364402465873,
+     0.03136935412368497
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "wer_c_vs_float_transcripts": {
+    "wer": 0.045662100456621,
+    "errors": 190,
+    "words": 4161,
+    "utterances": 591
+   },
+   "sqnr_db": 14.165680766913326,
+   "host_seconds": 327.8
+  },
+  "R_4.0s": {
+   "ir": "<repo>/out/q16/R/ir",
+   "gen": "<repo>/out/q16/R/gen_nl",
+   "window_samples": 64000,
+   "window_s": 4.0,
+   "frames": 165,
+   "hidden": 288,
+   "input_dtype": "i16",
+   "input_scale": 1.6817996445613252e-05,
+   "output_scale": 0.05858209940392201,
+   "utterances_served": 765,
+   "speakers": 40,
+   "words": 5944,
+   "fraction_of_set": 0.2830188679245283,
+   "wer_c_vs_reference": 0.08462314939434724,
+   "wer_float_same_window_vs_reference": 0.07301480484522208,
+   "c_minus_float_same_window": {
+    "delta_wer": 0.011608344549125169,
+    "ci95": [
+     0.005959247602531957,
+     0.01755664698910963
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "wer_c_vs_float_transcripts": {
+    "wer": 0.042717793474604776,
+    "errors": 254,
+    "words": 5946,
+    "utterances": 765
+   },
+   "sqnr_db": 13.626139603767736,
+   "host_seconds": 543.1
+  }
+ },
+ "elapsed_s": 543.0840647220612
+}

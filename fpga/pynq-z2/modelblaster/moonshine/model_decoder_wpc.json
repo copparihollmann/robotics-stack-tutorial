@@ -1,0 +1,501 @@
+{
+ "what": "Would a quantisation search over the DECODER reach for per-channel weights (`wpc`)?",
+ "set": {
+  "name": "dev-clean <= 4.0 s",
+  "utterances": 765,
+  "words": 5944
+ },
+ "method": "the decoder's weights fake-quantised per-tensor against per-channel on the real model; the ENCODER is left float throughout so the only thing moving is the decoder's weight grid",
+ "engine_stake": {
+  "token_gemms_engine_cycles": 8489362,
+  "token_gemms_hart0_cycles": 24604781,
+  "ratio": 2.9,
+  "ms_per_token_at_34.4828MHz": 467.3471458591814
+ },
+ "weights": {
+  "decoder.layers.0.self_attn.q_proj": {
+   "rows": 288,
+   "max_over_median": 1.7295986413955688,
+   "max_over_p10": 2.1686599254608154,
+   "bits_lost_median_row": 0.7904372811317444
+  },
+  "decoder.layers.0.self_attn.k_proj": {
+   "rows": 288,
+   "max_over_median": 1.621517300605774,
+   "max_over_p10": 2.129686117172241,
+   "bits_lost_median_row": 0.6973444223403931
+  },
+  "decoder.layers.0.self_attn.v_proj": {
+   "rows": 288,
+   "max_over_median": 1.7133768796920776,
+   "max_over_p10": 2.2064263820648193,
+   "bits_lost_median_row": 0.7768425345420837
+  },
+  "decoder.layers.0.self_attn.o_proj": {
+   "rows": 288,
+   "max_over_median": 8.95727825164795,
+   "max_over_p10": 11.091026306152344,
+   "bits_lost_median_row": 3.163060426712036
+  },
+  "decoder.layers.0.encoder_attn.q_proj": {
+   "rows": 288,
+   "max_over_median": 1.9237148761749268,
+   "max_over_p10": 2.492018222808838,
+   "bits_lost_median_row": 0.9438949823379517
+  },
+  "decoder.layers.0.encoder_attn.k_proj": {
+   "rows": 288,
+   "max_over_median": 1.5221246480941772,
+   "max_over_p10": 1.870877742767334,
+   "bits_lost_median_row": 0.6060864925384521
+  },
+  "decoder.layers.0.encoder_attn.v_proj": {
+   "rows": 288,
+   "max_over_median": 1.5422683954238892,
+   "max_over_p10": 1.9056830406188965,
+   "bits_lost_median_row": 0.625053882598877
+  },
+  "decoder.layers.0.encoder_attn.o_proj": {
+   "rows": 288,
+   "max_over_median": 11.927491188049316,
+   "max_over_p10": 15.091209411621094,
+   "bits_lost_median_row": 3.576218605041504
+  },
+  "decoder.layers.0.mlp.fc1": {
+   "rows": 2304,
+   "max_over_median": 2.820737361907959,
+   "max_over_p10": 3.41377329826355,
+   "bits_lost_median_row": 1.4960722923278809
+  },
+  "decoder.layers.0.mlp.fc2": {
+   "rows": 288,
+   "max_over_median": 3.2412731647491455,
+   "max_over_p10": 3.9310717582702637,
+   "bits_lost_median_row": 1.6965606212615967
+  },
+  "decoder.layers.1.self_attn.q_proj": {
+   "rows": 288,
+   "max_over_median": 1.828429102897644,
+   "max_over_p10": 2.4739129543304443,
+   "bits_lost_median_row": 0.8706046938896179
+  },
+  "decoder.layers.1.self_attn.k_proj": {
+   "rows": 288,
+   "max_over_median": 3.549602746963501,
+   "max_over_p10": 5.139623641967773,
+   "bits_lost_median_row": 1.8276575803756714
+  },
+  "decoder.layers.1.self_attn.v_proj": {
+   "rows": 288,
+   "max_over_median": 1.6710001230239868,
+   "max_over_p10": 2.046818256378174,
+   "bits_lost_median_row": 0.7407118082046509
+  },
+  "decoder.layers.1.self_attn.o_proj": {
+   "rows": 288,
+   "max_over_median": 3.0827653408050537,
+   "max_over_p10": 3.774907350540161,
+   "bits_lost_median_row": 1.62422513961792
+  },
+  "decoder.layers.1.encoder_attn.q_proj": {
+   "rows": 288,
+   "max_over_median": 1.8583943843841553,
+   "max_over_p10": 2.2846896648406982,
+   "bits_lost_median_row": 0.8940566778182983
+  },
+  "decoder.layers.1.encoder_attn.k_proj": {
+   "rows": 288,
+   "max_over_median": 1.9719762802124023,
+   "max_over_p10": 2.474200963973999,
+   "bits_lost_median_row": 0.9796422123908997
+  },
+  "decoder.layers.1.encoder_attn.v_proj": {
+   "rows": 288,
+   "max_over_median": 1.6286073923110962,
+   "max_over_p10": 1.9462668895721436,
+   "bits_lost_median_row": 0.7036388516426086
+  },
+  "decoder.layers.1.encoder_attn.o_proj": {
+   "rows": 288,
+   "max_over_median": 4.4004621505737305,
+   "max_over_p10": 5.192902088165283,
+   "bits_lost_median_row": 2.137655019760132
+  },
+  "decoder.layers.1.mlp.fc1": {
+   "rows": 2304,
+   "max_over_median": 3.5226101875305176,
+   "max_over_p10": 4.246849060058594,
+   "bits_lost_median_row": 1.8166447877883911
+  },
+  "decoder.layers.1.mlp.fc2": {
+   "rows": 288,
+   "max_over_median": 4.661915302276611,
+   "max_over_p10": 5.445304870605469,
+   "bits_lost_median_row": 2.2209227085113525
+  },
+  "decoder.layers.2.self_attn.q_proj": {
+   "rows": 288,
+   "max_over_median": 1.7662924528121948,
+   "max_over_p10": 2.5100603103637695,
+   "bits_lost_median_row": 0.8207242488861084
+  },
+  "decoder.layers.2.self_attn.k_proj": {
+   "rows": 288,
+   "max_over_median": 4.158933639526367,
+   "max_over_p10": 5.861660003662109,
+   "bits_lost_median_row": 2.056213617324829
+  },
+  "decoder.layers.2.self_attn.v_proj": {
+   "rows": 288,
+   "max_over_median": 1.4195772409439087,
+   "max_over_p10": 1.7169677019119263,
+   "bits_lost_median_row": 0.5054613351821899
+  },
+  "decoder.layers.2.self_attn.o_proj": {
+   "rows": 288,
+   "max_over_median": 2.4304275512695312,
+   "max_over_p10": 2.882477283477783,
+   "bits_lost_median_row": 1.28121018409729
+  },
+  "decoder.layers.2.encoder_attn.q_proj": {
+   "rows": 288,
+   "max_over_median": 1.6608116626739502,
+   "max_over_p10": 2.096205711364746,
+   "bits_lost_median_row": 0.731888473033905
+  },
+  "decoder.layers.2.encoder_attn.k_proj": {
+   "rows": 288,
+   "max_over_median": 1.918424367904663,
+   "max_over_p10": 2.4081568717956543,
+   "bits_lost_median_row": 0.9399219155311584
+  },
+  "decoder.layers.2.encoder_attn.v_proj": {
+   "rows": 288,
+   "max_over_median": 1.557998538017273,
+   "max_over_p10": 1.8377925157546997,
+   "bits_lost_median_row": 0.6396938562393188
+  },
+  "decoder.layers.2.encoder_attn.o_proj": {
+   "rows": 288,
+   "max_over_median": 3.982823133468628,
+   "max_over_p10": 4.75949764251709,
+   "bits_lost_median_row": 1.9937914609909058
+  },
+  "decoder.layers.2.mlp.fc1": {
+   "rows": 2304,
+   "max_over_median": 4.861021518707275,
+   "max_over_p10": 5.892863750457764,
+   "bits_lost_median_row": 2.281259536743164
+  },
+  "decoder.layers.2.mlp.fc2": {
+   "rows": 288,
+   "max_over_median": 5.524896621704102,
+   "max_over_p10": 6.288446426391602,
+   "bits_lost_median_row": 2.465947389602661
+  },
+  "decoder.layers.3.self_attn.q_proj": {
+   "rows": 288,
+   "max_over_median": 2.441072940826416,
+   "max_over_p10": 3.3876919746398926,
+   "bits_lost_median_row": 1.28751540184021
+  },
+  "decoder.layers.3.self_attn.k_proj": {
+   "rows": 288,
+   "max_over_median": 1.9058088064193726,
+   "max_over_p10": 2.629412889480591,
+   "bits_lost_median_row": 0.9304034113883972
+  },
+  "decoder.layers.3.self_attn.v_proj": {
+   "rows": 288,
+   "max_over_median": 1.719726800918579,
+   "max_over_p10": 2.149282455444336,
+   "bits_lost_median_row": 0.7821794152259827
+  },
+  "decoder.layers.3.self_attn.o_proj": {
+   "rows": 288,
+   "max_over_median": 2.1539993286132812,
+   "max_over_p10": 2.663999557495117,
+   "bits_lost_median_row": 1.1070177555084229
+  },
+  "decoder.layers.3.encoder_attn.q_proj": {
+   "rows": 288,
+   "max_over_median": 1.730006456375122,
+   "max_over_p10": 2.441091775894165,
+   "bits_lost_median_row": 0.7907774448394775
+  },
+  "decoder.layers.3.encoder_attn.k_proj": {
+   "rows": 288,
+   "max_over_median": 1.8136916160583496,
+   "max_over_p10": 2.606863498687744,
+   "bits_lost_median_row": 0.8589291572570801
+  },
+  "decoder.layers.3.encoder_attn.v_proj": {
+   "rows": 288,
+   "max_over_median": 1.9167054891586304,
+   "max_over_p10": 2.3098604679107666,
+   "bits_lost_median_row": 0.9386286735534668
+  },
+  "decoder.layers.3.encoder_attn.o_proj": {
+   "rows": 288,
+   "max_over_median": 3.1445541381835938,
+   "max_over_p10": 3.849138021469116,
+   "bits_lost_median_row": 1.6528555154800415
+  },
+  "decoder.layers.3.mlp.fc1": {
+   "rows": 2304,
+   "max_over_median": 2.566337823867798,
+   "max_over_p10": 3.271569013595581,
+   "bits_lost_median_row": 1.3597110509872437
+  },
+  "decoder.layers.3.mlp.fc2": {
+   "rows": 288,
+   "max_over_median": 3.8105645179748535,
+   "max_over_p10": 4.478174686431885,
+   "bits_lost_median_row": 1.9300047159194946
+  },
+  "decoder.layers.4.self_attn.q_proj": {
+   "rows": 288,
+   "max_over_median": 2.2156131267547607,
+   "max_over_p10": 3.004263401031494,
+   "bits_lost_median_row": 1.1477060317993164
+  },
+  "decoder.layers.4.self_attn.k_proj": {
+   "rows": 288,
+   "max_over_median": 1.8476673364639282,
+   "max_over_p10": 2.4093844890594482,
+   "bits_lost_median_row": 0.8857050538063049
+  },
+  "decoder.layers.4.self_attn.v_proj": {
+   "rows": 288,
+   "max_over_median": 1.89621102809906,
+   "max_over_p10": 2.3737337589263916,
+   "bits_lost_median_row": 0.9231195449829102
+  },
+  "decoder.layers.4.self_attn.o_proj": {
+   "rows": 288,
+   "max_over_median": 2.6536972522735596,
+   "max_over_p10": 3.285878896713257,
+   "bits_lost_median_row": 1.408003807067871
+  },
+  "decoder.layers.4.encoder_attn.q_proj": {
+   "rows": 288,
+   "max_over_median": 1.5564316511154175,
+   "max_over_p10": 1.9030240774154663,
+   "bits_lost_median_row": 0.638242244720459
+  },
+  "decoder.layers.4.encoder_attn.k_proj": {
+   "rows": 288,
+   "max_over_median": 1.803747534751892,
+   "max_over_p10": 2.3687620162963867,
+   "bits_lost_median_row": 0.8509974479675293
+  },
+  "decoder.layers.4.encoder_attn.v_proj": {
+   "rows": 288,
+   "max_over_median": 1.5769017934799194,
+   "max_over_p10": 1.9880849123001099,
+   "bits_lost_median_row": 0.657092809677124
+  },
+  "decoder.layers.4.encoder_attn.o_proj": {
+   "rows": 288,
+   "max_over_median": 2.5827107429504395,
+   "max_over_p10": 3.1052675247192383,
+   "bits_lost_median_row": 1.368886113166809
+  },
+  "decoder.layers.4.mlp.fc1": {
+   "rows": 2304,
+   "max_over_median": 2.466980457305908,
+   "max_over_p10": 3.332967519760132,
+   "bits_lost_median_row": 1.302746295928955
+  },
+  "decoder.layers.4.mlp.fc2": {
+   "rows": 288,
+   "max_over_median": 5.904229164123535,
+   "max_over_p10": 6.881638526916504,
+   "bits_lost_median_row": 2.561748743057251
+  },
+  "decoder.layers.5.self_attn.q_proj": {
+   "rows": 288,
+   "max_over_median": 2.0717568397521973,
+   "max_over_p10": 2.6020543575286865,
+   "bits_lost_median_row": 1.0508546829223633
+  },
+  "decoder.layers.5.self_attn.k_proj": {
+   "rows": 288,
+   "max_over_median": 1.883401870727539,
+   "max_over_p10": 2.409682273864746,
+   "bits_lost_median_row": 0.9133408665657043
+  },
+  "decoder.layers.5.self_attn.v_proj": {
+   "rows": 288,
+   "max_over_median": 1.7751336097717285,
+   "max_over_p10": 2.152329206466675,
+   "bits_lost_median_row": 0.8279275894165039
+  },
+  "decoder.layers.5.self_attn.o_proj": {
+   "rows": 288,
+   "max_over_median": 3.583261489868164,
+   "max_over_p10": 4.554341793060303,
+   "bits_lost_median_row": 1.841273307800293
+  },
+  "decoder.layers.5.encoder_attn.q_proj": {
+   "rows": 288,
+   "max_over_median": 1.4742013216018677,
+   "max_over_p10": 1.7385280132293701,
+   "bits_lost_median_row": 0.5599335432052612
+  },
+  "decoder.layers.5.encoder_attn.k_proj": {
+   "rows": 288,
+   "max_over_median": 1.919463872909546,
+   "max_over_p10": 2.3935067653656006,
+   "bits_lost_median_row": 0.9407033920288086
+  },
+  "decoder.layers.5.encoder_attn.v_proj": {
+   "rows": 288,
+   "max_over_median": 1.591335654258728,
+   "max_over_p10": 1.9857509136199951,
+   "bits_lost_median_row": 0.6702381372451782
+  },
+  "decoder.layers.5.encoder_attn.o_proj": {
+   "rows": 288,
+   "max_over_median": 2.449446678161621,
+   "max_over_p10": 2.963484525680542,
+   "bits_lost_median_row": 1.2924559116363525
+  },
+  "decoder.layers.5.mlp.fc1": {
+   "rows": 2304,
+   "max_over_median": 2.3066697120666504,
+   "max_over_p10": 3.313753604888916,
+   "bits_lost_median_row": 1.2058115005493164
+  },
+  "decoder.layers.5.mlp.fc2": {
+   "rows": 288,
+   "max_over_median": 7.594319820404053,
+   "max_over_p10": 8.83150577545166,
+   "bits_lost_median_row": 2.9249207973480225
+  },
+  "proj_out": {
+   "rows": 32768,
+   "max_over_median": 2.188307046890259,
+   "max_over_p10": 2.862905740737915,
+   "bits_lost_median_row": 1.1298152208328247
+  }
+ },
+ "configs": {
+  "float decoder (baseline)": {
+   "wer": 0.07301480484522208,
+   "errors": 434,
+   "tensors_quantised": 0
+  },
+  "per-TENSOR: all decoder weights": {
+   "wer": 0.07234185733512787,
+   "errors": 430,
+   "tensors_quantised": 61
+  },
+  "per-CHANNEL: all decoder weights": {
+   "wer": 0.07318304172274563,
+   "errors": 435,
+   "tensors_quantised": 61
+  },
+  "pt_minus_pc: all decoder weights": {
+   "delta_wer": -0.0008411843876177658,
+   "ci95": [
+    -0.0030238382223902642,
+    0.001324766566645275
+   ],
+   "resamples": 2000,
+   "unit": "utterance"
+  },
+  "pt_minus_float: all decoder weights": {
+   "delta_wer": -0.0006729475100942127,
+   "ci95": [
+    -0.0028471300685664357,
+    0.001540944489832201
+   ],
+   "resamples": 2000,
+   "unit": "utterance"
+  },
+  "per-TENSOR: decoder without lm_head": {
+   "wer": 0.07284656796769852,
+   "errors": 433,
+   "tensors_quantised": 60
+  },
+  "per-CHANNEL: decoder without lm_head": {
+   "wer": 0.07251009421265141,
+   "errors": 431,
+   "tensors_quantised": 60
+  },
+  "pt_minus_pc: decoder without lm_head": {
+   "delta_wer": 0.00033647375504710633,
+   "ci95": [
+    -0.0018479948215255743,
+    0.002564845236036655
+   ],
+   "resamples": 2000,
+   "unit": "utterance"
+  },
+  "pt_minus_float: decoder without lm_head": {
+   "delta_wer": -0.00016823687752355316,
+   "ci95": [
+    -0.002208368240154108,
+    0.0020288177789024382
+   ],
+   "resamples": 2000,
+   "unit": "utterance"
+  },
+  "per-TENSOR: lm_head only": {
+   "wer": 0.07335127860026917,
+   "errors": 436,
+   "tensors_quantised": 1
+  },
+  "per-CHANNEL: lm_head only": {
+   "wer": 0.07368775235531629,
+   "errors": 438,
+   "tensors_quantised": 1
+  },
+  "pt_minus_pc: lm_head only": {
+   "delta_wer": -0.00033647375504710633,
+   "ci95": [
+    -0.0018344270059368487,
+    0.001024625204637707
+   ],
+   "resamples": 2000,
+   "unit": "utterance"
+  },
+  "pt_minus_float: lm_head only": {
+   "delta_wer": 0.00033647375504710633,
+   "ci95": [
+    -0.0014907209430096416,
+    0.0021659898315257815
+   ],
+   "resamples": 2000,
+   "unit": "utterance"
+  }
+ },
+ "spread_by_family_max_over_median": {
+  "self_attn": {
+   "n": 24,
+   "min": 1.4195772409439087,
+   "median": 1.9010099172592163,
+   "max": 8.95727825164795
+  },
+  "cross_attn": {
+   "n": 24,
+   "min": 1.4742013216018677,
+   "median": 1.8360430002212524,
+   "max": 11.927491188049316
+  },
+  "mlp": {
+   "n": 12,
+   "min": 2.3066697120666504,
+   "median": 3.6665873527526855,
+   "max": 7.594319820404053
+  },
+  "lm_head": {
+   "n": 1,
+   "min": 2.188307046890259,
+   "median": 2.188307046890259,
+   "max": 2.188307046890259
+  }
+ },
+ "elapsed_s": 30.30163311958313
+}

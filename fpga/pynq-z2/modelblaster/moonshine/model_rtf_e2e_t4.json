@@ -1,0 +1,35 @@
+{
+ "encoder_cycles": 573403857,
+ "encoder_rtf": 4.157172974642431,
+ "mean_steps": 11.816,
+ "before_patch_0111": {
+  "dec_cycles": 655720526.6960001,
+  "dec_rtf": 4.753968113784264,
+  "e2e": 8.911141088426694
+ },
+ "after_patch_0111": {
+  "dec_cycles": 376265903.99200004,
+  "dec_rtf": 2.727924530432564,
+  "e2e": 6.885097505074994
+ },
+ "kernel_ab": {
+  "silu_s8": {
+   "cel_before": 2800.23,
+   "cel_after": 393.82,
+   "speedup": 7.110431161444315
+  },
+  "cat2_c1_s8": {
+   "cel_before": 393.44,
+   "cel_after": 48.5,
+   "speedup": 8.112164948453609
+  }
+ },
+ "D_distinct_codes": {
+  "mean": 112.1,
+  "median": 114,
+  "min": 18,
+  "max": 220,
+  "of": 256,
+  "note": "600 dumped buffers of the SiLU input shape (1,152 elements), a superset of the 144 SiLU inputs"
+ }
+}

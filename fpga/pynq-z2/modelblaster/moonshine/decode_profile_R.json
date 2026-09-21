@@ -1,0 +1,54 @@
+{
+ "what": "The decoder residue, split into the BLOCKS a hardware lane would remove, for a measured model.",
+ "calib": "<repo>/fpga/pynq-z2/modelblaster/moonshine/board/b30_q16r_run.json",
+ "int_model": "enc_q16",
+ "unit_cost_kinds": {
+  "layernorm": "layernorm_pc_s8",
+  "add": "add_pc_s8",
+  "groupnorm": "groupnorm_s16",
+  "softmax": "softmax_s8",
+  "matmul": "matmul_b_s8"
+ },
+ "tokens": 11.976,
+ "gemm_ms_per_token": 92.3,
+ "cross_attention_once_ms": 392.6,
+ "blocks_ms": {
+  "embed": 0.008351999908128002,
+  "LayerNorm": 9.645036805792708,
+  "rotary": 5.006897243240629,
+  "attention matmul": 35.54510523710302,
+  "attention softmax": 9.515302137315148,
+  "residual adds": 3.9618431291469993,
+  "SiLU": 27.034855745415285,
+  "gate multiply": 7.4165759184176645
+ },
+ "blocks_with_estimates": [
+  "SiLU",
+  "embed",
+  "gate multiply",
+  "rotary"
+ ],
+ "rotary_elements_per_token": 3072,
+ "rotary_measured_ms": 5.006897243240629,
+ "rotary_estimate_ms": 9.385710813928897,
+ "residue_ms_per_token": 98.13396821633958,
+ "residue_estimate_share": 0.35115041498957167,
+ "lane_removes_ms": {
+  "T2 attention unit": 50.0673046176588,
+  "T3 LayerNorm lane": 9.645036805792708,
+  "T4 LUT/GroupNorm/add lanes": 38.41327479297995
+ },
+ "token_ms": {
+  "as composed": 190.43396821633957,
+  "after T2": 140.36666359868076,
+  "after T2+T3": 130.72162679288806,
+  "after T2+T3+T4": 92.30835199990811
+ },
+ "budget_ms_per_token": 134.2184368737475,
+ "decoder_rtf": {
+  "as composed": 0.6683093008397206,
+  "after T2": 0.5184077908144502,
+  "after T2+T3": 0.4895305506179069,
+  "after T2+T3+T4": 0.3745212058877249
+ }
+}

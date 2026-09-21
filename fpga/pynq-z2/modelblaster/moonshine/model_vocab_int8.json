@@ -1,0 +1,349 @@
+{
+ "what": "The static lm_head prune re-measured on the INT8 path, and the pruned int8 checkpoint.",
+ "ir": "out/decint8/ir, frozen copy (the CSE workstream held the live tree); sha256 of graph.json and weights.npz below",
+ "ir_graph_sha256": "d0ea9ec8152a63f309743d791f1f95ae0a515840aadfde032b0f7bfb268c9fcb",
+ "ir_weights_sha256": "db859afc9f1ff98feac1d2486a1fa9c8c54c4023d6d30b1785bb5bb85eef89c8",
+ "exe": "dec_driver_mask.c built against that frozen out/decint8/gen_nl; behaviourally identical to out/decint8/hostbuild/dec_driver (765/765 sequences on the same input), and so is the gen_eng backend",
+ "encoder_gen": "<repo>/out/qatu_long/gen_nl",
+ "vocab": 32768,
+ "hidden": 288,
+ "n_steps": 24,
+ "lm_head": {
+  "tied_to_embed_tokens": true,
+  "weight_scale_s_w": 0.011689903229240357,
+  "row_attaining_max_abs_w": 1,
+  "start_token": 1,
+  "eos_token": 2,
+  "bias_all_zero": true,
+  "output_scale_per_step": [
+   0.17136100528747295,
+   0.18278414984575686,
+   0.18996745273259688,
+   0.1853504798618844,
+   0.1975163931658891,
+   0.20057223162313145,
+   0.19699708208699898,
+   0.20399986222034427,
+   0.2155331589105561,
+   0.20354179158548777,
+   0.1996360538512703,
+   0.20131796001824834,
+   0.17863129165228975,
+   0.19102549955413287,
+   0.1772333713741761,
+   0.1869823654054658,
+   0.19810996468611589,
+   0.20222852918669987,
+   0.2066516425665908,
+   0.1915157715804935,
+   0.19583003727469858,
+   0.20129859434713682,
+   0.18098778619540984,
+   0.18689157500980413
+  ]
+ },
+ "kept_set_selection": {
+  "source": "train",
+  "rule": "rows the float model EMITS on LibriSpeech train-clean-100 (model_trainset.py --emit), most frequent first; disjoint from dev-clean and test-clean -- model_vocab.py's rule, verbatim",
+  "always_kept": "<unk>/<s>/</s> + the 256 <0xNN> byte-fallback rows",
+  "rows_emitted_by_the_source": 10549,
+  "source_tokens": 311950
+ },
+ "sets": {
+  "dev": {
+   "utterances": 765,
+   "whole_set": true,
+   "words": 5944,
+   "variants": {
+    "16384": {
+     "V_kept": 16384,
+     "wer_vs_reference": 0.1411507402422611,
+     "errors": 839,
+     "words": 5944,
+     "mean_steps": 12.298039215686275,
+     "identical_sequences_to_baseline": 678,
+     "utterances_changed": 87,
+     "argmax_redirected_steps": 151,
+     "emitted_rows_all_kept": true,
+     "emitted_rows_all_embeddable": true,
+     "minus_int8_baseline": {
+      "delta_wer": 0.007234185733512786,
+      "ci95": [
+       0.0026764804282368685,
+       0.01248332763337893
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     },
+     "gate": {
+      "meaning": "compared",
+      "why": null,
+      "utterances_decoded": 765,
+      "argmax_steps": 9408,
+      "non_empty_hypotheses": 765
+     }
+    },
+    "11000": {
+     "V_kept": 11000,
+     "wer_vs_reference": 0.14182368775235532,
+     "errors": 843,
+     "words": 5944,
+     "mean_steps": 12.301960784313726,
+     "identical_sequences_to_baseline": 644,
+     "utterances_changed": 121,
+     "argmax_redirected_steps": 225,
+     "emitted_rows_all_kept": true,
+     "emitted_rows_all_embeddable": true,
+     "minus_int8_baseline": {
+      "delta_wer": 0.007907133243607,
+      "ci95": [
+       0.0020274903265216824,
+       0.014338450250544815
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     },
+     "gate": {
+      "meaning": "compared",
+      "why": null,
+      "utterances_decoded": 765,
+      "argmax_steps": 9411,
+      "non_empty_hypotheses": 765
+     }
+    }
+   },
+   "baseline": {
+    "V_kept": 32768,
+    "wer_vs_reference": 0.13391655450874831,
+    "errors": 796,
+    "words": 5944,
+    "mean_steps": 12.137254901960784,
+    "gate": {
+     "meaning": "compared",
+     "why": null,
+     "utterances_decoded": 765,
+     "argmax_steps": 9285,
+     "non_empty_hypotheses": 765
+    }
+   },
+   "input_sha256": "fa70cf13d95b4aafdfb7ba124ec4f541e45ad849b6bdb990b75d7732cf915175",
+   "V11000_minus_V16384": {
+    "delta_wer": 0.0006729475100942127,
+    "ci95": [
+     -0.00255060832727707,
+     0.004684154995690896
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   }
+  },
+  "test": {
+   "utterances": 772,
+   "whole_set": true,
+   "words": 6146,
+   "variants": {
+    "16384": {
+     "V_kept": 16384,
+     "wer_vs_reference": 0.14285714285714285,
+     "errors": 878,
+     "words": 6146,
+     "mean_steps": 12.374352331606218,
+     "identical_sequences_to_baseline": 695,
+     "utterances_changed": 77,
+     "argmax_redirected_steps": 117,
+     "emitted_rows_all_kept": true,
+     "emitted_rows_all_embeddable": true,
+     "minus_int8_baseline": {
+      "delta_wer": 0.004393101204035145,
+      "ci95": [
+       0.0003300306641577999,
+       0.008912978676267959
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     },
+     "gate": {
+      "meaning": "compared",
+      "why": null,
+      "utterances_decoded": 772,
+      "argmax_steps": 9553,
+      "non_empty_hypotheses": 772
+     }
+    },
+    "11000": {
+     "V_kept": 11000,
+     "wer_vs_reference": 0.147250244061178,
+     "errors": 905,
+     "words": 6146,
+     "mean_steps": 12.449481865284975,
+     "identical_sequences_to_baseline": 641,
+     "utterances_changed": 131,
+     "argmax_redirected_steps": 230,
+     "emitted_rows_all_kept": true,
+     "emitted_rows_all_embeddable": true,
+     "minus_int8_baseline": {
+      "delta_wer": 0.00878620240807029,
+      "ci95": [
+       0.0027107257054483527,
+       0.015686831550802135
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     },
+     "gate": {
+      "meaning": "compared",
+      "why": null,
+      "utterances_decoded": 772,
+      "argmax_steps": 9611,
+      "non_empty_hypotheses": 772
+     }
+    }
+   },
+   "baseline": {
+    "V_kept": 32768,
+    "wer_vs_reference": 0.13846404165310772,
+    "errors": 851,
+    "words": 6146,
+    "mean_steps": 12.25259067357513,
+    "gate": {
+     "meaning": "compared",
+     "why": null,
+     "utterances_decoded": 772,
+     "argmax_steps": 9459,
+     "non_empty_hypotheses": 772
+    }
+   },
+   "input_sha256": "3dc3c2c2f44220d2160e33a1dfc5814b0b3a9543fd4973d9322220499df769a9",
+   "V11000_minus_V16384": {
+    "delta_wer": 0.004393101204035145,
+    "ci95": [
+     -0.0009944985362775607,
+     0.01049228309969673
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   }
+  }
+ },
+ "keep_sets": {
+  "16384": {
+   "V_kept": 16384,
+   "max_abs_w_over_kept": 1.4846177101135254,
+   "s_w_unchanged": true,
+   "start_kept": true,
+   "eos_kept": true,
+   "rows_kept_in_ascending_id_order": true
+  },
+  "11000": {
+   "V_kept": 11000,
+   "max_abs_w_over_kept": 1.4846177101135254,
+   "s_w_unchanged": true,
+   "start_kept": true,
+   "eos_kept": true,
+   "rows_kept_in_ascending_id_order": true
+  }
+ },
+ "checkpoint": {
+  "path": "archive/runs/moonshine_vocab_int8@20260918T0230/checkpoint/lm_head_pruned_V11000.npz",
+  "V": 11000,
+  "K": 288,
+  "lm_head_weight_q_bytes": 3168000,
+  "embed_tokens_f32_bytes": 12672000,
+  "bit_identical_row_subset": true,
+  "rows_ascending": true,
+  "eos_compact_index": 2,
+  "start_compact_index": 1,
+  "s_w": 0.011689903229240357,
+  "s_w_unchanged_from_the_unpruned_model": true,
+  "output_scales_unchanged": true,
+  "row_order": "ASCENDING original token id -- the driver breaks argmax ties by lowest index, so a frequency-ordered compaction would change which row wins a tie and would not be this measurement's model",
+  "embed_tokens_f32_is_the_float_lm_head": true,
+  "sha256": "8e5e9e17d31d97174ec3fa86ddd3b0fb74ab3edbe1fae15c027a1021a6a63445",
+  "audit": {
+   "V": 11000,
+   "K": 288,
+   "rows_ascending": true,
+   "lm_head_rows_bit_identical_to_unpruned": true,
+   "s_w": 0.011689903229240357,
+   "start_token_present": true,
+   "eos_token_present": true,
+   "emitted_rows_over_both_sets": 3223,
+   "emitted_rows_outside_the_kept_set": [],
+   "closure_holds": true,
+   "lm_head_weight_q_bytes": 3168000,
+   "embed_tokens_f32_bytes": 12672000,
+   "embed_tokens_f32_bytes_unpruned": 37748736
+  }
+ },
+ "elapsed_s": 1191.2,
+ "second_draws_dev": {
+  "what": "the same comparison on inputs whose encoder hidden state is perturbed by a small relative amount -- a second draw of the same operating point.  It separates the prune's delta (stable) from the int8 decoder's sensitivity to its own input.",
+  "codes_flipped_per_utterance": {
+   "1e-07": 1.2,
+   "1e-06": 11.5,
+   "1e-05": 112.1,
+   "of": 570240,
+   "what": "int8 kx/vx codes, 8 utterances"
+  },
+  "draws": {
+   "1e-05": {
+    "baseline_wer": 0.13677658142664872,
+    "16384": {
+     "wer": 0.14350605652759085,
+     "delta": 0.006729475100942127,
+     "ci95": [
+      0.0018618035402818433,
+      0.012005358342804933
+     ]
+    },
+    "11000": {
+     "wer": 0.14451547779273216,
+     "delta": 0.007738896366083445,
+     "ci95": [
+      0.0015102825440172557,
+      0.01460221550855992
+     ]
+    }
+   },
+   "1e-06": {
+    "baseline_wer": 0.13458950201884254,
+    "16384": {
+     "wer": 0.14165545087483175,
+     "delta": 0.0070659488559892325,
+     "ci95": [
+      0.0024510826032453806,
+      0.012525605525247811
+     ]
+    },
+    "11000": {
+     "wer": 0.14350605652759085,
+     "delta": 0.008916554508748318,
+     "ci95": [
+      0.0029882786783765247,
+      0.01557156887558972
+     ]
+    }
+   }
+  }
+ },
+ "baseline_reproducibility": {
+  "published": {
+   "value": 0.1440107671601615,
+   "record": "model_dec_run_dev.json (2026-09-17 23:40)"
+  },
+  "measured_here": 0.13391655450874831,
+  "status": "NOT REPRODUCED -- both values stand with their pointers",
+  "what_was_checked_and_matched": [
+   "the int8 encoder's batch inputs AND outputs are byte-identical to the archived run's",
+   "emb.f32 is byte-identical",
+   "out/decint8/ir/{graph.json,weights.npz} and gen_nl/* are unchanged on disk",
+   "a driver rebuilt from those sources reproduces out/decint8/hostbuild/dec_driver on 765/765 sequences; so does out/decint8/engbuild/dec_driver (the gen_eng backend)",
+   "the packed input built without float_rollout is byte-identical to the one built with it (checked on 3 utterances, whole 577,152-byte buffers)"
+  ],
+  "what_differs": "the archived token sequences differ on 492/765 utterances, 139 of them at step 0 -- which depends only on h0 and the packed kx/vx",
+  "not_float_noise": "a 1e-6 relative perturbation of the encoder hidden state flips ~11 of 570,240 kx/vx codes and moves the baseline WER by 0.067 pp, not 1.01 pp",
+  "why_it_cannot_be_identified": "the archived in.bin was overwritten at 00:22 by another run, and model_dec_run.py's record carries neither the --ir path nor a hash of its input",
+  "follow_up": "model_dec_run.py should record the IR path, the exe path and a sha256 of in.bin"
+ },
+ "archive": "archive/runs/moonshine_vocab_int8@20260918T0230"
+}

@@ -1,0 +1,155 @@
+{
+ "what": "WER of ModelBlaster's GENERATED C (host build, bit-exact with the device by the host gates) for Moonshine Tiny's encoder, HF float decoder, greedy, 40 tokens",
+ "set": {
+  "name": "dev_clean <= 4 s",
+  "utterances": 765,
+  "speakers": 40,
+  "words": 5944,
+  "subset_of_n": null
+ },
+ "float": {
+  "wer_vs_reference": {
+   "wer": 0.0908479138627187,
+   "errors": 540,
+   "words": 5944,
+   "utterances": 765
+  }
+ },
+ "decoder": {
+  "max_new_tokens": 40,
+  "greedy": true,
+  "checkpoint": "UsefulSensors/moonshine-tiny@390624ed33d594443aa4aa221f5b9f283b545b5a"
+ },
+ "variants": {
+  "QATU_nl": {
+   "ir": "<repo>/out/qatu_long/ir",
+   "gen": "<repo>/out/qatu_long/gen_nl",
+   "q16_plan": null,
+   "input_dtype": "i8",
+   "input_scale": 0.004342627337598425,
+   "output_scale": 0.041631718609277536,
+   "kernel_picks": {
+    "add_s8": "pext_int_add",
+    "conv2d_s8": "pext_patch_dot8",
+    "gelu_s8": "pext_int_lut",
+    "groupnorm_s8": "pext_int_rsqrt",
+    "layernorm_s8": "pext_int_rsqrt",
+    "linear_s8": "pext_row_dot8",
+    "matmul_b_s8": "pext_dot8_exact",
+    "permute4_s8": "reference",
+    "rope_s8": "pext_int_rot",
+    "softmax_s8": "pext_int_row",
+    "tanh_s8": "pext_memo_lut"
+   },
+   "wer_vs_reference": {
+    "wer": 0.1059892328398385,
+    "errors": 630,
+    "words": 5944,
+    "utterances": 765
+   },
+   "wer_vs_float": {
+    "wer": 0.05727242190124286,
+    "errors": 341,
+    "words": 5954,
+    "utterances": 765
+   },
+   "sqnr_db": 14.361284632603192,
+   "cosine": 0.9815210417866339,
+   "identical_to_float_transcript": 574,
+   "host_seconds": 56.1,
+   "minus_float": {
+    "delta_wer": 0.015141318977119785,
+    "ci95": [
+     0.0086042933557358,
+     0.021768224193052174
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "differs_from_float": 191,
+   "examples_differing": [
+    {
+     "id": "1272-135031-0016",
+     "reference": "KALIKO HESITATED",
+     "float": "Galago hesitated.",
+     "c": "Calico hesitated."
+    },
+    {
+     "id": "1919-142785-0046",
+     "reference": "ILLUSTRATION BASIL",
+     "float": "Illustration Basil.",
+     "c": "It was station Basel."
+    },
+    {
+     "id": "2035-147961-0014",
+     "reference": "FROM OUR BENCH WE COULD SEE WHAT A HOLLOW CASE HIS BODY WAS",
+     "float": "From our bench, we could see what a hollow case his body was.",
+     "c": "For my bench, we could see what a hollow case his body was."
+    },
+    {
+     "id": "2277-149896-0022",
+     "reference": "LATER HOWEVER HIS OLD DISCRETION ASSERTED ITSELF",
+     "float": "Later, however, his old discussion asserted itself.",
+     "c": "Later, however, his old discretion asserted itself."
+    },
+    {
+     "id": "2803-154320-0008",
+     "reference": "WE COULD NOT EVEN FLY FLY JOHN",
+     "float": "We could not even fly, fly, Jerr.",
+     "c": "We could not even fly. Fly, Jair."
+    },
+    {
+     "id": "3536-8226-0007",
+     "reference": "OF COURSE IT AIN'T SAID MISSUS BOZZLE",
+     "float": "Of course it ain't, said Mrs. Basil.",
+     "c": "Of course it ain't, said Mrs. Fazal."
+    },
+    {
+     "id": "3752-4944-0029",
+     "reference": "WHOM IS HE GOING TO FLOG NOW",
+     "float": "Who is he going to flog now?",
+     "c": "What is he going to flog now?"
+    },
+    {
+     "id": "5338-284437-0023",
+     "reference": "NO OUR WAY IS BEST",
+     "float": "No, our way is best.",
+     "c": "No, our way is vast."
+    },
+    {
+     "id": "5694-64038-0011",
+     "reference": "BUT HOW TO GET HIM OUT WAS THE UNSOLVED PROBLEM",
+     "float": "But how to get him out was the insult problem.",
+     "c": "The how to get him out was the insult problem."
+    },
+    {
+     "id": "6295-64301-0008",
+     "reference": "THE NETTLE AND THE DOCK SAID JOSEPH",
+     "float": "The nettle on the dark, said Joseph.",
+     "c": "The nettle in the dark, said Joseph."
+    },
+    {
+     "id": "6313-76958-0025",
+     "reference": "A WRANGLER'S A WRANGLER ANSWERED BIG FOOT STOLIDLY",
+     "float": "A wrangler's a wrangler answered Bigfoot, stoddily.",
+     "c": "A wrangler's a ringler answered Bigfoot, stoddily."
+    },
+    {
+     "id": "777-126732-0020",
+     "reference": "LOMBROSO IS AN ASS",
+     "float": "When Proser was in ass",
+     "c": "The imposter was an ass."
+    }
+   ]
+  }
+ },
+ "calibration": {
+  "MB_INT8_CALIB_POLICY": "p99.9",
+  "MOONSHINE_CAL_SET": "librispeech",
+  "num_calibration": 64,
+  "pooled": true,
+  "patch": "patches/0108-modelblaster-int8-calibration-policy.patch",
+  "note": "percentile is POOLED over the calibration set; per-sample-then-max costs 5.05 points"
+ },
+ "checkpoint_dir": "<repo>/out/moonshine_qat_long"
+}

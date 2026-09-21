@@ -1,0 +1,42 @@
+{
+ "what": "The accuracy gate for ONE rung of the variable-length IR ladder (MOONSHINE_MODEL.md section 2.4).",
+ "set": "dev_clean",
+ "device": "cuda",
+ "rungs": {
+  "abl_set_only": {
+   "ir": "<repo>/out/rungs/abl_set_only/ir",
+   "gen": "<repo>/out/rungs/abl_set_only/gen_nl",
+   "window_samples": 64000,
+   "window_s": 4.0,
+   "frames": 165,
+   "hidden": 288,
+   "input_dtype": "i8",
+   "input_scale": 0.007733682947834645,
+   "output_scale": 0.05858209564929872,
+   "utterances_served": 765,
+   "speakers": 40,
+   "words": 5944,
+   "fraction_of_set": 0.2830188679245283,
+   "wer_c_vs_reference": 1.1068304172274563,
+   "wer_float_same_window_vs_reference": 0.07301480484522208,
+   "c_minus_float_same_window": {
+    "delta_wer": 1.0338156123822342,
+    "ci95": [
+     0.9979785949062432,
+     1.0735242605370883
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "wer_c_vs_float_transcripts": {
+    "wer": 1.1072990245543222,
+    "errors": 6584,
+    "words": 5946,
+    "utterances": 765
+   },
+   "sqnr_db": 3.259103170277231,
+   "host_seconds": 132.4
+  }
+ },
+ "elapsed_s": 132.43261671066284
+}

@@ -1,0 +1,318 @@
+{
+ "what": "WER of ModelBlaster's GENERATED C (host build, bit-exact with the device by the host gates) for Moonshine Tiny's encoder, HF float decoder, greedy, 40 tokens",
+ "set": {
+  "name": "test_clean <= 4 s",
+  "utterances": 772,
+  "speakers": 40,
+  "words": 6146,
+  "subset_of_n": null
+ },
+ "float": {
+  "wer_vs_reference": {
+   "wer": 0.07517084282460136,
+   "errors": 462,
+   "words": 6146,
+   "utterances": 772
+  }
+ },
+ "decoder": {
+  "max_new_tokens": 40,
+  "greedy": true,
+  "checkpoint": "UsefulSensors/moonshine-tiny@390624ed33d594443aa4aa221f5b9f283b545b5a"
+ },
+ "variants": {
+  "R_ref": {
+   "ir": "<repo>/out/q16/R/ir",
+   "gen": "<repo>/out/q16/R/gen_ref",
+   "q16_plan": {
+    "candidate": "R",
+    "quant_fix_key": "FINAL R: split stem (1, 64), stem weights 2 group(s), adds per-channel + o_proj/fc2 rows",
+    "record": "quant_fix_final_dev2.json"
+   },
+   "input_dtype": "i16",
+   "input_scale": 1.6817996445613252e-05,
+   "output_scale": 0.05858209940392201,
+   "kernel_picks": {
+    "add_pc_s8": "reference",
+    "conv2d_s8": "reference",
+    "gelu_s8": "reference",
+    "groupnorm_s16": "reference",
+    "layernorm_pc_s8": "reference",
+    "linear_s8": "reference",
+    "lut16_pc_s8": "reference",
+    "lut16_s16": "reference",
+    "matmul_b_s8": "reference",
+    "mrcombine_s16": "reference",
+    "permute4_s8": "reference",
+    "rope_s8": "reference",
+    "softmax_s8": "reference",
+    "split16_s8": "reference"
+   },
+   "wer_vs_reference": {
+    "wer": 0.08184184835665473,
+    "errors": 503,
+    "words": 6146,
+    "utterances": 772
+   },
+   "wer_vs_float": {
+    "wer": 0.038254924304085954,
+    "errors": 235,
+    "words": 6143,
+    "utterances": 772
+   },
+   "sqnr_db": 13.823485269412927,
+   "cosine": 0.9791731471630051,
+   "identical_to_float_transcript": 625,
+   "host_seconds": 98.9,
+   "minus_float": {
+    "delta_wer": 0.006671005532053368,
+    "ci95": [
+     0.0012931386133940655,
+     0.012307401655917868
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "minus_float_sim": {
+    "delta_wer": 0.0,
+    "ci95": [
+     -0.004244096675502761,
+     0.004291223125297282
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "differs_from_float": 147,
+   "examples_differing": [
+    {
+     "id": "1089-134686-0001",
+     "reference": "STUFF IT INTO YOU HIS BELLY COUNSELLED HIM",
+     "float": "Stuff it into you, his belly counseled him.",
+     "c": "Stuffed into you, his belly counseled him."
+    },
+    {
+     "id": "1284-1181-0005",
+     "reference": "NO I FORGOT ALL ABOUT THE BRAINS EXCLAIMED THE WOMAN",
+     "float": "No, I forgot all about the brains, exclaimed the woman.",
+     "c": "No, I forgot of them about the brains, exclaimed the woman."
+    },
+    {
+     "id": "1995-1837-0022",
+     "reference": "UP IN THE SICK ROOM ZORA LAY ON THE LITTLE WHITE BED",
+     "float": "Up in the sick rooms, or lay on the little white bed.",
+     "c": "Up in the sick loans are lay on the little wide bed."
+    },
+    {
+     "id": "260-123286-0010",
+     "reference": "SUNDAY AUGUST SIXTEENTH",
+     "float": "Sunday August 16.",
+     "c": "Sunday August 16th"
+    },
+    {
+     "id": "2830-3980-0040",
+     "reference": "THE GREETING OF THE APOSTLE IS REFRESHING",
+     "float": "The greeting of the apostle is refreshing.",
+     "c": "The greeting of the apostles refreshing."
+    },
+    {
+     "id": "4446-2271-0005",
+     "reference": "SHE SAVES HER HAND TOO SHE'S AT HER BEST IN THE SECOND ACT",
+     "float": "She saves her hand, too. She's out her best in the second act.",
+     "c": "She saves her hand, too. She's had her best in the second act."
+    },
+    {
+     "id": "4970-29095-0023",
+     "reference": "I HAVE NOTHING TO WEAR REPLIED THAT DEMURE PERSON",
+     "float": "I have nothing to wear, replied the demure person.",
+     "c": "I have nothing to wear, replied that demure person."
+    },
+    {
+     "id": "5142-33396-0039",
+     "reference": "I NAMED NINE OTHERS AND SAID",
+     "float": "I named nine others and said.",
+     "c": "I named my mother and said."
+    },
+    {
+     "id": "5683-32865-0006",
+     "reference": "AT DINNER LAKE WAS EASY AND AMUSING",
+     "float": "At dinner, Lake was easy and amusing.",
+     "c": "At dinner, Lake was easy at amusing."
+    },
+    {
+     "id": "6829-68769-0027",
+     "reference": "WHOSE NAME DID YOU SIGN TO THE CHECK ASKED KENNETH",
+     "float": "Whose name did you sign to the check? asked Kenneth.",
+     "c": "Who's named it? You signed to the check, asked Kenneth."
+    },
+    {
+     "id": "6930-81414-0026",
+     "reference": "MY OVERWROUGHT NERVES YIELDED AT LAST",
+     "float": "My overwrought nerve sealed it at last.",
+     "c": "My overwrought nerves yielded at last."
+    },
+    {
+     "id": "7729-102255-0013",
+     "reference": "IT WAS IN FACT THE BEST WEAPON OF ITS DAY",
+     "float": "It was in fact the best weapon of it's day.",
+     "c": "It was in fact the best weapon of it stay"
+    }
+   ]
+  },
+  "R_nl": {
+   "ir": "<repo>/out/q16/R/ir",
+   "gen": "<repo>/out/q16/R/gen_nl",
+   "q16_plan": {
+    "candidate": "R",
+    "quant_fix_key": "FINAL R: split stem (1, 64), stem weights 2 group(s), adds per-channel + o_proj/fc2 rows",
+    "record": "quant_fix_final_dev2.json"
+   },
+   "input_dtype": "i16",
+   "input_scale": 1.6817996445613252e-05,
+   "output_scale": 0.05858209940392201,
+   "kernel_picks": {
+    "add_pc_s8": "pext_int_block",
+    "conv2d_s8": "pext_patch_dot8",
+    "gelu_s8": "pext_int_lut",
+    "groupnorm_s16": "pext_int_memo",
+    "layernorm_pc_s8": "reference",
+    "linear_s8": "pext_row_dot8",
+    "lut16_pc_s8": "reference",
+    "lut16_s16": "reference",
+    "matmul_b_s8": "pext_dot8_exact",
+    "mrcombine_s16": "pext_fine_first",
+    "permute4_s8": "reference",
+    "rope_s8": "pext_int_rot",
+    "softmax_s8": "pext_int_row",
+    "split16_s8": "reference"
+   },
+   "wer_vs_reference": {
+    "wer": 0.08314350797266515,
+    "errors": 511,
+    "words": 6146,
+    "utterances": 772
+   },
+   "wer_vs_float": {
+    "wer": 0.03841771121601823,
+    "errors": 236,
+    "words": 6143,
+    "utterances": 772
+   },
+   "sqnr_db": 13.826589549464014,
+   "cosine": 0.9791886190874916,
+   "identical_to_float_transcript": 630,
+   "host_seconds": 78.8,
+   "minus_float": {
+    "delta_wer": 0.007972665148063782,
+    "ci95": [
+     0.0025770880225266532,
+     0.013739058517192749
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "minus_float_sim": {
+    "delta_wer": 0.0013016596160104132,
+    "ci95": [
+     -0.0027884859302069777,
+     0.005514089694755885
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "differs_from_float": 142,
+   "examples_differing": [
+    {
+     "id": "1089-134691-0010",
+     "reference": "BROTHER MAC ARDLE BROTHER KEOGH",
+     "float": "Brother MacArdle, Brother Kiaf.",
+     "c": "Brother MacArdle, Brother Kiev."
+    },
+    {
+     "id": "1580-141083-0021",
+     "reference": "THERE IS NO OPENING EXCEPT THE ONE PANE SAID OUR LEARNED GUIDE",
+     "float": "There is no opening except the one pane, said our learned guide.",
+     "c": "There is no opening except the one painting, said our learned guide."
+    },
+    {
+     "id": "1995-1837-0005",
+     "reference": "SHE WAS SO STRANGE AND HUMAN A CREATURE",
+     "float": "She was so strange and human a creature.",
+     "c": "She was so strange in human a creature."
+    },
+    {
+     "id": "237-134493-0009",
+     "reference": "PLEASE WAIT FOR ME MARIE EMIL COAXED",
+     "float": "Please wait for me, Marie. Aimeel coaxed.",
+     "c": "Please wait for me, Marie. Aimhill coaxed."
+    },
+    {
+     "id": "260-123288-0018",
+     "reference": "THE RAFT BEARS ON STILL TO THE SOUTH EAST",
+     "float": "The raft bears on still to the south-east.",
+     "c": "The raft bears on still to the southeast."
+    },
+    {
+     "id": "3575-170457-0016",
+     "reference": "FAREWELL MADAM",
+     "float": "Farewell madame",
+     "c": "Fairwell, madam."
+    },
+    {
+     "id": "4446-2275-0023",
+     "reference": "ALEXANDER GROANED I MEANT TO BUT SOMEHOW I COULDN'T",
+     "float": "Alexander Groan died meant to, but somehow I couldn't.",
+     "c": "Alexander Groan, Dine meant to, but somehow I couldn't."
+    },
+    {
+     "id": "4992-41806-0010",
+     "reference": "AIN'T THEY THE GREATEST",
+     "float": "Ain't they the greatest?",
+     "c": "They'd pay the greatest."
+    },
+    {
+     "id": "5142-33396-0058",
+     "reference": "A ROBBER VIKING SAID THE KING AND SCOWLED AT ME",
+     "float": "A robber fiking, said the king, and he scowled at me.",
+     "c": "A rubber fiking said the king and he scowled at me."
+    },
+    {
+     "id": "61-70970-0003",
+     "reference": "IF FOR A WHIM YOU BEGGAR YOURSELF I CANNOT STAY YOU",
+     "float": "If for a whim you begger yourself, I cannot stay you.",
+     "c": "If for a whim you beg your yourself, I cannot stay you."
+    },
+    {
+     "id": "6930-76324-0003",
+     "reference": "NOW WHAT WAS THE SENSE OF IT TWO INNOCENT BABIES LIKE THAT",
+     "float": "Now what is the sense of it? Two innocent babies like that.",
+     "c": "Now what is the sense of it? Two innocent bannies like that."
+    },
+    {
+     "id": "7127-75947-0021",
+     "reference": "LA VALLIERE IS QUITE A POETESS SAID TONNAY CHARENTE",
+     "float": "Lavallee is quite a poetess, said Tournay Sharon.",
+     "c": "Lavallee is quite a poetess, said Tone Chantant."
+    }
+   ]
+  }
+ },
+ "float_sim": {
+  "candidate": "R",
+  "quant_fix_key": "FINAL R: split stem (1, 64), stem weights 2 group(s), adds per-channel + o_proj/fc2 rows",
+  "record": "quant_fix_final_dev2.json",
+  "what": "fq.py float simulation (ESTIMATE), rerun here on the same utterances",
+  "wer_vs_reference": {
+   "wer": 0.08184184835665473,
+   "errors": 503,
+   "words": 6146,
+   "utterances": 772
+  },
+  "wer_vs_float": {
+   "wer": 0.03662705518476315,
+   "errors": 225,
+   "words": 6143,
+   "utterances": 772
+  },
+  "sqnr_db": 13.878283957622784
+ }
+}

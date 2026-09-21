@@ -1,0 +1,318 @@
+{
+ "what": "WER of ModelBlaster's GENERATED C (host build, bit-exact with the device by the host gates) for Moonshine Tiny's encoder, HF float decoder, greedy, 40 tokens",
+ "set": {
+  "name": "dev_clean <= 4 s",
+  "utterances": 765,
+  "speakers": 40,
+  "words": 5944,
+  "subset_of_n": null
+ },
+ "float": {
+  "wer_vs_reference": {
+   "wer": 0.07301480484522208,
+   "errors": 434,
+   "words": 5944,
+   "utterances": 765
+  }
+ },
+ "decoder": {
+  "max_new_tokens": 40,
+  "greedy": true,
+  "checkpoint": "UsefulSensors/moonshine-tiny@390624ed33d594443aa4aa221f5b9f283b545b5a"
+ },
+ "variants": {
+  "R3_ref": {
+   "ir": "<repo>/out/q16/R3/ir",
+   "gen": "<repo>/out/q16/R3/gen_ref",
+   "q16_plan": {
+    "candidate": "R3",
+    "quant_fix_key": "FINAL R: split stem (1, 16, 256), stem weights 4 group(s), adds per-channel + o_proj/fc2 rows",
+    "record": "quant_fix_final_dev2.json"
+   },
+   "input_dtype": "i16",
+   "input_scale": 1.6817996445613252e-05,
+   "output_scale": 0.05858209940392201,
+   "kernel_picks": {
+    "add_pc_s8": "reference",
+    "conv2d_s8": "reference",
+    "gelu_s8": "reference",
+    "groupnorm_s16": "reference",
+    "layernorm_pc_s8": "reference",
+    "linear_s8": "reference",
+    "lut16_pc_s8": "reference",
+    "lut16_s16": "reference",
+    "matmul_b_s8": "reference",
+    "mrcombine_s16": "reference",
+    "permute4_s8": "reference",
+    "rope_s8": "reference",
+    "softmax_s8": "reference",
+    "split16_s8": "reference"
+   },
+   "wer_vs_reference": {
+    "wer": 0.08327725437415881,
+    "errors": 495,
+    "words": 5944,
+    "utterances": 765
+   },
+   "wer_vs_float": {
+    "wer": 0.03161789438277834,
+    "errors": 188,
+    "words": 5946,
+    "utterances": 765
+   },
+   "sqnr_db": 16.04829576143827,
+   "cosine": 0.9875983330359459,
+   "identical_to_float_transcript": 653,
+   "host_seconds": 121.4,
+   "minus_float": {
+    "delta_wer": 0.010262449528936743,
+    "ci95": [
+     0.00516336190946096,
+     0.015678275933595547
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "minus_float_sim": {
+    "delta_wer": 0.0018506056527590848,
+    "ci95": [
+     -0.0024242291183276792,
+     0.006219751743462542
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "differs_from_float": 112,
+   "examples_differing": [
+    {
+     "id": "1272-135031-0016",
+     "reference": "KALIKO HESITATED",
+     "float": "Galico hesitated.",
+     "c": "Gallo hasitated."
+    },
+    {
+     "id": "174-50561-0009",
+     "reference": "THE WANDERING SINGER",
+     "float": "The wandering singer.",
+     "c": "The wanderer is sanger."
+    },
+    {
+     "id": "2035-147960-0015",
+     "reference": "OTTO WINKED AT ME",
+     "float": "What a wink to me.",
+     "c": "\"Our no winked at me\"."
+    },
+    {
+     "id": "2412-153948-0015",
+     "reference": "I WOULD TRY THE NEARER RANGE AND SEE HOW FAR I COULD GO",
+     "float": "I would try the nearer range and see how far I could go.",
+     "c": "I would try the nearer range and see how far I get go."
+    },
+    {
+     "id": "3081-166546-0036",
+     "reference": "IT'S A CASE IN A THOUSAND GRYCE",
+     "float": "It's a case in a thousand, Grace.",
+     "c": "It's a case in a thousand, guys."
+    },
+    {
+     "id": "3752-4943-0005",
+     "reference": "A PRISONER REFRACTORY YOUR REVERENCE SAID THE WATCHMAN",
+     "float": "A prisoner refractory, your reverence, said the watchman.",
+     "c": "A praising a refractory, your reverence, said the watchman."
+    },
+    {
+     "id": "3752-4944-0028",
+     "reference": "ANOTHER FLOGGING TO MORROW SAID HE GRUMBLINGLY",
+     "float": "Another flog in to-morrow, said he grumblingly.",
+     "c": "Another flog in tomorrow, said he grumblingly."
+    },
+    {
+     "id": "5338-284437-0027",
+     "reference": "A MISFORTUNE OF BIRTH PLACED ME HERE AND I CANNOT ESCAPE MY FATE",
+     "float": "I'm a fortunate birth placed me here, and I cannot escape my fate.",
+     "c": "I'm a sportsian of birth-placed me here, and I cannot escape my fate."
+    },
+    {
+     "id": "5895-34622-0015",
+     "reference": "PHOEBE COOKED VENUS SCRUBBED THE TEMPLE",
+     "float": "V B cooked, Venus scrubbed the temple.",
+     "c": "Phoebe cooked, Venus scrubbed the temple."
+    },
+    {
+     "id": "6295-244435-0035",
+     "reference": "BILL SKELLY AN HIS GANG THEM MOUNTAINEERS ARE UP",
+     "float": "Bill Skelean is gang, then Mountaineers are up.",
+     "c": "Bill Skeleigh and his gang, then Mountaineers are up."
+    },
+    {
+     "id": "6313-76958-0002",
+     "reference": "NOT ON THE RANGE WHY NOT DEMANDED THE BOY",
+     "float": "No, not the rage. Why not? demanded the boy.",
+     "c": "No, not the rage. Why not? commanded the boy."
+    },
+    {
+     "id": "777-126732-0033",
+     "reference": "COMRADE OSSIPON'S FACE TWITCHED WITH EXASPERATION",
+     "float": "ComEd Ossipon's face twitched with exasperation.",
+     "c": "Comrade Ossipon's face twitched with exasperation."
+    }
+   ]
+  },
+  "R3_nl": {
+   "ir": "<repo>/out/q16/R3/ir",
+   "gen": "<repo>/out/q16/R3/gen_nl",
+   "q16_plan": {
+    "candidate": "R3",
+    "quant_fix_key": "FINAL R: split stem (1, 16, 256), stem weights 4 group(s), adds per-channel + o_proj/fc2 rows",
+    "record": "quant_fix_final_dev2.json"
+   },
+   "input_dtype": "i16",
+   "input_scale": 1.6817996445613252e-05,
+   "output_scale": 0.05858209940392201,
+   "kernel_picks": {
+    "add_pc_s8": "pext_int_block",
+    "conv2d_s8": "pext_patch_dot8",
+    "gelu_s8": "pext_int_lut",
+    "groupnorm_s16": "pext_int_memo",
+    "layernorm_pc_s8": "reference",
+    "linear_s8": "pext_row_dot8",
+    "lut16_pc_s8": "reference",
+    "lut16_s16": "reference",
+    "matmul_b_s8": "pext_dot8_exact",
+    "mrcombine_s16": "pext_fine_first",
+    "permute4_s8": "reference",
+    "rope_s8": "pext_int_rot",
+    "softmax_s8": "pext_int_row",
+    "split16_s8": "reference"
+   },
+   "wer_vs_reference": {
+    "wer": 0.08176312247644683,
+    "errors": 486,
+    "words": 5944,
+    "utterances": 765
+   },
+   "wer_vs_float": {
+    "wer": 0.03245879582912883,
+    "errors": 193,
+    "words": 5946,
+    "utterances": 765
+   },
+   "sqnr_db": 16.05588986756696,
+   "cosine": 0.9876188784492067,
+   "identical_to_float_transcript": 650,
+   "host_seconds": 102.7,
+   "minus_float": {
+    "delta_wer": 0.008748317631224764,
+    "ci95": [
+     0.003662488174077578,
+     0.01401800969208999
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "minus_float_sim": {
+    "delta_wer": 0.00033647375504710633,
+    "ci95": [
+     -0.003910999359639951,
+     0.0048415921593598695
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "differs_from_float": 115,
+   "examples_differing": [
+    {
+     "id": "1272-135031-0016",
+     "reference": "KALIKO HESITATED",
+     "float": "Galico hesitated.",
+     "c": "Gallo cohesitated."
+    },
+    {
+     "id": "174-50561-0017",
+     "reference": "I DON'T KNOW WHAT BECOMES OF THE LADIES",
+     "float": "I don't know what becomes of the ladies.",
+     "c": "They don't know what becomes of the ladies."
+    },
+    {
+     "id": "2035-147961-0017",
+     "reference": "MISTER SHIMERDA WENT WITH HIM",
+     "float": "Mr. Shimerda went with him.",
+     "c": "Mr. Shimerida went with him."
+    },
+    {
+     "id": "2428-83699-0013",
+     "reference": "I EVEN BOUGHT SOMETHING FOR MADGE I MEAN MISSUS WILSON",
+     "float": "I even bought something for Madge. I mean Mrs. Wilson.",
+     "c": "I even bought something from age. I mean Mrs. Wilson."
+    },
+    {
+     "id": "3081-166546-0036",
+     "reference": "IT'S A CASE IN A THOUSAND GRYCE",
+     "float": "It's a case in a thousand, Grace.",
+     "c": "It's a case in a thousand, guys."
+    },
+    {
+     "id": "3752-4943-0015",
+     "reference": "IMPERTINENT YOUNG BEGGAR SAID BURGESS",
+     "float": "Im pertinent young beggar, said Burgess.",
+     "c": "Important at young beggar, said Burgess."
+    },
+    {
+     "id": "3752-4944-0028",
+     "reference": "ANOTHER FLOGGING TO MORROW SAID HE GRUMBLINGLY",
+     "float": "Another flog in to-morrow, said he grumblingly.",
+     "c": "Another flog in tomorrow, said he grumblingly."
+    },
+    {
+     "id": "5338-284437-0027",
+     "reference": "A MISFORTUNE OF BIRTH PLACED ME HERE AND I CANNOT ESCAPE MY FATE",
+     "float": "I'm a fortunate birth placed me here, and I cannot escape my fate.",
+     "c": "I'm a sportsian of birth placed me here, and I cannot escape my fate."
+    },
+    {
+     "id": "5895-34622-0015",
+     "reference": "PHOEBE COOKED VENUS SCRUBBED THE TEMPLE",
+     "float": "V B cooked, Venus scrubbed the temple.",
+     "c": "Phoebe cooked, Venus scrubbed the temple."
+    },
+    {
+     "id": "6295-244435-0040",
+     "reference": "BUT HE SAW NOTHING THAT MOVED THERE NO SIGNAL LIGHTS TWINKLED",
+     "float": "But he saw nothing that moved there, no signal lights twinkled.",
+     "c": "But he saw nothing the move there, no signal lights twinkled."
+    },
+    {
+     "id": "6313-76958-0019",
+     "reference": "STACY BROWN'S LEFT LEG SWUNG OVER THE SADDLE",
+     "float": "Saysy browns left legs, hung over the saddle.",
+     "c": "Saysy Browns left legs from over the saddle."
+    },
+    {
+     "id": "777-126732-0055",
+     "reference": "STEVIE PROWLED ROUND THE TABLE LIKE AN EXCITED ANIMAL IN A CAGE",
+     "float": "The steepy prowled round the table like an excited animal in a cage.",
+     "c": "Stipe proud round the table like an excited animal in a cage."
+    }
+   ]
+  }
+ },
+ "float_sim": {
+  "candidate": "R3",
+  "quant_fix_key": "FINAL R: split stem (1, 16, 256), stem weights 4 group(s), adds per-channel + o_proj/fc2 rows",
+  "record": "quant_fix_final_dev2.json",
+  "what": "fq.py float simulation (ESTIMATE), rerun here on the same utterances",
+  "wer_vs_reference": {
+   "wer": 0.08142664872139974,
+   "errors": 484,
+   "words": 5944,
+   "utterances": 765
+  },
+  "wer_vs_float": {
+   "wer": 0.03144971409350824,
+   "errors": 187,
+   "words": 5946,
+   "utterances": 765
+  },
+  "sqnr_db": 16.04988994511471
+ }
+}

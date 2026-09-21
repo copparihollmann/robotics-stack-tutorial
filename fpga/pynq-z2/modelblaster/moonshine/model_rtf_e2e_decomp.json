@@ -1,0 +1,17 @@
+{
+ "measured": {
+  "encoder_cycles": 573403857,
+  "decoder_cycles": 655720526.6960001,
+  "rtf_e2e": 8.911141088426694
+ },
+ "counterfactual_two_curated_kernels": {
+  "decoder_cycles": 328699557.61024,
+  "rtf_e2e": 6.540241907633951,
+  "silu_cel_assumed": 19.34,
+  "cat_cel_assumed": 6.48,
+  "basis": "GELU's curated LUT rate for SiLU (same op shape); permute4_s8's pext_block rate for a copy"
+ },
+ "mean_steps": 11.816,
+ "clock_hz": 34482800.0,
+ "window_s": 4.0
+}

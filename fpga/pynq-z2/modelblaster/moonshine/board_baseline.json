@@ -1,0 +1,2754 @@
+{
+ "what": "Lab B26 (scripts/50_rocket_moonshine_enc.sh): Moonshine Tiny encoder, int8 via ModelBlaster (patches/0100), on Rocket hart 0 of the PYNQ-Z1. MEASURED rdcycle counts on the board.",
+ "sessions": {
+  "roccmoon_0x5A5A0010": {
+   "run_dir": "out/rocket_moonshine_enc_roccmoon",
+   "full_record": "board/b26_roccmoon_run.json",
+   "command": "ROCCMOON_ACCEPTED=7475c1b20b34f42e3bbe192f41cee58f scripts/with_board.sh ./scripts/50_rocket_moonshine_enc.sh --board-only --name rocket_moonshine_enc_roccmoon --variants \"nl ew nl_eng ew_eng\" --stems \"\" --board chipyard_pynqz1_micrgb --bit fpga/pynq-z2/build_rocket_micrgb_roccmoon_z1/pynqz1_rocket_micrgb_roccmoon.bit --magic 0x5A5A0010 --runner run_rocket_roccmoon.py",
+   "notes": [
+    "One session, one bitstream: the engine variants (nl_eng, ew_eng) and their MBP twins (nl, ew, ew_bigconv) and the control image before and after.",
+    "Engine runtime as of the images' build (2026-09-17 00:17, before commits 05c5416 and 6e6f5ec): byte-wise result placement on hart 1, image cache keyed (address, kind). Moonshine has one const weight array per layer, so the cache-key bug does not reach it; the goldens matching exactly on the board agrees.",
+    "The encoder images run NO warm-up (MB_WARMUP=0) and ITERS=1: every number is ONE cold inference. The engine's one-time weight-image build (mbxr_rt_stats.image_cycles) is therefore inside its measured linear/conv dispatches; engine_vs_twin gives totals with and without that measured counter.",
+    "enc_ew runs pext_patch_dot8 at its default limits, which send conv3 (IC*KH=576 > 512 rows) to the scalar reference although kernel_picks.json names pext_patch_dot8; enc_ew_bigconv is the same generated C with -DMB_PEXT_CONV_MAXROWS=2048 -DMB_PEXT_CONV_WBYTES=2097152 and is the fair MBP twin for conv2d_s8.",
+    "max_abs_err is against each image's own baked host-C golden (the same generated C compiled for the host against pext.h's software model of MBP), not against the Python golden.",
+    "RTF = dispatch cycles / 34,482,759 Hz / 4.0 s of audio (encoder only; no front end, no decoder)."
+   ],
+   "bitstream_md5": "7475c1b20b34f42e3bbe192f41cee58f",
+   "soc_magic": "0x5A5A0010",
+   "fclk_as_run": {
+    "io_pll_ctrl": "0x00014000",
+    "io_pll_mhz": 1000.0,
+    "fclk0": {
+     "ctrl": "0x00101D00",
+     "divisor0": 29,
+     "divisor1": 1,
+     "src": "IO_PLL",
+     "mhz": 34.4828
+    },
+    "fclk1": {
+     "ctrl": "0x00100A00",
+     "divisor0": 10,
+     "divisor1": 1,
+     "src": "IO_PLL",
+     "mhz": 100.0
+    },
+    "fclk2": {
+     "ctrl": "0x00100500",
+     "divisor0": 5,
+     "divisor1": 1,
+     "src": "IO_PLL",
+     "mhz": 200.0
+    },
+    "fclk3": {
+     "ctrl": "0x00200500",
+     "divisor0": 5,
+     "divisor1": 2,
+     "src": "IO_PLL",
+     "mhz": 100.0
+    }
+   },
+   "clock_hz": 34482759.0,
+   "window_s": 4.0,
+   "hart": 0,
+   "models": {
+    "ctrl_ffn": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "1",
+     "kernel_cflags": "-DMB_PEXT_HW=1",
+     "image_bytes": 653336,
+     "bitstream_md5": "7475c1b20b34f42e3bbe192f41cee58f",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 100021651,
+     "warm": 99964451,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 100020368,
+     "seconds": 2.900590640093503,
+     "dispatches_profiled": 5,
+     "dispatches_in_ir": 5,
+     "kernel_picks": {
+      "add_s8": "pext_int_add",
+      "gelu_s8": "pext_int_lut",
+      "layernorm_s8": "pext_int_rsqrt",
+      "linear_s8": "pext_row_dot8"
+     },
+     "per_kind": {
+      "layernorm_s8": {
+       "dispatches": 1,
+       "cycles": 6210598,
+       "macs": 0,
+       "elements": 32768,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 6.209,
+       "cycles_per_mac": null,
+       "cycles_per_element": 189.532,
+       "seconds": 0.18
+      },
+      "linear_s8": {
+       "dispatches": 2,
+       "cycles": 89644213,
+       "macs": 67108864,
+       "elements": 163840,
+       "kernel": "pext_row_dot8",
+       "share_pct": 89.626,
+       "cycles_per_mac": 1.3358,
+       "cycles_per_element": 547.145,
+       "seconds": 2.6
+      },
+      "gelu_s8": {
+       "dispatches": 1,
+       "cycles": 2906608,
+       "macs": 0,
+       "elements": 131072,
+       "kernel": "pext_int_lut",
+       "share_pct": 2.906,
+       "cycles_per_mac": null,
+       "cycles_per_element": 22.176,
+       "seconds": 0.084
+      },
+      "add_s8": {
+       "dispatches": 1,
+       "cycles": 1258949,
+       "macs": 0,
+       "elements": 32768,
+       "kernel": "pext_int_add",
+       "share_pct": 1.259,
+       "cycles_per_mac": null,
+       "cycles_per_element": 38.42,
+       "seconds": 0.037
+      }
+     },
+     "console_bytes": 108315,
+     "fclk0_mhz_as_run": 34.4828,
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746402226.7422993,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 99964451,
+       "cyc0": 0
+      },
+      "buf_ffn_block_ln": 4043,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "enc_nl": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "0",
+     "kernel_cflags": "-DMB_PEXT_HW=1",
+     "image_bytes": 8005016,
+     "bitstream_md5": "7475c1b20b34f42e3bbe192f41cee58f",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 8668307449,
+     "warm": 0,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 8668264941,
+     "seconds": 251.3796805238235,
+     "rtf_4s": 62.84492013095588,
+     "dispatches_profiled": 129,
+     "dispatches_in_ir": 129,
+     "kernel_picks": {
+      "add_s8": "reference",
+      "conv2d_s8": "pext_patch_dot8",
+      "gelu_s8": "pext_int_lut",
+      "groupnorm_s8": "reference",
+      "layernorm_s8": "pext_int_rsqrt",
+      "linear_s8": "pext_row_dot8",
+      "matmul_b_s8": "pext_dot8_exact",
+      "permute4_s8": "reference",
+      "rope_s8": "reference",
+      "softmax_s8": "pext_int_row",
+      "tanh_s8": "reference"
+     },
+     "per_kind": {
+      "conv2d_s8": {
+       "dispatches": 3,
+       "cycles": 4921199765,
+       "macs": 503016480,
+       "elements": 525888,
+       "kernel": "pext_patch_dot8",
+       "share_pct": 56.773,
+       "cycles_per_mac": 9.7834,
+       "cycles_per_element": 9357.886,
+       "seconds": 142.715
+      },
+      "tanh_s8": {
+       "dispatches": 1,
+       "cycles": 475241093,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "reference",
+       "share_pct": 5.483,
+       "cycles_per_mac": null,
+       "cycles_per_element": 1651.794,
+       "seconds": 13.782
+      },
+      "groupnorm_s8": {
+       "dispatches": 1,
+       "cycles": 460206749,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "reference",
+       "share_pct": 5.309,
+       "cycles_per_mac": null,
+       "cycles_per_element": 1599.54,
+       "seconds": 13.346
+      },
+      "gelu_s8": {
+       "dispatches": 8,
+       "cycles": 26740130,
+       "macs": 0,
+       "elements": 1378656,
+       "kernel": "pext_int_lut",
+       "share_pct": 0.308,
+       "cycles_per_mac": null,
+       "cycles_per_element": 19.396,
+       "seconds": 0.775
+      },
+      "permute4_s8": {
+       "dispatches": 25,
+       "cycles": 47273648,
+       "macs": 0,
+       "elements": 1188000,
+       "kernel": "reference",
+       "share_pct": 0.545,
+       "cycles_per_mac": null,
+       "cycles_per_element": 39.793,
+       "seconds": 1.371
+      },
+      "layernorm_s8": {
+       "dispatches": 13,
+       "cycles": 115312453,
+       "macs": 0,
+       "elements": 617760,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 1.33,
+       "cycles_per_mac": null,
+       "cycles_per_element": 186.662,
+       "seconds": 3.344
+      },
+      "linear_s8": {
+       "dispatches": 36,
+       "cycles": 1264126867,
+       "macs": 985374720,
+       "elements": 2566080,
+       "kernel": "pext_row_dot8",
+       "share_pct": 14.583,
+       "cycles_per_mac": 1.2829,
+       "cycles_per_element": 492.63,
+       "seconds": 36.66
+      },
+      "rope_s8": {
+       "dispatches": 12,
+       "cycles": 401075871,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "reference",
+       "share_pct": 4.627,
+       "cycles_per_mac": null,
+       "cycles_per_element": 703.346,
+       "seconds": 11.631
+      },
+      "matmul_b_s8": {
+       "dispatches": 12,
+       "cycles": 198542319,
+       "macs": 94089600,
+       "elements": 1591920,
+       "kernel": "pext_dot8_exact",
+       "share_pct": 2.29,
+       "cycles_per_mac": 2.1101,
+       "cycles_per_element": 124.719,
+       "seconds": 5.758
+      },
+      "softmax_s8": {
+       "dispatches": 6,
+       "cycles": 366012980,
+       "macs": 0,
+       "elements": 1306800,
+       "kernel": "pext_int_row",
+       "share_pct": 4.222,
+       "cycles_per_mac": null,
+       "cycles_per_element": 280.083,
+       "seconds": 10.614
+      },
+      "add_s8": {
+       "dispatches": 12,
+       "cycles": 392533066,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "reference",
+       "share_pct": 4.528,
+       "cycles_per_mac": null,
+       "cycles_per_element": 688.365,
+       "seconds": 11.383
+      }
+     },
+     "console_bytes": 121714,
+     "fclk0_mhz_as_run": 34.4828,
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746402516.2183912,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 0,
+       "cyc0": 8668307449
+      },
+      "buf_moonshine_enc_stem_conv1": 1598,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "enc_ew": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "0",
+     "kernel_cflags": "-DMB_PEXT_HW=1",
+     "image_bytes": 8011472,
+     "bitstream_md5": "7475c1b20b34f42e3bbe192f41cee58f",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 7037960839,
+     "warm": 0,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 7037917052,
+     "seconds": 204.09959226290448,
+     "rtf_4s": 51.02489806572612,
+     "dispatches_profiled": 129,
+     "dispatches_in_ir": 129,
+     "kernel_picks": {
+      "add_s8": "pext_int_add",
+      "conv2d_s8": "pext_patch_dot8",
+      "gelu_s8": "pext_int_lut",
+      "groupnorm_s8": "pext_int_rsqrt",
+      "layernorm_s8": "pext_int_rsqrt",
+      "linear_s8": "pext_row_dot8",
+      "matmul_b_s8": "pext_dot8_exact",
+      "permute4_s8": "reference",
+      "rope_s8": "pext_int_rot",
+      "softmax_s8": "pext_int_row",
+      "tanh_s8": "pext_memo_lut"
+     },
+     "per_kind": {
+      "conv2d_s8": {
+       "dispatches": 3,
+       "cycles": 4925333047,
+       "macs": 503016480,
+       "elements": 525888,
+       "kernel": "pext_patch_dot8",
+       "share_pct": 69.983,
+       "cycles_per_mac": 9.7916,
+       "cycles_per_element": 9365.745,
+       "seconds": 142.835
+      },
+      "tanh_s8": {
+       "dispatches": 1,
+       "cycles": 6292861,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_memo_lut",
+       "share_pct": 0.089,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.872,
+       "seconds": 0.182
+      },
+      "groupnorm_s8": {
+       "dispatches": 1,
+       "cycles": 25710829,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 0.365,
+       "cycles_per_mac": null,
+       "cycles_per_element": 89.363,
+       "seconds": 0.746
+      },
+      "gelu_s8": {
+       "dispatches": 8,
+       "cycles": 29513193,
+       "macs": 0,
+       "elements": 1378656,
+       "kernel": "pext_int_lut",
+       "share_pct": 0.419,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.407,
+       "seconds": 0.856
+      },
+      "permute4_s8": {
+       "dispatches": 25,
+       "cycles": 47214986,
+       "macs": 0,
+       "elements": 1188000,
+       "kernel": "reference",
+       "share_pct": 0.671,
+       "cycles_per_mac": null,
+       "cycles_per_element": 39.743,
+       "seconds": 1.369
+      },
+      "layernorm_s8": {
+       "dispatches": 13,
+       "cycles": 115599366,
+       "macs": 0,
+       "elements": 617760,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 1.643,
+       "cycles_per_mac": null,
+       "cycles_per_element": 187.127,
+       "seconds": 3.352
+      },
+      "linear_s8": {
+       "dispatches": 36,
+       "cycles": 1266971652,
+       "macs": 985374720,
+       "elements": 2566080,
+       "kernel": "pext_row_dot8",
+       "share_pct": 18.002,
+       "cycles_per_mac": 1.2858,
+       "cycles_per_element": 493.738,
+       "seconds": 36.742
+      },
+      "rope_s8": {
+       "dispatches": 12,
+       "cycles": 37871691,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "pext_int_rot",
+       "share_pct": 0.538,
+       "cycles_per_mac": null,
+       "cycles_per_element": 66.414,
+       "seconds": 1.098
+      },
+      "matmul_b_s8": {
+       "dispatches": 12,
+       "cycles": 198142743,
+       "macs": 94089600,
+       "elements": 1591920,
+       "kernel": "pext_dot8_exact",
+       "share_pct": 2.815,
+       "cycles_per_mac": 2.1059,
+       "cycles_per_element": 124.468,
+       "seconds": 5.746
+      },
+      "softmax_s8": {
+       "dispatches": 6,
+       "cycles": 363755640,
+       "macs": 0,
+       "elements": 1306800,
+       "kernel": "pext_int_row",
+       "share_pct": 5.169,
+       "cycles_per_mac": null,
+       "cycles_per_element": 278.356,
+       "seconds": 10.549
+      },
+      "add_s8": {
+       "dispatches": 12,
+       "cycles": 21511044,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "pext_int_add",
+       "share_pct": 0.306,
+       "cycles_per_mac": null,
+       "cycles_per_element": 37.723,
+       "seconds": 0.624
+      }
+     },
+     "console_bytes": 121826,
+     "fclk0_mhz_as_run": 34.4828,
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746402763.442565,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 0,
+       "cyc0": 7037960839
+      },
+      "buf_moonshine_enc_stem_conv1": 1598,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "enc_nl_eng": {
+     "ran": true,
+     "target": "roccmoon",
+     "warmup": "0",
+     "kernel_cflags": "-DMB_PEXT_HW=1",
+     "image_bytes": 8010504,
+     "bitstream_md5": "7475c1b20b34f42e3bbe192f41cee58f",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 2843886724,
+     "warm": 0,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 2843844546,
+     "seconds": 82.4714909268136,
+     "rtf_4s": 20.6178727317034,
+     "dispatches_profiled": 129,
+     "dispatches_in_ir": 129,
+     "kernel_picks": {
+      "add_s8": "reference",
+      "conv2d_s8": "roccmoon_engine",
+      "gelu_s8": "pext_int_lut",
+      "groupnorm_s8": "reference",
+      "layernorm_s8": "pext_int_rsqrt",
+      "linear_s8": "roccmoon_engine",
+      "matmul_b_s8": "pext_dot8_exact",
+      "permute4_s8": "reference",
+      "rope_s8": "reference",
+      "softmax_s8": "pext_int_row",
+      "tanh_s8": "reference"
+     },
+     "per_kind": {
+      "conv2d_s8": {
+       "dispatches": 3,
+       "cycles": 124039905,
+       "macs": 503016480,
+       "elements": 525888,
+       "kernel": "roccmoon_engine",
+       "share_pct": 4.362,
+       "cycles_per_mac": 0.2466,
+       "cycles_per_element": 235.868,
+       "seconds": 3.597
+      },
+      "tanh_s8": {
+       "dispatches": 1,
+       "cycles": 473804800,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "reference",
+       "share_pct": 16.661,
+       "cycles_per_mac": null,
+       "cycles_per_element": 1646.802,
+       "seconds": 13.74
+      },
+      "groupnorm_s8": {
+       "dispatches": 1,
+       "cycles": 458497433,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "reference",
+       "share_pct": 16.122,
+       "cycles_per_mac": null,
+       "cycles_per_element": 1593.599,
+       "seconds": 13.296
+      },
+      "gelu_s8": {
+       "dispatches": 8,
+       "cycles": 29444382,
+       "macs": 0,
+       "elements": 1378656,
+       "kernel": "pext_int_lut",
+       "share_pct": 1.035,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.357,
+       "seconds": 0.854
+      },
+      "permute4_s8": {
+       "dispatches": 25,
+       "cycles": 47220576,
+       "macs": 0,
+       "elements": 1188000,
+       "kernel": "reference",
+       "share_pct": 1.66,
+       "cycles_per_mac": null,
+       "cycles_per_element": 39.748,
+       "seconds": 1.369
+      },
+      "layernorm_s8": {
+       "dispatches": 13,
+       "cycles": 116145428,
+       "macs": 0,
+       "elements": 617760,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 4.084,
+       "cycles_per_mac": null,
+       "cycles_per_element": 188.011,
+       "seconds": 3.368
+      },
+      "linear_s8": {
+       "dispatches": 36,
+       "cycles": 240455628,
+       "macs": 985374720,
+       "elements": 2566080,
+       "kernel": "roccmoon_engine",
+       "share_pct": 8.455,
+       "cycles_per_mac": 0.244,
+       "cycles_per_element": 93.705,
+       "seconds": 6.973
+      },
+      "rope_s8": {
+       "dispatches": 12,
+       "cycles": 402344123,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "reference",
+       "share_pct": 14.148,
+       "cycles_per_mac": null,
+       "cycles_per_element": 705.57,
+       "seconds": 11.668
+      },
+      "matmul_b_s8": {
+       "dispatches": 12,
+       "cycles": 199570986,
+       "macs": 94089600,
+       "elements": 1591920,
+       "kernel": "pext_dot8_exact",
+       "share_pct": 7.018,
+       "cycles_per_mac": 2.1211,
+       "cycles_per_element": 125.365,
+       "seconds": 5.788
+      },
+      "softmax_s8": {
+       "dispatches": 6,
+       "cycles": 359774591,
+       "macs": 0,
+       "elements": 1306800,
+       "kernel": "pext_int_row",
+       "share_pct": 12.651,
+       "cycles_per_mac": null,
+       "cycles_per_element": 275.31,
+       "seconds": 10.433
+      },
+      "add_s8": {
+       "dispatches": 12,
+       "cycles": 392546694,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "reference",
+       "share_pct": 13.803,
+       "cycles_per_mac": null,
+       "cycles_per_element": 688.389,
+       "seconds": 11.384
+      }
+     },
+     "roccmoon_stats": {
+      "warm": {
+       "calls_engine": 0,
+       "calls_fallback": 0,
+       "cycles_h0": 0,
+       "cycles_h1": 0,
+       "cycles_stage": 0,
+       "image_cycles": 0,
+       "image_bytes": 0,
+       "loads_act": 0,
+       "loads_wgt": 0,
+       "bytes_act": 0,
+       "bytes_wgt": 0,
+       "pairs": 0,
+       "polls": 0,
+       "fill_beats": 0,
+       "cyc_fill": 0,
+       "last_rc": 0
+      },
+      "total": {
+       "calls_engine": 39,
+       "calls_fallback": 0,
+       "cycles_h0": 101628010,
+       "cycles_h1": 101475689,
+       "cycles_stage": 33130440,
+       "image_cycles": 229643041,
+       "image_bytes": 8519680,
+       "loads_act": 4444,
+       "loads_wgt": 260,
+       "bytes_act": 35654656,
+       "bytes_wgt": 8519680,
+       "pairs": 4476,
+       "polls": 862922,
+       "fill_beats": 5521792,
+       "cyc_fill": 7342008,
+       "last_rc": 0
+      },
+      "timed": {
+       "calls_engine": 39,
+       "calls_fallback": 0,
+       "cycles_h0": 101628010,
+       "cycles_h1": 101475689,
+       "cycles_stage": 33130440,
+       "image_cycles": 229643041,
+       "image_bytes": 8519680,
+       "loads_act": 4444,
+       "loads_wgt": 260,
+       "bytes_act": 35654656,
+       "bytes_wgt": 8519680,
+       "pairs": 4476,
+       "polls": 862922,
+       "fill_beats": 5521792,
+       "cyc_fill": 7342008
+      }
+     },
+     "console_bytes": 122205,
+     "fclk0_mhz_as_run": 34.4828,
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746402889.5283701,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 0,
+       "cyc0": 2843886724
+      },
+      "buf_moonshine_enc_stem_conv1": 1598,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "enc_ew_eng": {
+     "ran": true,
+     "target": "roccmoon",
+     "warmup": "0",
+     "kernel_cflags": "-DMB_PEXT_HW=1",
+     "image_bytes": 8016960,
+     "bitstream_md5": "7475c1b20b34f42e3bbe192f41cee58f",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 1219994526,
+     "warm": 0,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 1219952208,
+     "seconds": 35.37861364283525,
+     "rtf_4s": 8.844653410708812,
+     "dispatches_profiled": 129,
+     "dispatches_in_ir": 129,
+     "kernel_picks": {
+      "add_s8": "pext_int_add",
+      "conv2d_s8": "roccmoon_engine",
+      "gelu_s8": "pext_int_lut",
+      "groupnorm_s8": "pext_int_rsqrt",
+      "layernorm_s8": "pext_int_rsqrt",
+      "linear_s8": "roccmoon_engine",
+      "matmul_b_s8": "pext_dot8_exact",
+      "permute4_s8": "reference",
+      "rope_s8": "pext_int_rot",
+      "softmax_s8": "pext_int_row",
+      "tanh_s8": "pext_memo_lut"
+     },
+     "per_kind": {
+      "conv2d_s8": {
+       "dispatches": 3,
+       "cycles": 128173851,
+       "macs": 503016480,
+       "elements": 525888,
+       "kernel": "roccmoon_engine",
+       "share_pct": 10.506,
+       "cycles_per_mac": 0.2548,
+       "cycles_per_element": 243.728,
+       "seconds": 3.717
+      },
+      "tanh_s8": {
+       "dispatches": 1,
+       "cycles": 6295286,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_memo_lut",
+       "share_pct": 0.516,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.881,
+       "seconds": 0.183
+      },
+      "groupnorm_s8": {
+       "dispatches": 1,
+       "cycles": 25897284,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 2.123,
+       "cycles_per_mac": null,
+       "cycles_per_element": 90.011,
+       "seconds": 0.751
+      },
+      "gelu_s8": {
+       "dispatches": 8,
+       "cycles": 26691367,
+       "macs": 0,
+       "elements": 1378656,
+       "kernel": "pext_int_lut",
+       "share_pct": 2.188,
+       "cycles_per_mac": null,
+       "cycles_per_element": 19.36,
+       "seconds": 0.774
+      },
+      "permute4_s8": {
+       "dispatches": 25,
+       "cycles": 47355404,
+       "macs": 0,
+       "elements": 1188000,
+       "kernel": "reference",
+       "share_pct": 3.882,
+       "cycles_per_mac": null,
+       "cycles_per_element": 39.861,
+       "seconds": 1.373
+      },
+      "layernorm_s8": {
+       "dispatches": 13,
+       "cycles": 115797773,
+       "macs": 0,
+       "elements": 617760,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 9.492,
+       "cycles_per_mac": null,
+       "cycles_per_element": 187.448,
+       "seconds": 3.358
+      },
+      "linear_s8": {
+       "dispatches": 36,
+       "cycles": 248353290,
+       "macs": 985374720,
+       "elements": 2566080,
+       "kernel": "roccmoon_engine",
+       "share_pct": 20.358,
+       "cycles_per_mac": 0.252,
+       "cycles_per_element": 96.783,
+       "seconds": 7.202
+      },
+      "rope_s8": {
+       "dispatches": 12,
+       "cycles": 37595812,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "pext_int_rot",
+       "share_pct": 3.082,
+       "cycles_per_mac": null,
+       "cycles_per_element": 65.93,
+       "seconds": 1.09
+      },
+      "matmul_b_s8": {
+       "dispatches": 12,
+       "cycles": 199893503,
+       "macs": 94089600,
+       "elements": 1591920,
+       "kernel": "pext_dot8_exact",
+       "share_pct": 16.385,
+       "cycles_per_mac": 2.1245,
+       "cycles_per_element": 125.568,
+       "seconds": 5.797
+      },
+      "softmax_s8": {
+       "dispatches": 6,
+       "cycles": 362450341,
+       "macs": 0,
+       "elements": 1306800,
+       "kernel": "pext_int_row",
+       "share_pct": 29.71,
+       "cycles_per_mac": null,
+       "cycles_per_element": 277.357,
+       "seconds": 10.511
+      },
+      "add_s8": {
+       "dispatches": 12,
+       "cycles": 21448297,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "pext_int_add",
+       "share_pct": 1.758,
+       "cycles_per_mac": null,
+       "cycles_per_element": 37.613,
+       "seconds": 0.622
+      }
+     },
+     "roccmoon_stats": {
+      "warm": {
+       "calls_engine": 0,
+       "calls_fallback": 0,
+       "cycles_h0": 0,
+       "cycles_h1": 0,
+       "cycles_stage": 0,
+       "image_cycles": 0,
+       "image_bytes": 0,
+       "loads_act": 0,
+       "loads_wgt": 0,
+       "bytes_act": 0,
+       "bytes_wgt": 0,
+       "pairs": 0,
+       "polls": 0,
+       "fill_beats": 0,
+       "cyc_fill": 0,
+       "last_rc": 0
+      },
+      "total": {
+       "calls_engine": 39,
+       "calls_fallback": 0,
+       "cycles_h0": 104336577,
+       "cycles_h1": 104166650,
+       "cycles_stage": 35052347,
+       "image_cycles": 237041424,
+       "image_bytes": 8519680,
+       "loads_act": 4444,
+       "loads_wgt": 260,
+       "bytes_act": 35654656,
+       "bytes_wgt": 8519680,
+       "pairs": 4476,
+       "polls": 882036,
+       "fill_beats": 5521792,
+       "cyc_fill": 7306759,
+       "last_rc": 0
+      },
+      "timed": {
+       "calls_engine": 39,
+       "calls_fallback": 0,
+       "cycles_h0": 104336577,
+       "cycles_h1": 104166650,
+       "cycles_stage": 35052347,
+       "image_cycles": 237041424,
+       "image_bytes": 8519680,
+       "loads_act": 4444,
+       "loads_wgt": 260,
+       "bytes_act": 35654656,
+       "bytes_wgt": 8519680,
+       "pairs": 4476,
+       "polls": 882036,
+       "fill_beats": 5521792,
+       "cyc_fill": 7306759
+      }
+     },
+     "console_bytes": 122315,
+     "fclk0_mhz_as_run": 34.4828,
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746402964.327604,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 0,
+       "cyc0": 1219994526
+      },
+      "buf_moonshine_enc_stem_conv1": 1598,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "enc_ew_bigconv": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "0",
+     "kernel_cflags": "-DMB_PEXT_HW=1 -DMB_PEXT_CONV_MAXROWS=2048 -DMB_PEXT_CONV_WBYTES=2097152",
+     "image_bytes": 8011472,
+     "bitstream_md5": "7475c1b20b34f42e3bbe192f41cee58f",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 2732013199,
+     "warm": 0,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 2731969648,
+     "seconds": 79.2271189205017,
+     "rtf_4s": 19.806779730125424,
+     "dispatches_profiled": 129,
+     "dispatches_in_ir": 129,
+     "kernel_picks": {
+      "add_s8": "pext_int_add",
+      "conv2d_s8": "pext_patch_dot8",
+      "gelu_s8": "pext_int_lut",
+      "groupnorm_s8": "pext_int_rsqrt",
+      "layernorm_s8": "pext_int_rsqrt",
+      "linear_s8": "pext_row_dot8",
+      "matmul_b_s8": "pext_dot8_exact",
+      "permute4_s8": "reference",
+      "rope_s8": "pext_int_rot",
+      "softmax_s8": "pext_int_row",
+      "tanh_s8": "pext_memo_lut"
+     },
+     "per_kind": {
+      "conv2d_s8": {
+       "dispatches": 3,
+       "cycles": 622339887,
+       "macs": 503016480,
+       "elements": 525888,
+       "kernel": "pext_patch_dot8",
+       "share_pct": 22.78,
+       "cycles_per_mac": 1.2372,
+       "cycles_per_element": 1183.408,
+       "seconds": 18.048
+      },
+      "tanh_s8": {
+       "dispatches": 1,
+       "cycles": 6296898,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_memo_lut",
+       "share_pct": 0.23,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.886,
+       "seconds": 0.183
+      },
+      "groupnorm_s8": {
+       "dispatches": 1,
+       "cycles": 25896361,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 0.948,
+       "cycles_per_mac": null,
+       "cycles_per_element": 90.008,
+       "seconds": 0.751
+      },
+      "gelu_s8": {
+       "dispatches": 8,
+       "cycles": 26740996,
+       "macs": 0,
+       "elements": 1378656,
+       "kernel": "pext_int_lut",
+       "share_pct": 0.979,
+       "cycles_per_mac": null,
+       "cycles_per_element": 19.396,
+       "seconds": 0.775
+      },
+      "permute4_s8": {
+       "dispatches": 25,
+       "cycles": 47287683,
+       "macs": 0,
+       "elements": 1188000,
+       "kernel": "reference",
+       "share_pct": 1.731,
+       "cycles_per_mac": null,
+       "cycles_per_element": 39.804,
+       "seconds": 1.371
+      },
+      "layernorm_s8": {
+       "dispatches": 13,
+       "cycles": 115287447,
+       "macs": 0,
+       "elements": 617760,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 4.22,
+       "cycles_per_mac": null,
+       "cycles_per_element": 186.622,
+       "seconds": 3.343
+      },
+      "linear_s8": {
+       "dispatches": 36,
+       "cycles": 1266380547,
+       "macs": 985374720,
+       "elements": 2566080,
+       "kernel": "pext_row_dot8",
+       "share_pct": 46.354,
+       "cycles_per_mac": 1.2852,
+       "cycles_per_element": 493.508,
+       "seconds": 36.725
+      },
+      "rope_s8": {
+       "dispatches": 12,
+       "cycles": 37661619,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "pext_int_rot",
+       "share_pct": 1.379,
+       "cycles_per_mac": null,
+       "cycles_per_element": 66.045,
+       "seconds": 1.092
+      },
+      "matmul_b_s8": {
+       "dispatches": 12,
+       "cycles": 200063595,
+       "macs": 94089600,
+       "elements": 1591920,
+       "kernel": "pext_dot8_exact",
+       "share_pct": 7.323,
+       "cycles_per_mac": 2.1263,
+       "cycles_per_element": 125.674,
+       "seconds": 5.802
+      },
+      "softmax_s8": {
+       "dispatches": 6,
+       "cycles": 362498877,
+       "macs": 0,
+       "elements": 1306800,
+       "kernel": "pext_int_row",
+       "share_pct": 13.269,
+       "cycles_per_mac": null,
+       "cycles_per_element": 277.394,
+       "seconds": 10.512
+      },
+      "add_s8": {
+       "dispatches": 12,
+       "cycles": 21515738,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "pext_int_add",
+       "share_pct": 0.788,
+       "cycles_per_mac": null,
+       "cycles_per_element": 37.731,
+       "seconds": 0.624
+      }
+     },
+     "console_bytes": 121822,
+     "fclk0_mhz_as_run": 34.4828,
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746403082.161879,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 0,
+       "cyc0": 2732013199
+      },
+      "buf_moonshine_enc_stem_conv1": 1598,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "ctrl_ffn_end": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "1",
+     "kernel_cflags": "-DMB_PEXT_HW=1",
+     "image_bytes": 653336,
+     "bitstream_md5": "7475c1b20b34f42e3bbe192f41cee58f",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 100011654,
+     "warm": 99937351,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 100010371,
+     "seconds": 2.900300727096692,
+     "dispatches_profiled": 5,
+     "dispatches_in_ir": 5,
+     "kernel_picks": {
+      "add_s8": "pext_int_add",
+      "gelu_s8": "pext_int_lut",
+      "layernorm_s8": "pext_int_rsqrt",
+      "linear_s8": "pext_row_dot8"
+     },
+     "per_kind": {
+      "layernorm_s8": {
+       "dispatches": 1,
+       "cycles": 6210642,
+       "macs": 0,
+       "elements": 32768,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 6.21,
+       "cycles_per_mac": null,
+       "cycles_per_element": 189.534,
+       "seconds": 0.18
+      },
+      "linear_s8": {
+       "dispatches": 2,
+       "cycles": 89634239,
+       "macs": 67108864,
+       "elements": 163840,
+       "kernel": "pext_row_dot8",
+       "share_pct": 89.625,
+       "cycles_per_mac": 1.3357,
+       "cycles_per_element": 547.084,
+       "seconds": 2.599
+      },
+      "gelu_s8": {
+       "dispatches": 1,
+       "cycles": 2906541,
+       "macs": 0,
+       "elements": 131072,
+       "kernel": "pext_int_lut",
+       "share_pct": 2.906,
+       "cycles_per_mac": null,
+       "cycles_per_element": 22.175,
+       "seconds": 0.084
+      },
+      "add_s8": {
+       "dispatches": 1,
+       "cycles": 1258949,
+       "macs": 0,
+       "elements": 32768,
+       "kernel": "pext_int_add",
+       "share_pct": 1.259,
+       "cycles_per_mac": null,
+       "cycles_per_element": 38.42,
+       "seconds": 0.037
+      }
+     },
+     "console_bytes": 108315,
+     "fclk0_mhz_as_run": 34.4828,
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746403121.8135252,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 99937351,
+       "cyc0": 0
+      },
+      "buf_ffn_block_ln": 4043,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    }
+   },
+   "engine_vs_twin": {
+    "enc_nl_eng_vs_enc_nl": {
+     "linear_s8": {
+      "engine_cycles": 240455628,
+      "twin_cycles": 1264126867,
+      "speedup": 5.257
+     },
+     "conv2d_s8": {
+      "engine_cycles": 124039905,
+      "twin_cycles": 4921199765,
+      "speedup": 39.674
+     },
+     "linear_plus_conv_excl_image": {
+      "engine_cycles": 134852492,
+      "twin_cycles": 6185326632,
+      "speedup": 45.867
+     },
+     "total": {
+      "engine_cycles": 2843844546,
+      "twin_cycles": 8668264941,
+      "speedup": 3.048
+     },
+     "total_excl_image": {
+      "engine_cycles": 2614201505,
+      "twin_cycles": 8668264941,
+      "image_cycles": 229643041,
+      "speedup": 3.316,
+      "rtf_4s_engine": 18.953
+     }
+    },
+    "enc_ew_eng_vs_enc_ew": {
+     "linear_s8": {
+      "engine_cycles": 248353290,
+      "twin_cycles": 1266971652,
+      "speedup": 5.101
+     },
+     "conv2d_s8": {
+      "engine_cycles": 128173851,
+      "twin_cycles": 4925333047,
+      "speedup": 38.427
+     },
+     "linear_plus_conv_excl_image": {
+      "engine_cycles": 139485717,
+      "twin_cycles": 6192304699,
+      "speedup": 44.394
+     },
+     "total": {
+      "engine_cycles": 1219952208,
+      "twin_cycles": 7037917052,
+      "speedup": 5.769
+     },
+     "total_excl_image": {
+      "engine_cycles": 982910784,
+      "twin_cycles": 7037917052,
+      "image_cycles": 237041424,
+      "speedup": 7.16,
+      "rtf_4s_engine": 7.126
+     }
+    },
+    "enc_ew_eng_vs_enc_ew_bigconv": {
+     "linear_s8": {
+      "engine_cycles": 248353290,
+      "twin_cycles": 1266380547,
+      "speedup": 5.099
+     },
+     "conv2d_s8": {
+      "engine_cycles": 128173851,
+      "twin_cycles": 622339887,
+      "speedup": 4.855
+     },
+     "linear_plus_conv_excl_image": {
+      "engine_cycles": 139485717,
+      "twin_cycles": 1888720434,
+      "speedup": 13.541
+     },
+     "total": {
+      "engine_cycles": 1219952208,
+      "twin_cycles": 2731969648,
+      "speedup": 2.239
+     },
+     "total_excl_image": {
+      "engine_cycles": 982910784,
+      "twin_cycles": 2731969648,
+      "image_cycles": 237041424,
+      "speedup": 2.779,
+      "rtf_4s_engine": 7.126
+     }
+    }
+   }
+  },
+  "mic_0x5A5A0005": {
+   "run_dir": "out/rocket_moonshine_enc",
+   "full_record": "board/b26_mic_run.json",
+   "command": "scripts/with_board.sh ./scripts/50_rocket_moonshine_enc.sh --board-only",
+   "notes": [
+    "Mic bitstream (no engine): nl and ew encoders, ew_bigconv, the stem layout lever (time on W vs time on H) at default and raised conv limits, control image before and after.",
+    "Encoder images: same MB_WARMUP=0 / ITERS=1 and host-C golden conventions as the roccmoon session. Stem images DO run a warm-up (MB_WARMUP=1); their timed run is within 0.03 % of it.",
+    "pext_patch_dot8 takes its DOT8 path only if IC*KH <= MB_PEXT_CONV_MAXROWS (default 512). Time on W: conv3 (IC*KH = 576) is scalar. Time on H: conv2 (288*7 = 2016) and conv3 (576*3 = 1728) are scalar. The *_bigconv images raise the limit so every conv is on DOT8; the default-limit ratio mostly measures which convolutions fall back, the bigconv ratio measures the layout."
+   ],
+   "bitstream_md5": "566bc5402d0cab22130942bf9904bfdb",
+   "soc_magic": "0x5A5A0005",
+   "fclk_as_run": {
+    "io_pll_ctrl": "0x00014000",
+    "io_pll_mhz": 1000.0,
+    "fclk0": {
+     "ctrl": "0x00101D00",
+     "divisor0": 29,
+     "divisor1": 1,
+     "src": "IO_PLL",
+     "mhz": 34.4828
+    },
+    "fclk1": {
+     "ctrl": "0x00100A00",
+     "divisor0": 10,
+     "divisor1": 1,
+     "src": "IO_PLL",
+     "mhz": 100.0
+    },
+    "fclk2": {
+     "ctrl": "0x00100500",
+     "divisor0": 5,
+     "divisor1": 1,
+     "src": "IO_PLL",
+     "mhz": 200.0
+    },
+    "fclk3": {
+     "ctrl": "0x00200500",
+     "divisor0": 5,
+     "divisor1": 2,
+     "src": "IO_PLL",
+     "mhz": 100.0
+    }
+   },
+   "clock_hz": 34482759.0,
+   "window_s": 4.0,
+   "hart": 0,
+   "models": {
+    "ctrl_ffn": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "1",
+     "kernel_cflags": "-DMB_PEXT_HW=1",
+     "image_bytes": 652168,
+     "bitstream_md5": "566bc5402d0cab22130942bf9904bfdb",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 99750054,
+     "warm": 99661054,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 99748700,
+     "seconds": 2.892712268180165,
+     "dispatches_profiled": 5,
+     "dispatches_in_ir": 5,
+     "kernel_picks": {
+      "add_s8": "pext_int_add",
+      "gelu_s8": "pext_int_lut",
+      "layernorm_s8": "pext_int_rsqrt",
+      "linear_s8": "pext_row_dot8"
+     },
+     "per_kind": {
+      "layernorm_s8": {
+       "dispatches": 1,
+       "cycles": 6210018,
+       "macs": 0,
+       "elements": 32768,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 6.226,
+       "cycles_per_mac": null,
+       "cycles_per_element": 189.515,
+       "seconds": 0.18
+      },
+      "linear_s8": {
+       "dispatches": 2,
+       "cycles": 89369102,
+       "macs": 67108864,
+       "elements": 163840,
+       "kernel": "pext_row_dot8",
+       "share_pct": 89.594,
+       "cycles_per_mac": 1.3317,
+       "cycles_per_element": 545.466,
+       "seconds": 2.592
+      },
+      "gelu_s8": {
+       "dispatches": 1,
+       "cycles": 2911457,
+       "macs": 0,
+       "elements": 131072,
+       "kernel": "pext_int_lut",
+       "share_pct": 2.919,
+       "cycles_per_mac": null,
+       "cycles_per_element": 22.213,
+       "seconds": 0.084
+      },
+      "add_s8": {
+       "dispatches": 1,
+       "cycles": 1258123,
+       "macs": 0,
+       "elements": 32768,
+       "kernel": "pext_int_add",
+       "share_pct": 1.261,
+       "cycles_per_mac": null,
+       "cycles_per_element": 38.395,
+       "seconds": 0.036
+      }
+     },
+     "console_bytes": 108311,
+     "fclk0_mhz_as_run": 34.4828,
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746404994.8983972,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 99661054,
+       "cyc0": 99750054
+      },
+      "buf_ffn_block_ln": 4043,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "enc_nl": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "0",
+     "kernel_cflags": "-DMB_PEXT_HW=1",
+     "image_bytes": 8003848,
+     "bitstream_md5": "566bc5402d0cab22130942bf9904bfdb",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 8669339669,
+     "warm": 0,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 8669295966,
+     "seconds": 251.40958024849462,
+     "rtf_4s": 62.852395062123655,
+     "dispatches_profiled": 129,
+     "dispatches_in_ir": 129,
+     "kernel_picks": {
+      "add_s8": "reference",
+      "conv2d_s8": "pext_patch_dot8",
+      "gelu_s8": "pext_int_lut",
+      "groupnorm_s8": "reference",
+      "layernorm_s8": "pext_int_rsqrt",
+      "linear_s8": "pext_row_dot8",
+      "matmul_b_s8": "pext_dot8_exact",
+      "permute4_s8": "reference",
+      "rope_s8": "reference",
+      "softmax_s8": "pext_int_row",
+      "tanh_s8": "reference"
+     },
+     "per_kind": {
+      "conv2d_s8": {
+       "dispatches": 3,
+       "cycles": 4921152944,
+       "macs": 503016480,
+       "elements": 525888,
+       "kernel": "pext_patch_dot8",
+       "share_pct": 56.765,
+       "cycles_per_mac": 9.7833,
+       "cycles_per_element": 9357.797,
+       "seconds": 142.713
+      },
+      "tanh_s8": {
+       "dispatches": 1,
+       "cycles": 478002796,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "reference",
+       "share_pct": 5.514,
+       "cycles_per_mac": null,
+       "cycles_per_element": 1661.393,
+       "seconds": 13.862
+      },
+      "groupnorm_s8": {
+       "dispatches": 1,
+       "cycles": 459934713,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "reference",
+       "share_pct": 5.305,
+       "cycles_per_mac": null,
+       "cycles_per_element": 1598.594,
+       "seconds": 13.338
+      },
+      "gelu_s8": {
+       "dispatches": 8,
+       "cycles": 26737228,
+       "macs": 0,
+       "elements": 1378656,
+       "kernel": "pext_int_lut",
+       "share_pct": 0.308,
+       "cycles_per_mac": null,
+       "cycles_per_element": 19.394,
+       "seconds": 0.775
+      },
+      "permute4_s8": {
+       "dispatches": 25,
+       "cycles": 47272178,
+       "macs": 0,
+       "elements": 1188000,
+       "kernel": "reference",
+       "share_pct": 0.545,
+       "cycles_per_mac": null,
+       "cycles_per_element": 39.791,
+       "seconds": 1.371
+      },
+      "layernorm_s8": {
+       "dispatches": 13,
+       "cycles": 115315268,
+       "macs": 0,
+       "elements": 617760,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 1.33,
+       "cycles_per_mac": null,
+       "cycles_per_element": 186.667,
+       "seconds": 3.344
+      },
+      "linear_s8": {
+       "dispatches": 36,
+       "cycles": 1263607015,
+       "macs": 985374720,
+       "elements": 2566080,
+       "kernel": "pext_row_dot8",
+       "share_pct": 14.576,
+       "cycles_per_mac": 1.2824,
+       "cycles_per_element": 492.427,
+       "seconds": 36.645
+      },
+      "rope_s8": {
+       "dispatches": 12,
+       "cycles": 401229861,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "reference",
+       "share_pct": 4.628,
+       "cycles_per_mac": null,
+       "cycles_per_element": 703.616,
+       "seconds": 11.636
+      },
+      "matmul_b_s8": {
+       "dispatches": 12,
+       "cycles": 198587883,
+       "macs": 94089600,
+       "elements": 1591920,
+       "kernel": "pext_dot8_exact",
+       "share_pct": 2.291,
+       "cycles_per_mac": 2.1106,
+       "cycles_per_element": 124.747,
+       "seconds": 5.759
+      },
+      "softmax_s8": {
+       "dispatches": 6,
+       "cycles": 365011305,
+       "macs": 0,
+       "elements": 1306800,
+       "kernel": "pext_int_row",
+       "share_pct": 4.21,
+       "cycles_per_mac": null,
+       "cycles_per_element": 279.317,
+       "seconds": 10.585
+      },
+      "add_s8": {
+       "dispatches": 12,
+       "cycles": 392444775,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "reference",
+       "share_pct": 4.527,
+       "cycles_per_mac": null,
+       "cycles_per_element": 688.21,
+       "seconds": 11.381
+      }
+     },
+     "console_bytes": 121714,
+     "fclk0_mhz_as_run": 34.4828,
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746405284.2192283,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 0,
+       "cyc0": 8669339669
+      },
+      "buf_moonshine_enc_stem_conv1": 1598,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "enc_ew": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "0",
+     "kernel_cflags": "-DMB_PEXT_HW=1",
+     "image_bytes": 8010304,
+     "bitstream_md5": "566bc5402d0cab22130942bf9904bfdb",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 7036113122,
+     "warm": 0,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 7036069124,
+     "seconds": 204.04600235149397,
+     "rtf_4s": 51.01150058787349,
+     "dispatches_profiled": 129,
+     "dispatches_in_ir": 129,
+     "kernel_picks": {
+      "add_s8": "pext_int_add",
+      "conv2d_s8": "pext_patch_dot8",
+      "gelu_s8": "pext_int_lut",
+      "groupnorm_s8": "pext_int_rsqrt",
+      "layernorm_s8": "pext_int_rsqrt",
+      "linear_s8": "pext_row_dot8",
+      "matmul_b_s8": "pext_dot8_exact",
+      "permute4_s8": "reference",
+      "rope_s8": "pext_int_rot",
+      "softmax_s8": "pext_int_row",
+      "tanh_s8": "pext_memo_lut"
+     },
+     "per_kind": {
+      "conv2d_s8": {
+       "dispatches": 3,
+       "cycles": 4926574276,
+       "macs": 503016480,
+       "elements": 525888,
+       "kernel": "pext_patch_dot8",
+       "share_pct": 70.019,
+       "cycles_per_mac": 9.7941,
+       "cycles_per_element": 9368.106,
+       "seconds": 142.871
+      },
+      "tanh_s8": {
+       "dispatches": 1,
+       "cycles": 6290832,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_memo_lut",
+       "share_pct": 0.089,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.865,
+       "seconds": 0.182
+      },
+      "groupnorm_s8": {
+       "dispatches": 1,
+       "cycles": 25711764,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 0.365,
+       "cycles_per_mac": null,
+       "cycles_per_element": 89.366,
+       "seconds": 0.746
+      },
+      "gelu_s8": {
+       "dispatches": 8,
+       "cycles": 29508902,
+       "macs": 0,
+       "elements": 1378656,
+       "kernel": "pext_int_lut",
+       "share_pct": 0.419,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.404,
+       "seconds": 0.856
+      },
+      "permute4_s8": {
+       "dispatches": 25,
+       "cycles": 47213852,
+       "macs": 0,
+       "elements": 1188000,
+       "kernel": "reference",
+       "share_pct": 0.671,
+       "cycles_per_mac": null,
+       "cycles_per_element": 39.742,
+       "seconds": 1.369
+      },
+      "layernorm_s8": {
+       "dispatches": 13,
+       "cycles": 115599377,
+       "macs": 0,
+       "elements": 617760,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 1.643,
+       "cycles_per_mac": null,
+       "cycles_per_element": 187.127,
+       "seconds": 3.352
+      },
+      "linear_s8": {
+       "dispatches": 36,
+       "cycles": 1264341235,
+       "macs": 985374720,
+       "elements": 2566080,
+       "kernel": "pext_row_dot8",
+       "share_pct": 17.969,
+       "cycles_per_mac": 1.2831,
+       "cycles_per_element": 492.713,
+       "seconds": 36.666
+      },
+      "rope_s8": {
+       "dispatches": 12,
+       "cycles": 37852756,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "pext_int_rot",
+       "share_pct": 0.538,
+       "cycles_per_mac": null,
+       "cycles_per_element": 66.38,
+       "seconds": 1.098
+      },
+      "matmul_b_s8": {
+       "dispatches": 12,
+       "cycles": 198202020,
+       "macs": 94089600,
+       "elements": 1591920,
+       "kernel": "pext_dot8_exact",
+       "share_pct": 2.817,
+       "cycles_per_mac": 2.1065,
+       "cycles_per_element": 124.505,
+       "seconds": 5.748
+      },
+      "softmax_s8": {
+       "dispatches": 6,
+       "cycles": 363260557,
+       "macs": 0,
+       "elements": 1306800,
+       "kernel": "pext_int_row",
+       "share_pct": 5.163,
+       "cycles_per_mac": null,
+       "cycles_per_element": 277.977,
+       "seconds": 10.535
+      },
+      "add_s8": {
+       "dispatches": 12,
+       "cycles": 21513553,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "pext_int_add",
+       "share_pct": 0.306,
+       "cycles_per_mac": null,
+       "cycles_per_element": 37.727,
+       "seconds": 0.624
+      }
+     },
+     "console_bytes": 121826,
+     "fclk0_mhz_as_run": 34.4828,
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746405528.975575,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 0,
+       "cyc0": 7036113122
+      },
+      "buf_moonshine_enc_stem_conv1": 1598,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "enc_ew_bigconv": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "0",
+     "kernel_cflags": "-DMB_PEXT_HW=1 -DMB_PEXT_CONV_MAXROWS=2048 -DMB_PEXT_CONV_WBYTES=2097152",
+     "image_bytes": 8010304,
+     "bitstream_md5": "566bc5402d0cab22130942bf9904bfdb",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 2729691190,
+     "warm": 0,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 2729646915,
+     "seconds": 79.15975966424264,
+     "rtf_4s": 19.78993991606066,
+     "dispatches_profiled": 129,
+     "dispatches_in_ir": 129,
+     "kernel_picks": {
+      "add_s8": "pext_int_add",
+      "conv2d_s8": "pext_patch_dot8",
+      "gelu_s8": "pext_int_lut",
+      "groupnorm_s8": "pext_int_rsqrt",
+      "layernorm_s8": "pext_int_rsqrt",
+      "linear_s8": "pext_row_dot8",
+      "matmul_b_s8": "pext_dot8_exact",
+      "permute4_s8": "reference",
+      "rope_s8": "pext_int_rot",
+      "softmax_s8": "pext_int_row",
+      "tanh_s8": "pext_memo_lut"
+     },
+     "per_kind": {
+      "conv2d_s8": {
+       "dispatches": 3,
+       "cycles": 622475331,
+       "macs": 503016480,
+       "elements": 525888,
+       "kernel": "pext_patch_dot8",
+       "share_pct": 22.804,
+       "cycles_per_mac": 1.2375,
+       "cycles_per_element": 1183.665,
+       "seconds": 18.052
+      },
+      "tanh_s8": {
+       "dispatches": 1,
+       "cycles": 6298833,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_memo_lut",
+       "share_pct": 0.231,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.893,
+       "seconds": 0.183
+      },
+      "groupnorm_s8": {
+       "dispatches": 1,
+       "cycles": 25898809,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 0.949,
+       "cycles_per_mac": null,
+       "cycles_per_element": 90.016,
+       "seconds": 0.751
+      },
+      "gelu_s8": {
+       "dispatches": 8,
+       "cycles": 26737538,
+       "macs": 0,
+       "elements": 1378656,
+       "kernel": "pext_int_lut",
+       "share_pct": 0.98,
+       "cycles_per_mac": null,
+       "cycles_per_element": 19.394,
+       "seconds": 0.775
+      },
+      "permute4_s8": {
+       "dispatches": 25,
+       "cycles": 47283607,
+       "macs": 0,
+       "elements": 1188000,
+       "kernel": "reference",
+       "share_pct": 1.732,
+       "cycles_per_mac": null,
+       "cycles_per_element": 39.801,
+       "seconds": 1.371
+      },
+      "layernorm_s8": {
+       "dispatches": 13,
+       "cycles": 115287627,
+       "macs": 0,
+       "elements": 617760,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 4.224,
+       "cycles_per_mac": null,
+       "cycles_per_element": 186.622,
+       "seconds": 3.343
+      },
+      "linear_s8": {
+       "dispatches": 36,
+       "cycles": 1263902860,
+       "macs": 985374720,
+       "elements": 2566080,
+       "kernel": "pext_row_dot8",
+       "share_pct": 46.303,
+       "cycles_per_mac": 1.2827,
+       "cycles_per_element": 492.542,
+       "seconds": 36.653
+      },
+      "rope_s8": {
+       "dispatches": 12,
+       "cycles": 37638806,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "pext_int_rot",
+       "share_pct": 1.379,
+       "cycles_per_mac": null,
+       "cycles_per_element": 66.005,
+       "seconds": 1.092
+      },
+      "matmul_b_s8": {
+       "dispatches": 12,
+       "cycles": 200101397,
+       "macs": 94089600,
+       "elements": 1591920,
+       "kernel": "pext_dot8_exact",
+       "share_pct": 7.331,
+       "cycles_per_mac": 2.1267,
+       "cycles_per_element": 125.698,
+       "seconds": 5.803
+      },
+      "softmax_s8": {
+       "dispatches": 6,
+       "cycles": 362507718,
+       "macs": 0,
+       "elements": 1306800,
+       "kernel": "pext_int_row",
+       "share_pct": 13.28,
+       "cycles_per_mac": null,
+       "cycles_per_element": 277.401,
+       "seconds": 10.513
+      },
+      "add_s8": {
+       "dispatches": 12,
+       "cycles": 21514389,
+       "macs": 0,
+       "elements": 570240,
+       "kernel": "pext_int_add",
+       "share_pct": 0.788,
+       "cycles_per_mac": null,
+       "cycles_per_element": 37.729,
+       "seconds": 0.624
+      }
+     },
+     "console_bytes": 121822,
+     "fclk0_mhz_as_run": 34.4828,
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746405648.309317,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 0,
+       "cyc0": 2729691190
+      },
+      "buf_moonshine_enc_stem_conv1": 1598,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "stem_w": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "1",
+     "kernel_cflags": "-DMB_PEXT_HW=1",
+     "image_bytes": 1873744,
+     "bitstream_md5": "566bc5402d0cab22130942bf9904bfdb",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 4983231110,
+     "warm": 4983276901,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 4983229019,
+     "seconds": 144.51363996134995,
+     "dispatches_profiled": 7,
+     "dispatches_in_ir": 7,
+     "kernel_picks": {
+      "conv2d_s8": "pext_patch_dot8",
+      "gelu_s8": "pext_int_lut",
+      "groupnorm_s8": "pext_int_rsqrt",
+      "tanh_s8": "pext_memo_lut"
+     },
+     "per_kind": {
+      "conv2d_s8": {
+       "dispatches": 3,
+       "cycles": 4946156175,
+       "macs": 503016480,
+       "elements": 525888,
+       "kernel": "pext_patch_dot8",
+       "share_pct": 99.256,
+       "cycles_per_mac": 9.833,
+       "cycles_per_element": 9405.341,
+       "seconds": 143.439
+      },
+      "tanh_s8": {
+       "dispatches": 1,
+       "cycles": 6293330,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_memo_lut",
+       "share_pct": 0.126,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.874,
+       "seconds": 0.183
+      },
+      "groupnorm_s8": {
+       "dispatches": 1,
+       "cycles": 25709564,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 0.516,
+       "cycles_per_mac": null,
+       "cycles_per_element": 89.359,
+       "seconds": 0.746
+      },
+      "gelu_s8": {
+       "dispatches": 2,
+       "cycles": 5069950,
+       "macs": 0,
+       "elements": 238176,
+       "kernel": "pext_int_lut",
+       "share_pct": 0.102,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.287,
+       "seconds": 0.147
+      }
+     },
+     "console_bytes": 103722,
+     "fclk0_mhz_as_run": 34.4828,
+     "per_dispatch": [
+      {
+       "dispatch": 0,
+       "name": "stem.conv1",
+       "op": "conv2d_s8",
+       "cycles": 29851470,
+       "macs": 36539424,
+       "elements": 287712
+      },
+      {
+       "dispatch": 1,
+       "name": "stem.tanh",
+       "op": "tanh_s8",
+       "cycles": 6293330,
+       "macs": 0,
+       "elements": 287712
+      },
+      {
+       "dispatch": 2,
+       "name": "stem.groupnorm",
+       "op": "groupnorm_s8",
+       "cycles": 25709564,
+       "macs": 0,
+       "elements": 287712
+      },
+      {
+       "dispatch": 3,
+       "name": "stem.conv2",
+       "op": "conv2d_s8",
+       "cycles": 1017586094,
+       "macs": 384362496,
+       "elements": 190656
+      },
+      {
+       "dispatch": 4,
+       "name": "stem.gelu2",
+       "op": "gelu_s8",
+       "cycles": 4022316,
+       "macs": 0,
+       "elements": 190656
+      },
+      {
+       "dispatch": 5,
+       "name": "stem.conv3",
+       "op": "conv2d_s8",
+       "cycles": 3898718611,
+       "macs": 82114560,
+       "elements": 47520
+      },
+      {
+       "dispatch": 6,
+       "name": "stem.gelu3",
+       "op": "gelu_s8",
+       "cycles": 1047634,
+       "macs": 0,
+       "elements": 47520
+      }
+     ],
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746405976.4455237,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 4983276901,
+       "cyc0": 4983231110
+      },
+      "buf_moonshine_stem_w_stem_conv1": 1598,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "stem_h": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "1",
+     "kernel_cflags": "-DMB_PEXT_HW=1",
+     "image_bytes": 1873744,
+     "bitstream_md5": "566bc5402d0cab22130942bf9904bfdb",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 19947455617,
+     "warm": 19947425141,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 19947453662,
+     "seconds": 578.4761498347624,
+     "dispatches_profiled": 7,
+     "dispatches_in_ir": 7,
+     "kernel_picks": {
+      "conv2d_s8": "pext_patch_dot8",
+      "gelu_s8": "pext_int_lut",
+      "groupnorm_s8": "pext_int_rsqrt",
+      "tanh_s8": "pext_memo_lut"
+     },
+     "per_kind": {
+      "conv2d_s8": {
+       "dispatches": 3,
+       "cycles": 19910383344,
+       "macs": 503016480,
+       "elements": 525888,
+       "kernel": "pext_patch_dot8",
+       "share_pct": 99.814,
+       "cycles_per_mac": 39.582,
+       "cycles_per_element": 37860.501,
+       "seconds": 577.401
+      },
+      "tanh_s8": {
+       "dispatches": 1,
+       "cycles": 6293520,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_memo_lut",
+       "share_pct": 0.032,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.874,
+       "seconds": 0.183
+      },
+      "groupnorm_s8": {
+       "dispatches": 1,
+       "cycles": 25707478,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 0.129,
+       "cycles_per_mac": null,
+       "cycles_per_element": 89.351,
+       "seconds": 0.746
+      },
+      "gelu_s8": {
+       "dispatches": 2,
+       "cycles": 5069320,
+       "macs": 0,
+       "elements": 238176,
+       "kernel": "pext_int_lut",
+       "share_pct": 0.025,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.284,
+       "seconds": 0.147
+      }
+     },
+     "console_bytes": 103728,
+     "fclk0_mhz_as_run": 34.4828,
+     "per_dispatch": [
+      {
+       "dispatch": 0,
+       "name": "stem.conv1",
+       "op": "conv2d_s8",
+       "cycles": 44593172,
+       "macs": 36539424,
+       "elements": 287712
+      },
+      {
+       "dispatch": 1,
+       "name": "stem.tanh",
+       "op": "tanh_s8",
+       "cycles": 6293520,
+       "macs": 0,
+       "elements": 287712
+      },
+      {
+       "dispatch": 2,
+       "name": "stem.groupnorm",
+       "op": "groupnorm_s8",
+       "cycles": 25707478,
+       "macs": 0,
+       "elements": 287712
+      },
+      {
+       "dispatch": 3,
+       "name": "stem.conv2",
+       "op": "conv2d_s8",
+       "cycles": 15581392070,
+       "macs": 384362496,
+       "elements": 190656
+      },
+      {
+       "dispatch": 4,
+       "name": "stem.gelu2",
+       "op": "gelu_s8",
+       "cycles": 4021626,
+       "macs": 0,
+       "elements": 190656
+      },
+      {
+       "dispatch": 5,
+       "name": "stem.conv3",
+       "op": "conv2d_s8",
+       "cycles": 4284398102,
+       "macs": 82114560,
+       "elements": 47520
+      },
+      {
+       "dispatch": 6,
+       "name": "stem.gelu3",
+       "op": "gelu_s8",
+       "cycles": 1047694,
+       "macs": 0,
+       "elements": 47520
+      }
+     ],
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746407169.8563547,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 19947425141,
+       "cyc0": 19947455617
+      },
+      "buf_moonshine_stem_h_stem_conv1": 1598,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "stem_w_bigconv": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "1",
+     "kernel_cflags": "-DMB_PEXT_HW=1 -DMB_PEXT_CONV_MAXROWS=2048 -DMB_PEXT_CONV_WBYTES=2097152",
+     "image_bytes": 1873744,
+     "bitstream_md5": "566bc5402d0cab22130942bf9904bfdb",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 683340896,
+     "warm": 683425000,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 683339041,
+     "seconds": 19.81683197101485,
+     "dispatches_profiled": 7,
+     "dispatches_in_ir": 7,
+     "kernel_picks": {
+      "conv2d_s8": "pext_patch_dot8",
+      "gelu_s8": "pext_int_lut",
+      "groupnorm_s8": "pext_int_rsqrt",
+      "tanh_s8": "pext_memo_lut"
+     },
+     "per_kind": {
+      "conv2d_s8": {
+       "dispatches": 3,
+       "cycles": 646553738,
+       "macs": 503016480,
+       "elements": 525888,
+       "kernel": "pext_patch_dot8",
+       "share_pct": 94.617,
+       "cycles_per_mac": 1.2854,
+       "cycles_per_element": 1229.451,
+       "seconds": 18.75
+      },
+      "tanh_s8": {
+       "dispatches": 1,
+       "cycles": 6298244,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_memo_lut",
+       "share_pct": 0.922,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.891,
+       "seconds": 0.183
+      },
+      "groupnorm_s8": {
+       "dispatches": 1,
+       "cycles": 25896591,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 3.79,
+       "cycles_per_mac": null,
+       "cycles_per_element": 90.009,
+       "seconds": 0.751
+      },
+      "gelu_s8": {
+       "dispatches": 2,
+       "cycles": 4590468,
+       "macs": 0,
+       "elements": 238176,
+       "kernel": "pext_int_lut",
+       "share_pct": 0.672,
+       "cycles_per_mac": null,
+       "cycles_per_element": 19.273,
+       "seconds": 0.133
+      }
+     },
+     "console_bytes": 103713,
+     "fclk0_mhz_as_run": 34.4828,
+     "per_dispatch": [
+      {
+       "dispatch": 0,
+       "name": "stem.conv1",
+       "op": "conv2d_s8",
+       "cycles": 50714714,
+       "macs": 36539424,
+       "elements": 287712
+      },
+      {
+       "dispatch": 1,
+       "name": "stem.tanh",
+       "op": "tanh_s8",
+       "cycles": 6298244,
+       "macs": 0,
+       "elements": 287712
+      },
+      {
+       "dispatch": 2,
+       "name": "stem.groupnorm",
+       "op": "groupnorm_s8",
+       "cycles": 25896591,
+       "macs": 0,
+       "elements": 287712
+      },
+      {
+       "dispatch": 3,
+       "name": "stem.conv2",
+       "op": "conv2d_s8",
+       "cycles": 485871872,
+       "macs": 384362496,
+       "elements": 190656
+      },
+      {
+       "dispatch": 4,
+       "name": "stem.gelu2",
+       "op": "gelu_s8",
+       "cycles": 3638953,
+       "macs": 0,
+       "elements": 190656
+      },
+      {
+       "dispatch": 5,
+       "name": "stem.conv3",
+       "op": "conv2d_s8",
+       "cycles": 109967152,
+       "macs": 82114560,
+       "elements": 47520
+      },
+      {
+       "dispatch": 6,
+       "name": "stem.gelu3",
+       "op": "gelu_s8",
+       "cycles": 951515,
+       "macs": 0,
+       "elements": 47520
+      }
+     ],
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746407248.1362114,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 683425000,
+       "cyc0": 683340896
+      },
+      "buf_moonshine_stem_w_stem_conv1": 1598,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "stem_h_bigconv": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "1",
+     "kernel_cflags": "-DMB_PEXT_HW=1 -DMB_PEXT_CONV_MAXROWS=2048 -DMB_PEXT_CONV_WBYTES=2097152",
+     "image_bytes": 1873744,
+     "bitstream_md5": "566bc5402d0cab22130942bf9904bfdb",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 713501485,
+     "warm": 713665660,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 713499478,
+     "seconds": 20.691484634393667,
+     "dispatches_profiled": 7,
+     "dispatches_in_ir": 7,
+     "kernel_picks": {
+      "conv2d_s8": "pext_patch_dot8",
+      "gelu_s8": "pext_int_lut",
+      "groupnorm_s8": "pext_int_rsqrt",
+      "tanh_s8": "pext_memo_lut"
+     },
+     "per_kind": {
+      "conv2d_s8": {
+       "dispatches": 3,
+       "cycles": 676714849,
+       "macs": 503016480,
+       "elements": 525888,
+       "kernel": "pext_patch_dot8",
+       "share_pct": 94.844,
+       "cycles_per_mac": 1.3453,
+       "cycles_per_element": 1286.804,
+       "seconds": 19.625
+      },
+      "tanh_s8": {
+       "dispatches": 1,
+       "cycles": 6299844,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_memo_lut",
+       "share_pct": 0.883,
+       "cycles_per_mac": null,
+       "cycles_per_element": 21.896,
+       "seconds": 0.183
+      },
+      "groupnorm_s8": {
+       "dispatches": 1,
+       "cycles": 25895840,
+       "macs": 0,
+       "elements": 287712,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 3.629,
+       "cycles_per_mac": null,
+       "cycles_per_element": 90.006,
+       "seconds": 0.751
+      },
+      "gelu_s8": {
+       "dispatches": 2,
+       "cycles": 4588945,
+       "macs": 0,
+       "elements": 238176,
+       "kernel": "pext_int_lut",
+       "share_pct": 0.643,
+       "cycles_per_mac": null,
+       "cycles_per_element": 19.267,
+       "seconds": 0.133
+      }
+     },
+     "console_bytes": 103713,
+     "fclk0_mhz_as_run": 34.4828,
+     "per_dispatch": [
+      {
+       "dispatch": 0,
+       "name": "stem.conv1",
+       "op": "conv2d_s8",
+       "cycles": 54160171,
+       "macs": 36539424,
+       "elements": 287712
+      },
+      {
+       "dispatch": 1,
+       "name": "stem.tanh",
+       "op": "tanh_s8",
+       "cycles": 6299844,
+       "macs": 0,
+       "elements": 287712
+      },
+      {
+       "dispatch": 2,
+       "name": "stem.groupnorm",
+       "op": "groupnorm_s8",
+       "cycles": 25895840,
+       "macs": 0,
+       "elements": 287712
+      },
+      {
+       "dispatch": 3,
+       "name": "stem.conv2",
+       "op": "conv2d_s8",
+       "cycles": 504291539,
+       "macs": 384362496,
+       "elements": 190656
+      },
+      {
+       "dispatch": 4,
+       "name": "stem.gelu2",
+       "op": "gelu_s8",
+       "cycles": 3638589,
+       "macs": 0,
+       "elements": 190656
+      },
+      {
+       "dispatch": 5,
+       "name": "stem.conv3",
+       "op": "conv2d_s8",
+       "cycles": 118263139,
+       "macs": 82114560,
+       "elements": 47520
+      },
+      {
+       "dispatch": 6,
+       "name": "stem.gelu3",
+       "op": "gelu_s8",
+       "cycles": 950356,
+       "macs": 0,
+       "elements": 47520
+      }
+     ],
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746407325.0884657,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 713665660,
+       "cyc0": 713501485
+      },
+      "buf_moonshine_stem_h_stem_conv1": 1598,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    },
+    "ctrl_ffn_end": {
+     "ran": true,
+     "target": "pext_nl",
+     "warmup": "1",
+     "kernel_cflags": "-DMB_PEXT_HW=1",
+     "image_bytes": 652168,
+     "bitstream_md5": "566bc5402d0cab22130942bf9904bfdb",
+     "cpu": 0,
+     "mhartid": 0,
+     "median": 99781033,
+     "warm": 99671415,
+     "max_abs_err": 0,
+     "dispatch_cycles_total": 99779718,
+     "seconds": 2.8936117901702705,
+     "dispatches_profiled": 5,
+     "dispatches_in_ir": 5,
+     "kernel_picks": {
+      "add_s8": "pext_int_add",
+      "gelu_s8": "pext_int_lut",
+      "layernorm_s8": "pext_int_rsqrt",
+      "linear_s8": "pext_row_dot8"
+     },
+     "per_kind": {
+      "layernorm_s8": {
+       "dispatches": 1,
+       "cycles": 6210140,
+       "macs": 0,
+       "elements": 32768,
+       "kernel": "pext_int_rsqrt",
+       "share_pct": 6.224,
+       "cycles_per_mac": null,
+       "cycles_per_element": 189.518,
+       "seconds": 0.18
+      },
+      "linear_s8": {
+       "dispatches": 2,
+       "cycles": 89401664,
+       "macs": 67108864,
+       "elements": 163840,
+       "kernel": "pext_row_dot8",
+       "share_pct": 89.599,
+       "cycles_per_mac": 1.3322,
+       "cycles_per_element": 545.664,
+       "seconds": 2.593
+      },
+      "gelu_s8": {
+       "dispatches": 1,
+       "cycles": 2908654,
+       "macs": 0,
+       "elements": 131072,
+       "kernel": "pext_int_lut",
+       "share_pct": 2.915,
+       "cycles_per_mac": null,
+       "cycles_per_element": 22.191,
+       "seconds": 0.084
+      },
+      "add_s8": {
+       "dispatches": 1,
+       "cycles": 1259260,
+       "macs": 0,
+       "elements": 32768,
+       "kernel": "pext_int_add",
+       "share_pct": 1.262,
+       "cycles_per_mac": null,
+       "cycles_per_element": 38.43,
+       "seconds": 0.037
+      }
+     },
+     "console_bytes": 108311,
+     "fclk0_mhz_as_run": 34.4828,
+     "ram_read_last": {
+      "tag": "end",
+      "board_time": 1746407365.4827404,
+      "big": {
+       "ran": 1,
+       "cpu_id": 0,
+       "warm_cycles": 99671415,
+       "cyc0": 99781033
+      },
+      "buf_ffn_block_ln": 4043,
+      "riscv_cpu_boot_flag": 1,
+      "riscv_cpu_wake_flag": 1,
+      "z_sys_post_kernel": 1
+     }
+    }
+   },
+   "stem_layout_lever": {
+    "stem.conv1": {
+     "op": "conv2d_s8",
+     "w_cycles": 29851470,
+     "h_cycles": 44593172,
+     "h_over_w": 1.494,
+     "w_cyc_per_mac": 0.817,
+     "h_cyc_per_mac": 1.2204
+    },
+    "stem.tanh": {
+     "op": "tanh_s8",
+     "w_cycles": 6293330,
+     "h_cycles": 6293520,
+     "h_over_w": 1.0,
+     "w_cyc_per_mac": null,
+     "h_cyc_per_mac": null
+    },
+    "stem.groupnorm": {
+     "op": "groupnorm_s8",
+     "w_cycles": 25709564,
+     "h_cycles": 25707478,
+     "h_over_w": 1.0,
+     "w_cyc_per_mac": null,
+     "h_cyc_per_mac": null
+    },
+    "stem.conv2": {
+     "op": "conv2d_s8",
+     "w_cycles": 1017586094,
+     "h_cycles": 15581392070,
+     "h_over_w": 15.312,
+     "w_cyc_per_mac": 2.6475,
+     "h_cyc_per_mac": 40.5383
+    },
+    "stem.gelu2": {
+     "op": "gelu_s8",
+     "w_cycles": 4022316,
+     "h_cycles": 4021626,
+     "h_over_w": 1.0,
+     "w_cyc_per_mac": null,
+     "h_cyc_per_mac": null
+    },
+    "stem.conv3": {
+     "op": "conv2d_s8",
+     "w_cycles": 3898718611,
+     "h_cycles": 4284398102,
+     "h_over_w": 1.099,
+     "w_cyc_per_mac": 47.479,
+     "h_cyc_per_mac": 52.1759
+    },
+    "stem.gelu3": {
+     "op": "gelu_s8",
+     "w_cycles": 1047634,
+     "h_cycles": 1047694,
+     "h_over_w": 1.0,
+     "w_cyc_per_mac": null,
+     "h_cyc_per_mac": null
+    }
+   },
+   "stem_layout_lever_bigconv": {
+    "stem.conv1": {
+     "op": "conv2d_s8",
+     "w_cycles": 50714714,
+     "h_cycles": 54160171,
+     "h_over_w": 1.068,
+     "w_cyc_per_mac": 1.3879,
+     "h_cyc_per_mac": 1.4822
+    },
+    "stem.tanh": {
+     "op": "tanh_s8",
+     "w_cycles": 6298244,
+     "h_cycles": 6299844,
+     "h_over_w": 1.0,
+     "w_cyc_per_mac": null,
+     "h_cyc_per_mac": null
+    },
+    "stem.groupnorm": {
+     "op": "groupnorm_s8",
+     "w_cycles": 25896591,
+     "h_cycles": 25895840,
+     "h_over_w": 1.0,
+     "w_cyc_per_mac": null,
+     "h_cyc_per_mac": null
+    },
+    "stem.conv2": {
+     "op": "conv2d_s8",
+     "w_cycles": 485871872,
+     "h_cycles": 504291539,
+     "h_over_w": 1.038,
+     "w_cyc_per_mac": 1.2641,
+     "h_cyc_per_mac": 1.312
+    },
+    "stem.gelu2": {
+     "op": "gelu_s8",
+     "w_cycles": 3638953,
+     "h_cycles": 3638589,
+     "h_over_w": 1.0,
+     "w_cyc_per_mac": null,
+     "h_cyc_per_mac": null
+    },
+    "stem.conv3": {
+     "op": "conv2d_s8",
+     "w_cycles": 109967152,
+     "h_cycles": 118263139,
+     "h_over_w": 1.075,
+     "w_cyc_per_mac": 1.3392,
+     "h_cyc_per_mac": 1.4402
+    },
+    "stem.gelu3": {
+     "op": "gelu_s8",
+     "w_cycles": 951515,
+     "h_cycles": 950356,
+     "h_over_w": 0.999,
+     "w_cyc_per_mac": null,
+     "h_cyc_per_mac": null
+    }
+   }
+  }
+ },
+ "cross_session_twins": {
+  "enc_nl": {
+   "roccmoon_bitstream": 8668264941,
+   "mic_bitstream": 8669295966,
+   "rel_diff_pct": 0.012
+  },
+  "enc_ew": {
+   "roccmoon_bitstream": 7037917052,
+   "mic_bitstream": 7036069124,
+   "rel_diff_pct": -0.026
+  },
+  "enc_ew_bigconv": {
+   "roccmoon_bitstream": 2731969648,
+   "mic_bitstream": 2729646915,
+   "rel_diff_pct": -0.085
+  }
+ },
+ "stem_layout_lever_summary": {
+  "default_limits": {
+   "stem_cycles_w": 4983229019,
+   "stem_cycles_h": 19947453662,
+   "stem_h_over_w": 4.003,
+   "conv_cycles_w": 4946156175,
+   "conv_cycles_h": 19910383344,
+   "conv_macs": 503016480,
+   "conv_cyc_per_mac_w": 9.833,
+   "conv_cyc_per_mac_h": 39.582,
+   "conv_h_over_w": 4.025
+  },
+  "raised_limits": {
+   "stem_cycles_w": 683339041,
+   "stem_cycles_h": 713499478,
+   "stem_h_over_w": 1.044,
+   "conv_cycles_w": 646553738,
+   "conv_cycles_h": 676714849,
+   "conv_macs": 503016480,
+   "conv_cyc_per_mac_w": 1.2854,
+   "conv_cyc_per_mac_h": 1.3453,
+   "conv_h_over_w": 1.047
+  }
+ },
+ "todo_items_4_and_5b_from_the_graph": {
+  "source": "out/rocket_moonshine_enc/enc/ir/graph.json (154 ops, 129 dispatches)",
+  "op_counts": {
+   "linear_s8": 36,
+   "permute4_s8": 25,
+   "view": 25,
+   "layernorm_s8": 13,
+   "rope_s8": 12,
+   "matmul_b_s8": 12,
+   "add_s8": 12,
+   "gelu_s8": 8,
+   "softmax_s8": 6,
+   "conv2d_s8": 3,
+   "tanh_s8": 1,
+   "groupnorm_s8": 1
+  },
+  "item_4_depthwise": "does not apply: no depthwise_conv2d_s8 op; the three convolutions are dense (Conv2d groups=1: 1->288, 288->576, 576->288).",
+  "item_5b_short_reductions": "does not apply: conv reduction lengths K = IC*KH*KW are 127, 2016 and 1728; the shortest dot product anywhere is matmul_b_s8 q.k at K = 36 (head dim 288/8), then linear K = 288 / 1152 and matmul_b a.v K = 165. None is below 32."
+ },
+ "ram_read_caveat": "peek_ram.py reads DRAM behind Rocket's caches; a recently written line can read stale (ctrl_ffn cyc[0] read 0 ten seconds after the console printed its value). Non-zero = written; zero = unknown."
+}

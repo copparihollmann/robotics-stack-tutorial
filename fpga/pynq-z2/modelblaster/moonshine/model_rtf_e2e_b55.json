@@ -1,0 +1,189 @@
+{
+ "what": "RTF_e2e on silicon from TWO MEASURED HALVES -- encoder B54 (matmul_b_s8 tail hoist), decoder B56 arm D (the SHIPPABLE configuration: CSE + silu integer builder, V=32,768, NO lm_head prune, hoist in). The decoder half is re-measured, not carried forward: b54's decoder was dec_cse_on, which predated place_early, the silu integer builder and both matmul_b_s8 hoists.",
+ "composed_not_measured": true,
+ "rtf_e2e_per_iteration": 4.214195447132085,
+ "rtf_e2e_per_iteration_basis": "mean_steps 11.976 (candidate R, dev_clean) -- THE SAME BASIS model_rtf_e2e_b54.json uses, so that 4.4810 -> this number is a like-for-like comparison and not a change of method.",
+ "rtf_e2e_per_iteration_honest_for_this_graph": 4.232262031636294,
+ "which_is_honest": "12.137 is the honest mean_steps FOR THIS GRAPH: it is the UNPRUNED int8 decoder's own dev_clean mean, and this graph is the unpruned one.  11.976 is candidate R's decoder, a different graph, and is carried only because b54 used it and the comparison against 4.4810 must not move two things at once. The difference is +0.018 RTF_e2e.  12.302 is the V=11,000 PRUNED model's own mean and does NOT apply to this graph at all -- the prune is out, on WER grounds; it is reported here only because it is what a reader coming from B49's record would expect to see, and its absence needs explaining rather than hiding.",
+ "supersedes": {
+  "record": "model_rtf_e2e_b54.json",
+  "rtf_e2e_per_iteration": 4.481002856853086,
+  "what_changed": "the DECODER half.  b54 carried dec_cse_on (rtf_per_iteration 1.5610) forward and declared it stale in three directions.  It is now measured on the shippable configuration with the hoist in: 1.2942 at the same mean_steps.  The encoder half is unchanged from b54 (2.9200, B54 arm B).",
+  "and_what_did_not": "nothing about the encoder half, and nothing about the method."
+ },
+ "the_headline_that_does_not_reproduce": {
+  "quoted_since_B49": 4.2542,
+  "quoted_in": "TODO.md, sixteen entries, with no record file behind it",
+  "documented_method_on_B49s_own_arrays": 4.413255,
+  "optimistic_by": 0.158855,
+  "where_each_half_of_the_error_came_from": [
+   "THE METHOD.  4.2542's decoder term is 1.2542 = B49's rtf_steady 2.5133445 x 11.976471/24 -- the 24-step total SCALED.  The documented method sums the first 11.976471 steady step-cycle counts and interpolates the fractional last, which gives 1.2017.  Scaling OVERSTATES by 0.0525 because later decode steps cost more (the self-attention N grows: step 1 is 12,970,800 cycles and step 23 is 15,611,662).",
+   "THE ADDITION.  3.2116 + 1.2542 = 4.4658, and 4.4658 - 4.2542 = 0.2116 EXACTLY -- the encoder's own fractional part.  The quoted figure is the sum with the encoder entered as 3 rather than 3.2116.",
+   "The two errors run in opposite directions and DO NOT cancel: -0.2116 from the addition against +0.0525 from the method, net -0.1589.  An arithmetic slip that partly hides a method error is the worst case for a figure nobody can re-derive, which is what having no record file behind it means."
+  ]
+ },
+ "method": {
+  "definition": "decoder cycles per utterance = sum of the first `mean_steps` STEADY step-cycle counts, interpolating the fractional last one.  NOT rtf_steady x mean_steps / 24.",
+  "why": "the board image walks all 24 steps; a real decode stops at EOS.  Later steps cost more, so scaling the 24-step total prices a short decode at the average of a long one.",
+  "verified": "this record's implementation reproduces model_rtf_e2e_b54.json's own rtf_per_iteration 1.561001335 from b54's own step_cycles_steady and mean_steps before it was used here; the script refuses to run if it does not.",
+  "script": "archive/runs/b56_dec_mmb_hoist/compose_b55.py"
+ },
+ "encoder": {
+  "record": "archive/runs/b54_encoder_mmb_hoist/on/run.json",
+  "lab": "B54",
+  "measured": true,
+  "soc_magic": "0x5A5A002D",
+  "bitstream_md5": "1bae0310c1e13048b22b4da9c72901ab",
+  "rtf_steady": 2.9200015216299833,
+  "steady_cycles": 402758835,
+  "max_abs_err": 0,
+  "unchanged_from_b54": true
+ },
+ "decoder": {
+  "record": "out/b56_dec_ship_on/run.json  (archive/runs/b56_dec_ship_on@20260918T1014)",
+  "lab": "B56 arm D",
+  "measured": true,
+  "soc_magic": "0x5A5A0028",
+  "bitstream_md5": "32d10e5d47a4ca1f120f6f6d34e04b4e",
+  "configuration": "candidate DEC, IR out/decint8/ir (V=32,768, NO prune), ir_cse ON, silu_s8 on pext_int_lut, no lanes, MBXR_RT_CAP=4, MBXR_RT_PLACE_EARLY=1, matmul_b_s8 hoist IN",
+  "accounting": "rows_include_image",
+  "steps_unrolled": 24,
+  "mean_steps": 11.976470588235294,
+  "mean_steps_record": "fpga/pynq-z2/modelblaster/moonshine/decoder_tokens_dev.json models.R.mean (dev_clean, 765 utterances, host decode of candidate R's IR)",
+  "mean_steps_own_graph": 12.137254901960784,
+  "mean_steps_own_graph_record": "fpga/pynq-z2/modelblaster/moonshine/model_vocab_cycles.json predictions[V].per_utterance_with_early_exit.sets.dev.mean_steps_baseline, itself from model_vocab_int8.json (dev_clean, the UNPRUNED int8 decoder)",
+  "mean_steps_pruned_not_applicable": 12.301960784313726,
+  "mean_steps_never_read_from_a_run_record": "the board image walks a fixed 24-step table, so no run.json carries a token count at all; and the B49 decode driver reports 17.07 by running to the step cap because the prune broke its index space.  Reading mean_steps from a run record would inflate the decoder term by ~40 % in the flattering direction.",
+  "image_cycles_once": 292825119,
+  "step_cycles_incl_image": [
+   309382536,
+   14046291,
+   14130257,
+   14310645,
+   14516387,
+   14701126,
+   14772987,
+   14892280,
+   15088229,
+   15147289,
+   15284007,
+   15425548,
+   15511203,
+   15608179,
+   15709130,
+   15840097,
+   15958004,
+   15899065,
+   16258701,
+   16227605,
+   16322574,
+   16462801,
+   16711290,
+   16674777
+  ],
+  "step_cycles_steady": [
+   16557417,
+   14046291,
+   14130257,
+   14310645,
+   14516387,
+   14701126,
+   14772987,
+   14892280,
+   15088229,
+   15147289,
+   15284007,
+   15425548,
+   15511203,
+   15608179,
+   15709130,
+   15840097,
+   15958004,
+   15899065,
+   16258701,
+   16227605,
+   16322574,
+   16462801,
+   16711290,
+   16674777
+  ],
+  "cycles_per_iteration": 178509508.92941177,
+  "rtf_per_iteration": 1.2941939255021022,
+  "cycles_per_iteration_own_graph_mean_steps": 181001451.6470588,
+  "rtf_per_iteration_own_graph_mean_steps": 1.3122605100063107,
+  "cycles_cold": 471334627.92941177,
+  "rtf_cold": 3.417176014899299,
+  "rtf_steady_all_24_steps": 2.697405165578543,
+  "steady_cycles_all_24_steps": 372055889,
+  "max_abs_err": 0,
+  "control_in_session": {
+   "what": "arm C -- the SAME tree, same IR, same flags, built and run in the same board-lock hold with -DMBP_MMB_NO_SPECIALIZE=1, which compiles the hoisted nest out of the same kernel file",
+   "record": "out/b56_dec_ship_off/run.json  (archive/runs/b56_dec_ship_off@20260918T1008)",
+   "steady_cycles": 374904040,
+   "rtf_steady": 2.718054260101403,
+   "rtf_per_iteration": 1.3037748084143594,
+   "rtf_e2e_per_iteration": 4.223776330044343,
+   "max_abs_err": 0,
+   "host_c_golden_vs_treatment": "BYTE-IDENTICAL, 0 of 786,432 bytes differ, gated before the board (out/b56_dec_ship_on/golden_ab.json)"
+  },
+  "delta_vs_control_pct": -0.7597013358404994,
+  "matmul_b_s8_cycles": {
+   "control": 129128623,
+   "hoisted": 121444085,
+   "delta_pct": -5.951072520923575
+  },
+  "linear_s8_cycles": {
+   "control": 393129127,
+   "hoisted": 398360595,
+   "delta_pct": 1.3307251080381026,
+   "note": "THE ENGINE GAVE BACK 68 % OF THE SAVING -- see assumes"
+  }
+ },
+ "assumes": [
+  "the two halves were measured in separate board runs and are ADDED; the harness runs one model per image, so they cannot be run as one without a multi-model build.  Nothing here measures the transition between them.",
+  "the decoder's per-token cost is independent of the encoder having just run.  In a real pipeline the decoder would start with the encoder's working set in cache, not its own.",
+  "the weight image build is charged once per BOOT, not once per utterance: the per-iteration figures subtract it (decoder step 0 carries all of it) and the cold figures keep it.  A deployment that re-images per utterance pays the cold number -- and at V=32,768 that is 292,825,119 cycles, 8.49 s of a 4.0 s window on its own.",
+  "the cross-attention prologue (float, off-board) is not counted at all.",
+  "the two halves are on DIFFERENT BITSTREAMS -- the encoder on 0x5A5A002D (md5 1bae0310c1, both lanes, the pipelined multiplier), the decoder on 0x5A5A0028 (md5 32d10e5d47, roccmoonall).  Adding them assumes the SoC difference costs nothing.  Both halves ran at MBXR_RT_CAP=4.",
+  "the encoder figure was produced using the documented per-run BIT_ACCEPTED override (B54); the decoder's bitstream is accepted by scripts/58 by default.  scripts/lib/bitstream_id.sh is unchanged.",
+  "MEAN_STEPS.  11.976 is candidate R's decoder measured on dev_clean; the graph priced here is not R's decoder. 12.137 is this graph's own unpruned dev mean and is the honest figure for it; both are reported and neither is read from a run record.  The spread between them is +0.018 RTF_e2e -- smaller than the 0.159 error in the 4.2542 figure this record replaces.",
+  "NEW (B56): THE DECODER HALF IS NO LONGER STALE and no longer carries the lm_head prune.  b54's decoder was dec_cse_on: no silu integer builder, no place_early, neither matmul_b_s8 hoist.  This one has all three.  It is also 6.27 MB of weights BIGGER than B49's, because the V=11,000 prune was withdrawn on WER grounds (+0.9926 points, CI [+0.291,+1.742], and its driver emits pruned-space indices into original-space lookups). So this record is WORSE than a composition built on B49 would be, and that is the point: B49's decoder cannot ship.",
+  "NEW (B56): THE HOIST IS WORTH -0.76 % ON THIS GRAPH, NOT -2.47 %.  On B49's pruned graph the same source change is worth -2.47 % of decoder steady; here it is -0.76 %.  matmul_b_s8 itself saves the SAME 7.68 M cycles in both (129.13 M -> 121.44 M, -5.95 %, reproducing the pruned arms to 0.03 %), but on this graph the engine gives 5.23 M of it back: fill_beats, loads_wgt, pairs, bytes_wgt and placed_early are BYTE-FOR-BYTE IDENTICAL across the two arms while cyc_fill rises 5.99 % and cyc_wait 10.65 %.  Same beats, slower beats -- the CPU's tighter loop competes with the engine for memory, and at V=32,768 the engine moves 479.7 MB per iteration against 320.9 MB at V=11,000.  A CPU-side saving on this decoder is roughly one third realised.",
+  "NEW (B56): the cold figure is composed only for the decoder half.  The two halves' image builds are on different bitstreams and are not added.",
+  "NEW (B56): a newer encoder half exists (L333, attention unit, rtf_steady 1.5267) and is NOT composed here.  This record deliberately moves ONE half against model_rtf_e2e_b54.json.  forward_note_not_the_headline carries the arithmetic for a successor who wants both."
+ ],
+ "labels": {
+  "model": "Moonshine Tiny int8 -- encoder: candidate QATU, both lanes (B54 arm B); decoder: candidate DEC, CSE + silu integer builder, V=32,768 unpruned (B56 arm D).  Two different candidates, added.",
+  "clock_hz": 34482759.0,
+  "window_s": 4.0,
+  "eval_set": "timing on the baked 4.0 s calibration window (both halves); mean token count from decoder_tokens_dev.json (dev_clean, 765 utterances) with model_vocab_cycles.json's unpruned dev mean reported alongside.  No WER was measured on either image in this lab.",
+  "cold_or_steady": "per-utterance STEADY (weights already imaged).  Decoder cold is reported for the decoder half alone; a combined cold is not composed because the two image builds are on different bitstreams.",
+  "stage": "generated C from IR, backend roccmoon, curated MBP kernels, one image per half",
+  "scope": "whole encoder + whole decoder, ADDED.  Nothing here measures the transition between them, and the float cross-attention prologue is outside both."
+ },
+ "accuracy": {
+  "decoder": "max_abs_err 0 ('matched') in BOTH B56 arms, and the two images' host-C goldens are BYTE-IDENTICAL over 786,432 bytes, gated before the board.  The hoist changed no value.",
+  "encoder": "max_abs_err 0 in both B54 arms; byte-identity at 18 bench shapes (B52/B53).",
+  "coordinate_system_note": "these gates compare bytes in a FIXED coordinate system that neither arm can move -- the hoist changes no index, no shape and no tensor layout.  That is why they are gates here, where the same instruments could not see the V=11,000 prune's defect: there they compared logits to logits inside the index space the prune had itself redefined.",
+  "not_measured_here": "WER on either image.  The encoder's LayerNorm lane carries B44's paired-bootstrap result ([-1.033,+0.273] WER points, no detectable change); the decoder graph priced here is the unpruned one, whose WER is the 13.392 % control the prune was measured against."
+ },
+ "goal": {
+  "target": 1.0,
+  "measured_composed": 4.214195447132085,
+  "short_by_factor": 4.214195447132085,
+  "split": {
+   "encoder": 2.9200015216299833,
+   "decoder": 1.2941939255021022
+  }
+ },
+ "forward_note_not_the_headline": {
+  "what": "A NEWER ENCODER HALF landed while this decoder was on the board and is deliberately NOT used here: L333 (2026-09-18 10:35) collected the attention unit on a real encoder image -- rtf_steady 2.9199 -> 1.5267, max_abs_err 0, inside its committed band.  This record composes against B54's 2.9200 because that is the encoder half it was asked to compose against, and changing two halves at once would make the comparison with model_rtf_e2e_b54.json's 4.4810 unreadable.",
+  "recomposed_if_that_encoder_is_used": {
+   "encoder_rtf_steady": 1.5267,
+   "rtf_e2e_per_iteration": 2.820894,
+   "rtf_e2e_per_iteration_own_graph_mean_steps": 2.838961,
+   "record": "see L333; this line is arithmetic on someone else's measured half, not a measurement made here"
+  },
+  "and_what_it_implies": "the decoder would then be 45.9 % of RTF_e2e rather than 30.7 %, and this record's finding -- that a CPU-side decoder saving is about one third realised because the engine gives it back -- becomes the binding constraint on the goal rather than a footnote to the encoder's."
+ }
+}

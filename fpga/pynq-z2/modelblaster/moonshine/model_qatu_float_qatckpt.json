@@ -1,0 +1,95 @@
+{
+ "what": "R's split stem, axis by axis: the WER/stem-cycles curve (MOONSHINE_MODEL.md section 2.6).",
+ "method": "host float simulation (quant_fix.build + fq.FQInterp), the machinery section 8.13 selected its candidates with.  These WERs are ESTIMATES: only generated integer C counts as a measurement (section 8.12).",
+ "set": {
+  "name": "dev-clean <= 4.0 s",
+  "utterances": 765,
+  "speakers": 40,
+  "words": 5944,
+  "subset_of_765": null
+ },
+ "bars": {
+  "campaign_s8_13_dev": 0.093,
+  "user_guideline_dev": 0.085,
+  "note": "named on every row; the long QAT run's own evals are on a 256-utterance dev SUBSET and are a third denominator, not comparable to these"
+ },
+ "float_wer_vs_reference": 0.10615746971736205,
+ "checkpoint_dir": "<training-host>/…",
+ "cycle_model": {
+  "R_stem_M": 393.0,
+  "unsplit_saving_measured_M": [
+   260.0,
+   309.0
+  ],
+  "per_mac_multiple_M": 98.25,
+  "encoder_steady_M": 733.9,
+  "conv2_range_asymmetry_M": {
+   "coarse_4_dispatches": 127.2,
+   "fine_4_dispatches": 65.9
+  },
+  "label": "fitted to Lab B30's measured anchors; see section 2.6.1"
+ },
+ "configs": {
+  "unsplit.W8A8.calib-p99.99": {
+   "mac_multiple": 1,
+   "dispatches_per_conv": 1,
+   "input_halves": 1,
+   "weight_groups": 1,
+   "ranges": "1 at p99.99",
+   "note": "unsplit stem, plain per-tensor W8A8, p99.99 activation calibration",
+   "wer_vs_reference": 0.17429340511440108,
+   "errors": 1036,
+   "wer_vs_float": 0.13941018766756033,
+   "sqnr_db": 12.18164427102523,
+   "delta_vs_R_points": null,
+   "stem_M_cycles": 98.25,
+   "saving_vs_R_M": 294.75,
+   "encoder_M_cycles": 439.15,
+   "label": "DERIVED from Lab B30's measured 393.0 M stem and 260-309 M unsplit saving",
+   "under_campaign_bar": false,
+   "under_user_guideline": false,
+   "seconds": 19.4
+  },
+  "unsplit.W8A8.calib-p99.9": {
+   "mac_multiple": 1,
+   "dispatches_per_conv": 1,
+   "input_halves": 1,
+   "weight_groups": 1,
+   "ranges": "1 at p99.9",
+   "note": "unsplit stem, plain per-tensor W8A8, p99.9 activation calibration",
+   "wer_vs_reference": 0.12331763122476447,
+   "errors": 733,
+   "wer_vs_float": 0.07875335120643431,
+   "sqnr_db": 13.683811089394538,
+   "delta_vs_R_points": null,
+   "stem_M_cycles": 98.25,
+   "saving_vs_R_M": 294.75,
+   "encoder_M_cycles": 439.15,
+   "label": "DERIVED from Lab B30's measured 393.0 M stem and 260-309 M unsplit saving",
+   "under_campaign_bar": false,
+   "under_user_guideline": false,
+   "seconds": 19.4
+  },
+  "unsplit.W8A8.calib-max": {
+   "mac_multiple": 1,
+   "dispatches_per_conv": 1,
+   "input_halves": 1,
+   "weight_groups": 1,
+   "ranges": "1 at max",
+   "note": "unsplit stem, plain per-tensor W8A8, max activation calibration",
+   "wer_vs_reference": 0.38139300134589504,
+   "errors": 2267,
+   "wer_vs_float": 0.36109249329758714,
+   "sqnr_db": 9.088346764225962,
+   "delta_vs_R_points": null,
+   "stem_M_cycles": 98.25,
+   "saving_vs_R_M": 294.75,
+   "encoder_M_cycles": 439.15,
+   "label": "DERIVED from Lab B30's measured 393.0 M stem and 260-309 M unsplit saving",
+   "under_campaign_bar": false,
+   "under_user_guideline": false,
+   "seconds": 19.5
+  }
+ },
+ "elapsed_s": 78.7996141910553
+}

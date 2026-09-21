@@ -1,0 +1,634 @@
+{
+ "what": "Moonshine Tiny encoder on ModelBlaster (patches/0100), host gates, no board. Produced by scripts/50_rocket_moonshine_enc.sh --build-only (check_moonshine.py); compacted copy of out/rocket_moonshine_enc/host_gates.json without the per-dispatch rows.",
+ "ir": {
+  "ops": 154,
+  "dispatches": 129,
+  "op_kinds": {
+   "conv2d_s8": 3,
+   "tanh_s8": 1,
+   "groupnorm_s8": 1,
+   "gelu_s8": 8,
+   "permute4_s8": 25,
+   "view": 25,
+   "layernorm_s8": 13,
+   "linear_s8": 36,
+   "rope_s8": 12,
+   "matmul_b_s8": 12,
+   "softmax_s8": 6,
+   "add_s8": 12
+  },
+  "calibration_windows": 16,
+  "env": [
+   "MB_INT8_GELU_AWARE_RANGES=1",
+   "MB_INT8_GOLDEN_C_FLOAT=1"
+  ],
+  "item4_depthwise_dispatches": 0,
+  "item5b_conv_reduction_lengths_K": [
+   127,
+   1728,
+   2016
+  ]
+ },
+ "a_reference_kernels_vs_python_golden": {
+  "per_kind": {
+   "conv2d_s8": {
+    "dispatches": 3,
+    "elements": 525888,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "tanh_s8": {
+    "dispatches": 1,
+    "elements": 287712,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "groupnorm_s8": {
+    "dispatches": 1,
+    "elements": 287712,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "gelu_s8": {
+    "dispatches": 8,
+    "elements": 1378656,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "permute4_s8": {
+    "dispatches": 25,
+    "elements": 1188000,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "layernorm_s8": {
+    "dispatches": 13,
+    "elements": 617760,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "linear_s8": {
+    "dispatches": 36,
+    "elements": 2566080,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "rope_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "matmul_b_s8": {
+    "dispatches": 12,
+    "elements": 1591920,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "softmax_s8": {
+    "dispatches": 6,
+    "elements": 1306800,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "add_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 0,
+    "max_abs_err": 0
+   }
+  },
+  "first_differing_dispatch": null,
+  "output_elements": 47520,
+  "output_vs_python_golden_max_abs_err": 0,
+  "output_vs_python_golden_n_differ": 0,
+  "every_dispatch_bit_exact": true,
+  "dispatches": 129,
+  "slow_path": []
+ },
+ "b1_modelblaster_verify_kernel_atol0": [
+  {
+   "op": "tanh_s8",
+   "kernel": "pext/pext_tanh_s8_pext_memo_lut.c",
+   "claimed": "bit_exact",
+   "ok_at_atol0": true,
+   "max_abs_err": 0.0,
+   "message": "ok (4 shapes \u00d7 5 trials, max_abs_err=0 max_rel_err=0)"
+  },
+  {
+   "op": "add_s8",
+   "kernel": "pext_nl/pext_nl_add_s8_pext_int_add.c",
+   "claimed": "bit_exact",
+   "ok_at_atol0": true,
+   "max_abs_err": 0.0,
+   "message": "ok (3 shapes \u00d7 5 trials, max_abs_err=0 max_rel_err=0)"
+  },
+  {
+   "op": "mul_s8",
+   "kernel": "pext_nl/pext_nl_mul_s8_pext_int_mul.c",
+   "claimed": "bit_exact",
+   "ok_at_atol0": true,
+   "max_abs_err": 0.0,
+   "message": "ok (4 shapes \u00d7 5 trials, max_abs_err=0 max_rel_err=0)"
+  },
+  {
+   "op": "rope_s8",
+   "kernel": "pext_nl/pext_nl_rope_s8_pext_int_rot.c",
+   "claimed": "bit_exact",
+   "ok_at_atol0": true,
+   "max_abs_err": 0.0,
+   "message": "ok (3 shapes \u00d7 5 trials, max_abs_err=0 max_rel_err=0)"
+  },
+  {
+   "op": "matmul_b_s8",
+   "kernel": "pext_nl/pext_nl_matmul_b_s8_pext_dot8_exact.c",
+   "claimed": "bit_exact",
+   "ok_at_atol0": null,
+   "message": "host-verify disabled in KernelSpec; see b2/b3"
+  },
+  {
+   "op": "groupnorm_s8",
+   "kernel": "pext_nl/pext_nl_groupnorm_s8_pext_int_rsqrt.c",
+   "claimed": "numeric_drift",
+   "ok_at_atol0": false,
+   "max_abs_err": 1.0,
+   "message": "numerical mismatch on shape={'N': 1, 'C': 16, 'H': 3, 'W': 7}: max_abs_err=1 max_rel_err=0.025 (atol=0 rtol=0)"
+  }
+ ],
+ "b2_stress_full_O2": [
+  {
+   "test": "fexact32_vs_fpu",
+   "cases": 140000000,
+   "mismatches": 0,
+   "max_abs_err": 0
+  },
+  {
+   "test": "tanh_s8_memo_lut",
+   "cases": 9779074,
+   "mismatches": 0,
+   "max_abs_err": 0
+  },
+  {
+   "test": "add_s8_random",
+   "cases": 196608000,
+   "mismatches": 0,
+   "max_abs_err": 0,
+   "reference_undefined": 468072,
+   "slow": "36061557/196608000"
+  },
+  {
+   "test": "mul_s8_random",
+   "cases": 196608000,
+   "mismatches": 0,
+   "max_abs_err": 0,
+   "reference_undefined": 436913,
+   "slow": "22544128/196608000"
+  },
+  {
+   "test": "rope_s8_random",
+   "cases": 788808000,
+   "mismatches": 0,
+   "max_abs_err": 0,
+   "slow": "43099620/788808000"
+  },
+  {
+   "test": "matmul_b_s8_random",
+   "cases": 129368240,
+   "mismatches": 0,
+   "max_abs_err": 0,
+   "slow": "15784316/129368240"
+  },
+  {
+   "test": "groupnorm_s8_random",
+   "cases": 5772820,
+   "mismatches": 13464,
+   "max_abs_err": 1,
+   "class": "numeric_drift"
+  }
+ ],
+ "b2_stress_asan_ubsan": [
+  {
+   "test": "fexact32_vs_fpu",
+   "cases": 1400000,
+   "mismatches": 0,
+   "max_abs_err": 0
+  },
+  {
+   "test": "tanh_s8_memo_lut",
+   "cases": 148871,
+   "mismatches": 0,
+   "max_abs_err": 0
+  },
+  {
+   "test": "add_s8_random",
+   "cases": 2621440,
+   "mismatches": 0,
+   "max_abs_err": 0,
+   "reference_undefined": 0,
+   "slow": "462997/2621440"
+  },
+  {
+   "test": "mul_s8_random",
+   "cases": 2621440,
+   "mismatches": 0,
+   "max_abs_err": 0,
+   "reference_undefined": 0,
+   "slow": "426130/2621440"
+  },
+  {
+   "test": "rope_s8_random",
+   "cases": 8006880,
+   "mismatches": 0,
+   "max_abs_err": 0,
+   "slow": "789463/8006880"
+  },
+  {
+   "test": "matmul_b_s8_random",
+   "cases": 434747,
+   "mismatches": 0,
+   "max_abs_err": 0,
+   "slow": "2204/434747"
+  },
+  {
+   "test": "groupnorm_s8_random",
+   "cases": 577282,
+   "mismatches": 1314,
+   "max_abs_err": 1,
+   "class": "numeric_drift"
+  }
+ ],
+ "b2_note": "add_s8/mul_s8 'reference_undefined' counts elements where the float reference's (int32_t)roundf(...) is outside int32 (C undefined behaviour; x86 returns INT_MIN, the kernel saturates) -- excluded from 'mismatches'. 'slow' = elements that took the exact binary32 slow path, inflated here by deliberately tie-heavy and saturating scale triples.",
+ "b3_model_data_per_kind": {
+  "tanh_s8": {
+   "dispatches": 1,
+   "elements": 287712,
+   "mismatches": 0,
+   "max_abs_err": 0
+  },
+  "groupnorm_s8": {
+   "dispatches": 1,
+   "elements": 287712,
+   "mismatches": 279,
+   "max_abs_err": 1
+  },
+  "gelu_s8": {
+   "dispatches": 8,
+   "elements": 1378656,
+   "mismatches": 372,
+   "max_abs_err": 1
+  },
+  "layernorm_s8": {
+   "dispatches": 13,
+   "elements": 617760,
+   "mismatches": 2309,
+   "max_abs_err": 1
+  },
+  "rope_s8": {
+   "dispatches": 12,
+   "elements": 570240,
+   "mismatches": 0,
+   "max_abs_err": 0
+  },
+  "matmul_b_s8": {
+   "dispatches": 12,
+   "elements": 1591920,
+   "mismatches": 0,
+   "max_abs_err": 0
+  },
+  "softmax_s8": {
+   "dispatches": 6,
+   "elements": 1306800,
+   "mismatches": 1510,
+   "max_abs_err": 1
+  },
+  "add_s8": {
+   "dispatches": 12,
+   "elements": 570240,
+   "mismatches": 0,
+   "max_abs_err": 0
+  }
+ },
+ "b3_note": "every dispatch of the kind run on its GOLDEN input through the reference kernel and the curated kernel. gelu_s8/layernorm_s8/softmax_s8 are patches/0060's integer kernels (numeric_drift), included for the record.",
+ "b3_asan_ubsan": {
+  "returncode": 0,
+  "same_results": true
+ },
+ "b3_shift_ubsan_reports_int_nonlin_tu": {
+  "reports": [
+   "<repo>/fpga/pynq-z2/sw/int_nonlin.c:263:5: runtime error: left shift of negative value -4784128",
+   "<repo>/fpga/pynq-z2/sw/int_nonlin.c:342:38: runtime error: left shift of negative value -73",
+   "cand_nl.c:281:29: runtime error: left shift of negative value -21",
+   "cand_nl.c:292:41: runtime error: left shift of negative value -1",
+   "cand_nl.c:383:72: runtime error: left shift of negative value -7",
+   "cand_nl.c:391:79: runtime error: left shift of negative value -7"
+  ],
+  "attribution": "all in patches/0060 code, none in 0100's: int_nonlin.c:263 (nl_scale 'a <<= -s') and :342 via the integer GELU; pext_nl_layernorm_s8_pext_int_rsqrt.c:99 and :110 (cand_nl.c:281, :292); pext_nl_softmax_s8_pext_int_row.c:62 and :70 (cand_nl.c:383, :391) -- left shifts of negative values, defined by GCC as arithmetic; not changed here."
+ },
+ "objects_rv64imac_MB_PEXT_HW1": [
+  {
+   "op": "tanh_s8",
+   "kernel": "pext/pext_tanh_s8_pext_memo_lut.c",
+   "custom0_encodings": 0,
+   "softfloat_relocs": 8,
+   "softfloat_symbols": [
+    "__divsf3",
+    "__fixsfsi",
+    "__floatsisf",
+    "__mulsf3"
+   ],
+   "libm_relocs": 4,
+   "libm_symbols": [
+    "roundf",
+    "tanhf"
+   ],
+   "other_calls": [
+    "memset"
+   ]
+  },
+  {
+   "op": "add_s8",
+   "kernel": "pext_nl/pext_nl_add_s8_pext_int_add.c",
+   "custom0_encodings": 2,
+   "softfloat_relocs": 0,
+   "softfloat_symbols": [],
+   "libm_relocs": 0,
+   "libm_symbols": [],
+   "other_calls": [
+    "__clzdi2",
+    "pint_add_exact"
+   ]
+  },
+  {
+   "op": "mul_s8",
+   "kernel": "pext_nl/pext_nl_mul_s8_pext_int_mul.c",
+   "custom0_encodings": 0,
+   "softfloat_relocs": 0,
+   "softfloat_symbols": [],
+   "libm_relocs": 0,
+   "libm_symbols": [],
+   "other_calls": [
+    "__clzdi2",
+    "pint_mul_exact"
+   ]
+  },
+  {
+   "op": "rope_s8",
+   "kernel": "pext_nl/pext_nl_rope_s8_pext_int_rot.c",
+   "custom0_encodings": 0,
+   "softfloat_relocs": 0,
+   "softfloat_symbols": [],
+   "libm_relocs": 0,
+   "libm_symbols": [],
+   "other_calls": [
+    "__clzdi2",
+    "fx32_add",
+    "pint_rope_exact",
+    "pint_rope_pass_exact"
+   ]
+  },
+  {
+   "op": "matmul_b_s8",
+   "kernel": "pext_nl/pext_nl_matmul_b_s8_pext_dot8_exact.c",
+   "custom0_encodings": 2,
+   "softfloat_relocs": 0,
+   "softfloat_symbols": [],
+   "libm_relocs": 0,
+   "libm_symbols": [],
+   "other_calls": [
+    "__ashlti3",
+    "__clzdi2",
+    "__lshrti3",
+    "memcpy",
+    "memset",
+    "pmmb_exact"
+   ]
+  },
+  {
+   "op": "groupnorm_s8",
+   "kernel": "pext_nl/pext_nl_groupnorm_s8_pext_int_rsqrt.c",
+   "custom0_encodings": 0,
+   "softfloat_relocs": 0,
+   "softfloat_symbols": [],
+   "libm_relocs": 0,
+   "libm_symbols": [],
+   "other_calls": [
+    "__clzdi2",
+    "int_erf_q31.part.0",
+    "int_exp2_q31",
+    "int_gelu_s8",
+    "int_rsqrt_q31",
+    "memset",
+    "nl_gelu_one",
+    "printf"
+   ]
+  }
+ ],
+ "b4_whole_model": {
+  "nl": {
+   "per_kind": {
+    "conv2d_s8": {
+     "dispatches": 3,
+     "elements": 525888,
+     "n_differ": 0,
+     "max_abs_err": 0
+    },
+    "tanh_s8": {
+     "dispatches": 1,
+     "elements": 287712,
+     "n_differ": 0,
+     "max_abs_err": 0
+    },
+    "groupnorm_s8": {
+     "dispatches": 1,
+     "elements": 287712,
+     "n_differ": 0,
+     "max_abs_err": 0
+    },
+    "gelu_s8": {
+     "dispatches": 8,
+     "elements": 1378656,
+     "n_differ": 403707,
+     "max_abs_err": 46
+    },
+    "permute4_s8": {
+     "dispatches": 25,
+     "elements": 1188000,
+     "n_differ": 854100,
+     "max_abs_err": 59
+    },
+    "layernorm_s8": {
+     "dispatches": 13,
+     "elements": 617760,
+     "n_differ": 335973,
+     "max_abs_err": 21
+    },
+    "linear_s8": {
+     "dispatches": 36,
+     "elements": 2566080,
+     "n_differ": 1978116,
+     "max_abs_err": 60
+    },
+    "rope_s8": {
+     "dispatches": 12,
+     "elements": 570240,
+     "n_differ": 413524,
+     "max_abs_err": 57
+    },
+    "matmul_b_s8": {
+     "dispatches": 12,
+     "elements": 1591920,
+     "n_differ": 1195101,
+     "max_abs_err": 59
+    },
+    "softmax_s8": {
+     "dispatches": 6,
+     "elements": 1306800,
+     "n_differ": 174135,
+     "max_abs_err": 64
+    },
+    "add_s8": {
+     "dispatches": 12,
+     "elements": 570240,
+     "n_differ": 304609,
+     "max_abs_err": 38
+    }
+   },
+   "first_differing_dispatch": {
+    "dispatch": 8,
+    "name": "layers.0.input_layernorm",
+    "op": "layernorm_s8",
+    "tensor": "layers_0_input_layernorm",
+    "elements": 47520,
+    "max_abs_err": 1,
+    "n_differ": 270
+   },
+   "output_elements": 47520,
+   "output_vs_python_golden_max_abs_err": 20,
+   "output_vs_python_golden_n_differ": 12471,
+   "every_dispatch_bit_exact": false,
+   "dispatches": 129,
+   "slow_path": [
+    {
+     "kernel": "matmul_b_s8",
+     "slow": "15",
+     "elements": "1591920"
+    }
+   ]
+  },
+  "ew": {
+   "per_kind": {
+    "conv2d_s8": {
+     "dispatches": 3,
+     "elements": 525888,
+     "n_differ": 6156,
+     "max_abs_err": 25
+    },
+    "tanh_s8": {
+     "dispatches": 1,
+     "elements": 287712,
+     "n_differ": 0,
+     "max_abs_err": 0
+    },
+    "groupnorm_s8": {
+     "dispatches": 1,
+     "elements": 287712,
+     "n_differ": 279,
+     "max_abs_err": 1
+    },
+    "gelu_s8": {
+     "dispatches": 8,
+     "elements": 1378656,
+     "n_differ": 481496,
+     "max_abs_err": 67
+    },
+    "permute4_s8": {
+     "dispatches": 25,
+     "elements": 1188000,
+     "n_differ": 954624,
+     "max_abs_err": 66
+    },
+    "layernorm_s8": {
+     "dispatches": 13,
+     "elements": 617760,
+     "n_differ": 404446,
+     "max_abs_err": 32
+    },
+    "linear_s8": {
+     "dispatches": 36,
+     "elements": 2566080,
+     "n_differ": 2148538,
+     "max_abs_err": 89
+    },
+    "rope_s8": {
+     "dispatches": 12,
+     "elements": 570240,
+     "n_differ": 460867,
+     "max_abs_err": 57
+    },
+    "matmul_b_s8": {
+     "dispatches": 12,
+     "elements": 1591920,
+     "n_differ": 1329338,
+     "max_abs_err": 66
+    },
+    "softmax_s8": {
+     "dispatches": 6,
+     "elements": 1306800,
+     "n_differ": 219048,
+     "max_abs_err": 83
+    },
+    "add_s8": {
+     "dispatches": 12,
+     "elements": 570240,
+     "n_differ": 368560,
+     "max_abs_err": 43
+    }
+   },
+   "first_differing_dispatch": {
+    "dispatch": 2,
+    "name": "stem.groupnorm",
+    "op": "groupnorm_s8",
+    "tensor": "stem_groupnorm",
+    "elements": 287712,
+    "max_abs_err": 1,
+    "n_differ": 279
+   },
+   "output_elements": 47520,
+   "output_vs_python_golden_max_abs_err": 27,
+   "output_vs_python_golden_n_differ": 15203,
+   "every_dispatch_bit_exact": false,
+   "dispatches": 129,
+   "slow_path": [
+    {
+     "kernel": "add_s8",
+     "slow": "0",
+     "elements": "570240"
+    },
+    {
+     "kernel": "rope_s8",
+     "slow": "60",
+     "elements": "570240"
+    },
+    {
+     "kernel": "matmul_b_s8",
+     "slow": "21",
+     "elements": "1591920"
+    }
+   ]
+  }
+ },
+ "b4_note": "each variant's generated C end to end on the host (pext.h software model of MBP). Both contain numeric_drift kernels, so the output differs from the Python golden; that output is baked as the variant's host-C golden, which the board must reproduce exactly. slow_path = elements of the exact integer kernels that took the binary32 slow path on real speech.",
+ "golden_c_float_evidence": {
+  "what": "the same extraction WITHOUT MB_INT8_GOLDEN_C_FLOAT=1 (stock simulator), compared with the C-exact golden that host gate (a) proves equal to the reference C at every dispatch",
+  "first_differing_dispatch": {
+   "name": "add_8",
+   "op": "add_s8",
+   "elements_differing": 2,
+   "max_abs_err": 1,
+   "cause": "np.round (half-to-even) against the reference's roundf (half-away)"
+  },
+  "output_elements_differing": 1289,
+  "output_elements": 47520,
+  "output_max_abs_err": 12
+ }
+}

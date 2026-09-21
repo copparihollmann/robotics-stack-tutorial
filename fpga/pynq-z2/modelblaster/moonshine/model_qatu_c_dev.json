@@ -1,0 +1,155 @@
+{
+ "what": "WER of ModelBlaster's GENERATED C (host build, bit-exact with the device by the host gates) for Moonshine Tiny's encoder, HF float decoder, greedy, 40 tokens",
+ "set": {
+  "name": "dev_clean <= 4 s",
+  "utterances": 765,
+  "speakers": 40,
+  "words": 5944,
+  "subset_of_n": null
+ },
+ "float": {
+  "wer_vs_reference": {
+   "wer": 0.10615746971736205,
+   "errors": 631,
+   "words": 5944,
+   "utterances": 765
+  }
+ },
+ "decoder": {
+  "max_new_tokens": 40,
+  "greedy": true,
+  "checkpoint": "UsefulSensors/moonshine-tiny@390624ed33d594443aa4aa221f5b9f283b545b5a"
+ },
+ "variants": {
+  "QATU_nl": {
+   "ir": "<repo>/out/qatu_real/ir",
+   "gen": "<repo>/out/qatu_real/gen_nl",
+   "q16_plan": null,
+   "input_dtype": "i8",
+   "input_scale": 0.004313070943036418,
+   "output_scale": 0.04197640624760064,
+   "kernel_picks": {
+    "add_s8": "pext_int_add",
+    "conv2d_s8": "pext_patch_dot8",
+    "gelu_s8": "pext_int_lut",
+    "groupnorm_s8": "pext_int_rsqrt",
+    "layernorm_s8": "pext_int_rsqrt",
+    "linear_s8": "pext_row_dot8",
+    "matmul_b_s8": "pext_dot8_exact",
+    "permute4_s8": "reference",
+    "rope_s8": "pext_int_rot",
+    "softmax_s8": "pext_int_row",
+    "tanh_s8": "pext_memo_lut"
+   },
+   "wer_vs_reference": {
+    "wer": 0.1260094212651413,
+    "errors": 749,
+    "words": 5944,
+    "utterances": 765
+   },
+   "wer_vs_float": {
+    "wer": 0.08679624664879357,
+    "errors": 518,
+    "words": 5968,
+    "utterances": 765
+   },
+   "sqnr_db": 13.22127243441681,
+   "cosine": 0.9758468909411316,
+   "identical_to_float_transcript": 512,
+   "host_seconds": 82.6,
+   "minus_float": {
+    "delta_wer": 0.019851951547779273,
+    "ci95": [
+     0.010470855733117315,
+     0.029696528211379695
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "differs_from_float": 253,
+   "examples_differing": [
+    {
+     "id": "1272-135031-0008",
+     "reference": "I HOPE HE DOESN'T WORK TOO HARD SAID SHAGGY",
+     "float": "I hope he doesn't work too hard, said Shaggy.",
+     "c": "I hope he doesn't work to the hards of Shaggy."
+    },
+    {
+     "id": "1462-170145-0006",
+     "reference": "IF YOU'D SENT ME A NOTE OR TELEPHONED ME OR ANYTHING",
+     "float": "If he'd set he a note or telephone to me or anything.",
+     "c": "If he'd set me a note or telephone to me or anything."
+    },
+    {
+     "id": "1993-147149-0017",
+     "reference": "OH JEM DON'T GIVE WAY SO I CANNOT BEAR TO SEE YOU",
+     "float": "Oh, Jim, don't give way so. I cannot bear to see you.",
+     "c": "One can don't get me so, but cannot bear to see you."
+    },
+    {
+     "id": "2086-149220-0046",
+     "reference": "PRAY GO TO BED FOR I AM SURE YOU MUST NEED REST",
+     "float": "Pray go to bed, for I am sure you must need rest.",
+     "c": "Pray go to bed, for I am sure you must eat rest."
+    },
+    {
+     "id": "251-118436-0018",
+     "reference": "I KNOW NOW WHAT BRINGS ME TO THE PYRE",
+     "float": "I know now what brings me to the power.",
+     "c": "I know now what brings me to the pyre."
+    },
+    {
+     "id": "3081-166546-0084",
+     "reference": "SWEETWATER HELP ME OUT OF THIS",
+     "float": "Sweet water, health me out of this.",
+     "c": "Sweet water, pelt me out of this."
+    },
+    {
+     "id": "3752-4944-0023",
+     "reference": "DEAD SAID DOCTOR MACKLEWAIN",
+     "float": "Dead, said Dr. McElwain.",
+     "c": "Dad said Dr. McEllaine."
+    },
+    {
+     "id": "5536-43358-0016",
+     "reference": "WHO MAY CONDEMN HIS SUPERSTITION",
+     "float": "Who may condemn his superstition.",
+     "c": "Who may condemn his superstation?"
+    },
+    {
+     "id": "5895-34629-0001",
+     "reference": "THE DOME OF SAINT PAUL'S WAS A DELIGHT TO URSUS",
+     "float": "The dome of saint Pauls was a delight to earth's.",
+     "c": "The dome of St. Paul's was a delight to Ursus."
+    },
+    {
+     "id": "6313-66125-0018",
+     "reference": "LIGE QUICKLY MADE FAST THE LINE TO A TREE",
+     "float": "Lies quickly make fast the line to a tree.",
+     "c": "Lies quickly make vests align to a tree."
+    },
+    {
+     "id": "6319-64726-0014",
+     "reference": "I HAVE WAITED LONG FOR YOU",
+     "float": "I have waited long for you.",
+     "c": "I is waited long for you."
+    },
+    {
+     "id": "777-126732-0073",
+     "reference": "HE ISN'T FIT TO HEAR WHAT'S SAID HERE HE BELIEVES IT'S ALL TRUE",
+     "float": "He's fit to hear what said here. He believes it's all true.",
+     "c": "He's a fit to hear what's said here. He believes it's all true."
+    }
+   ]
+  }
+ },
+ "calibration": {
+  "MB_INT8_CALIB_POLICY": "p99.9",
+  "MOONSHINE_CAL_SET": "librispeech",
+  "num_calibration": 64,
+  "pooled": true,
+  "patch": "patches/0108-modelblaster-int8-calibration-policy.patch",
+  "note": "percentile is POOLED over the calibration set; per-sample-then-max costs 5.05 points"
+ },
+ "checkpoint_dir": "<repo>/out/moonshine_qat"
+}

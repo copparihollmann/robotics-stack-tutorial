@@ -1,0 +1,473 @@
+{
+ "what": "FINALISTS on test-clean <=4 s, run once each; FLOAT SIMULATION (estimates)",
+ "eval": {
+  "utterances": 772,
+  "speakers": 40,
+  "words": 6146
+ },
+ "float": {
+  "wer_vs_reference": {
+   "wer": 0.07517084282460136,
+   "errors": 462,
+   "words": 6146,
+   "utterances": 772
+  }
+ },
+ "finalists": {
+  "W8A8 (as extracted)": {
+   "knobs": {},
+   "sqnr_db": 3.62910249842918,
+   "cosine": 0.7706233511433966,
+   "wer_vs_float": {
+    "wer": 1.1176949373270388,
+    "errors": 6866,
+    "words": 6143,
+    "utterances": 772
+   },
+   "wer_vs_reference": {
+    "wer": 1.1156849983729256,
+    "errors": 6857,
+    "words": 6146,
+    "utterances": 772
+   },
+   "notes": [],
+   "differs_from_float": 772,
+   "examples_differing": [
+    {
+     "id": "1089-134686-0001",
+     "reference": "STUFF IT INTO YOU HIS BELLY COUNSELLED HIM",
+     "float": "Stuff it into you, his belly counseled him.",
+     "int8": "That's it."
+    },
+    {
+     "id": "1320-122617-0022",
+     "reference": "THE DELAWARES ARE CHILDREN OF THE TORTOISE AND THEY OUTSTRIP THE DEER",
+     "float": "The Delawares are children of the tortoise, and they outstrip the deer.",
+     "int8": "The number is 100."
+    },
+    {
+     "id": "1995-1837-0000",
+     "reference": "HE KNEW THE SILVER FLEECE HIS AND ZORA'S MUST BE RUINED",
+     "float": "He knew the silver fleece, his and Zorah's must be ruined.",
+     "int8": "And then the moment, the moment, the moment, the moment."
+    },
+    {
+     "id": "237-134500-0020",
+     "reference": "YES DON'T YOU",
+     "float": "Yes, don't you?",
+     "int8": "The"
+    },
+    {
+     "id": "2830-3980-0024",
+     "reference": "IN THIS WHOLE EPISTLE PAUL TREATS OF THE RESURRECTION OF CHRIST",
+     "float": "In this whole pistol, Paul treats of the resurrection of Christ.",
+     "int8": "And this is the most important thing."
+    },
+    {
+     "id": "4446-2273-0012",
+     "reference": "THANK YOU BUT I DON'T LIKE IT SO WELL AS THIS",
+     "float": "Thank you, but I don't like it so well as this.",
+     "int8": "That's what I'm saying."
+    },
+    {
+     "id": "4970-29093-0008",
+     "reference": "HE WANTED TO BEGIN AT THE TOP OF THE LADDER",
+     "float": "He wanted to begin at the top of the ladder.",
+     "int8": "100% of the time, the 100% of the time,"
+    },
+    {
+     "id": "5142-33396-0041",
+     "reference": "SO I SET GUARDS OVER EVERY ONE IN THAT HOUSE",
+     "float": "So I set guards over everyone in that house.",
+     "int8": "The first one."
+    },
+    {
+     "id": "61-70968-0016",
+     "reference": "AND THEN THEY BECAME VEXED AND WOULD HAVE SNATCHED YOUR PURSE FROM US",
+     "float": "And then they became vexed, and would have snatched your purse from us.",
+     "int8": "And that is the end of the video."
+    },
+    {
+     "id": "6829-68769-0017",
+     "reference": "WORSE TOM WORSE N EVER REPLIED THE JAILER GLOOMILY",
+     "float": "Worse, Tom, horse and arrow replied the jailer gloomily.",
+     "int8": "I'm so excited. I'm so excited. I'm so excited."
+    },
+    {
+     "id": "7021-85628-0019",
+     "reference": "WITH ONE JUMP ANDERS GOT OUT OF HIS CHAIR",
+     "float": "With one jump, Anders got out of his chair.",
+     "int8": "I'm sorry. I'm sorry."
+    },
+    {
+     "id": "8455-210777-0021",
+     "reference": "BUT I MEAN TO HAVE MY INNINGS BEFORE LONG",
+     "float": "But I mean to have my innings before long.",
+     "int8": "I mean, that's the only thing."
+    }
+   ],
+   "examples_agreeing": []
+  },
+  "FINAL R: split stem (1, 64), stem weights 2 group(s), adds per-channel + o_proj/fc2 rows": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 2,
+     "stem.conv2": 2,
+     "stem.conv3": 2
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      64
+     ],
+     "stem_conv2": [
+      1,
+      64
+     ],
+     "stem_conv3": [
+      1,
+      64
+     ]
+    }
+   },
+   "sqnr_db": 13.878283957622784,
+   "cosine": 0.9794274412214777,
+   "wer_vs_float": {
+    "wer": 0.03662705518476315,
+    "errors": 225,
+    "words": 6143,
+    "utterances": 772
+   },
+   "wer_vs_reference": {
+    "wer": 0.08184184835665473,
+    "errors": 503,
+    "words": 6146,
+    "utterances": 772
+   },
+   "notes": [],
+   "differs_from_float": 139,
+   "examples_differing": [
+    {
+     "id": "1089-134686-0003",
+     "reference": "HELLO BERTIE ANY GOOD IN YOUR MIND",
+     "float": "How Bertie, any good in your mind?",
+     "int8": "Oh, Bertie, any good in your mind?"
+    },
+    {
+     "id": "1284-1181-0005",
+     "reference": "NO I FORGOT ALL ABOUT THE BRAINS EXCLAIMED THE WOMAN",
+     "float": "No, I forgot all about the brains, exclaimed the woman.",
+     "int8": "No, I forgot of them about the brains, exclaimed the woman."
+    },
+    {
+     "id": "1995-1837-0006",
+     "reference": "THE WORLD WAS WATER VEILED IN MISTS",
+     "float": "The world was water-veiled in mists.",
+     "int8": "The world was water-valed in mists."
+    },
+    {
+     "id": "237-134500-0016",
+     "reference": "I DON'T KNOW ALL OF THEM BUT I KNOW LINDENS ARE",
+     "float": "I don't know all of them, but I know the Indians are.",
+     "int8": "I don't know all of them, but I know then and thus are."
+    },
+    {
+     "id": "2830-3980-0059",
+     "reference": "PAUL STICKS TO HIS THEME",
+     "float": "Pause text to its theme.",
+     "int8": "Pause text to a theme."
+    },
+    {
+     "id": "4446-2271-0006",
+     "reference": "HE'S BEEN WANTING TO MARRY HILDA THESE THREE YEARS AND MORE",
+     "float": "He's been wanting to marry Hilda these three years and more.",
+     "int8": "He's been wanted to marry Hilda these three years and more."
+    },
+    {
+     "id": "4970-29095-0011",
+     "reference": "DOES THEE THINK THEE COULD STAND IT SIX MONTHS",
+     "float": "Does the think be could stand at six months?",
+     "int8": "As the \"think\" the could stand it six months."
+    },
+    {
+     "id": "5142-33396-0026",
+     "reference": "MY MEN LAUGHED YES A STINGY HOST",
+     "float": "My men laughed, Yes, a stingy host.",
+     "int8": "My men laughed. Yes, a stingy hoe's."
+    },
+    {
+     "id": "5683-32865-0001",
+     "reference": "SAID LORD CHELFORD ADDRESSING ME",
+     "float": "Said Lord Shelford, addressing me.",
+     "int8": "\"Sed Lord Chelford, addressing me.\""
+    },
+    {
+     "id": "6829-68769-0027",
+     "reference": "WHOSE NAME DID YOU SIGN TO THE CHECK ASKED KENNETH",
+     "float": "Whose name did you sign to the check? asked Kenneth.",
+     "int8": "Who's named it? She signed to the check, asked Kenneth."
+    },
+    {
+     "id": "6930-81414-0019",
+     "reference": "VOLTAIRE PICKED UP SOMETHING FROM THE GROUND AND LOOKED AT IT",
+     "float": "Mochair picked up something from the ground and looked at it.",
+     "int8": "Moe Chair picked up something from the ground and looked at it."
+    },
+    {
+     "id": "7176-92135-0033",
+     "reference": "RELAPSES INTO SILENCE FOR THE REST OF THE EVENING",
+     "float": "Relapers in the sides for the rest of the unit.",
+     "int8": "Relapers in the science for the rest of the yearning."
+    }
+   ],
+   "examples_agreeing": [
+    {
+     "id": "1089-134686-0001",
+     "reference": "STUFF IT INTO YOU HIS BELLY COUNSELLED HIM",
+     "float": "Stuff it into you, his belly counseled him.",
+     "int8": "Stuff it into you, his belly counseled him."
+    },
+    {
+     "id": "1089-134686-0014",
+     "reference": "HE TRIED TO THINK HOW IT COULD BE",
+     "float": "He tried to think how it could be.",
+     "int8": "He tried to think how it could be."
+    },
+    {
+     "id": "1089-134686-0016",
+     "reference": "THEN YOU CAN ASK HIM QUESTIONS ON THE CATECHISM DEDALUS",
+     "float": "Then you can ask him questions on the Catechism deadlifts.",
+     "int8": "Then you can ask him questions on the Catechism deadlifts."
+    },
+    {
+     "id": "1089-134686-0027",
+     "reference": "HE CLASPED HIS HANDS ON THE DESK AND SAID",
+     "float": "He clasped his hands on the desk and said.",
+     "int8": "He clasped his hands on the desk and said."
+    }
+   ]
+  },
+  "FINAL R: split stem (1, 16, 256), stem weights 4 group(s), adds per-channel + o_proj/fc2 rows": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "stem.conv1": 4,
+     "stem.conv2": 4,
+     "stem.conv3": 4
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "multi": {
+     "stem_conv1": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv2": [
+      1,
+      16,
+      256
+     ],
+     "stem_conv3": [
+      1,
+      16,
+      256
+     ]
+    }
+   },
+   "sqnr_db": 16.147267807614945,
+   "cosine": 0.9878679296178898,
+   "wer_vs_float": {
+    "wer": 0.028650496500081394,
+    "errors": 176,
+    "words": 6143,
+    "utterances": 772
+   },
+   "wer_vs_reference": {
+    "wer": 0.07517084282460136,
+    "errors": 462,
+    "words": 6146,
+    "utterances": 772
+   },
+   "notes": [],
+   "differs_from_float": 111,
+   "examples_differing": [
+    {
+     "id": "1089-134686-0003",
+     "reference": "HELLO BERTIE ANY GOOD IN YOUR MIND",
+     "float": "How Bertie, any good in your mind?",
+     "int8": "Hello Bertie, any good in your mind?"
+    },
+    {
+     "id": "1221-135767-0008",
+     "reference": "COME THEREFORE AND LET US FLING MUD AT THEM",
+     "float": "Come therefore and let us fling mud at them.",
+     "int8": "Come therefore and let us fling mudd at them."
+    },
+    {
+     "id": "1995-1837-0000",
+     "reference": "HE KNEW THE SILVER FLEECE HIS AND ZORA'S MUST BE RUINED",
+     "float": "He knew the silver fleece, his and Zorah's must be ruined.",
+     "int8": "He knew the silver fleece, his and Zoras must be ruined."
+    },
+    {
+     "id": "237-134493-0009",
+     "reference": "PLEASE WAIT FOR ME MARIE EMIL COAXED",
+     "float": "Please wait for me, Marie. Aimeel coaxed.",
+     "int8": "Please wait for me, Marie. Aimhill coaxed."
+    },
+    {
+     "id": "2830-3980-0020",
+     "reference": "THIS IS NO SINFUL PRIDE IT IS HOLY PRIDE",
+     "float": "This is no sinful pride, it is wholly pride.",
+     "int8": "This is no sinful pride, it is holy pride."
+    },
+    {
+     "id": "3729-6852-0021",
+     "reference": "I THANK HIM AND TAKE MY LEAVE",
+     "float": "I thank him and take my leaves.",
+     "int8": "I thank him and take my leave."
+    },
+    {
+     "id": "4446-2275-0006",
+     "reference": "I THOUGHT IT MIGHT BE SISTER KATE OR COUSIN MIKE WOULD BE HAPPENING ALONG",
+     "float": "I thought it might be Sister Cater, because a mic would be happening along.",
+     "int8": "I thought it might be Sister Cater, because in Mike would be happening along."
+    },
+    {
+     "id": "4992-41806-0005",
+     "reference": "NEXT CAME OLIVE'S TURN TO HELP IN THE CEREMONIES",
+     "float": "Next came olives turned to help in the ceremonies.",
+     "int8": "Next came Olive's turn to help in the ceremonies."
+    },
+    {
+     "id": "5142-33396-0049",
+     "reference": "HERE FRIEND TAKE IT AND HE THRUST IT INTO THE FARMER'S HAND",
+     "float": "Here, friend, take it, and he thrust into the farmer's hand.",
+     "int8": "Here, a friend take it, and he thrust into the farmer's hand."
+    },
+    {
+     "id": "61-70970-0003",
+     "reference": "IF FOR A WHIM YOU BEGGAR YOURSELF I CANNOT STAY YOU",
+     "float": "If for a whim you begger yourself, I cannot stay you.",
+     "int8": "If for a whim you beg your yourself, I cannot stay you."
+    },
+    {
+     "id": "6829-68771-0031",
+     "reference": "HER EYES WANDERED TO THE MAID'S HANDS",
+     "float": "Her eyes wandered to the maid's hand.",
+     "int8": "Her eyes wandered to the maid's hands."
+    },
+    {
+     "id": "7176-88083-0027",
+     "reference": "THEN THE LEADER PARTED FROM THE LINE",
+     "float": "Then the leader parted from the line.",
+     "int8": "The nadir parted from the line."
+    }
+   ],
+   "examples_agreeing": [
+    {
+     "id": "1089-134686-0001",
+     "reference": "STUFF IT INTO YOU HIS BELLY COUNSELLED HIM",
+     "float": "Stuff it into you, his belly counseled him.",
+     "int8": "Stuff it into you, his belly counseled him."
+    },
+    {
+     "id": "1089-134686-0014",
+     "reference": "HE TRIED TO THINK HOW IT COULD BE",
+     "float": "He tried to think how it could be.",
+     "int8": "He tried to think how it could be."
+    },
+    {
+     "id": "1089-134686-0016",
+     "reference": "THEN YOU CAN ASK HIM QUESTIONS ON THE CATECHISM DEDALUS",
+     "float": "Then you can ask him questions on the Catechism deadlifts.",
+     "int8": "Then you can ask him questions on the Catechism deadlifts."
+    },
+    {
+     "id": "1089-134686-0027",
+     "reference": "HE CLASPED HIS HANDS ON THE DESK AND SAID",
+     "float": "He clasped his hands on the desk and said.",
+     "int8": "He clasped his hands on the desk and said."
+    }
+   ]
+  }
+ }
+}

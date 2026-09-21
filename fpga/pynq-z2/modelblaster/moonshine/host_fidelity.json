@@ -1,0 +1,655 @@
+{
+ "what": "host gate (c): int8 encoder (generated C, host) + HF float decoder vs float encoder + HF float decoder, greedy",
+ "caveat": "SMALL-SAMPLE CHECK: hf-internal-testing/librispeech_asr_dummy, ONE speaker (1272), 16 whole-transcript utterances <= 4 s (zero-padded) and 8 centre-cropped 4 s windows of longer ones; none of them was a calibration clip. Not an accuracy measurement.",
+ "checkpoint": "UsefulSensors/moonshine-tiny@390624ed33d594443aa4aa221f5b9f283b545b5a",
+ "speech": "hf-internal-testing/librispeech_asr_dummy@5be91486e11a2d616f4ec5db8d3fd248585ac07a",
+ "transformers": "4.48.0",
+ "max_new_tokens": 26,
+ "variants": {
+  "ref": {
+   "ir": "<repo>/out/rocket_moonshine_enc/enc/ir",
+   "gen": "<repo>/out/rocket_moonshine_enc/enc/gen_ref",
+   "input_scale": 0.005243496632012796,
+   "output_scale": 0.058067137800802394,
+   "rows": [
+    {
+     "id": "1272-128104-0014",
+     "set": "eval",
+     "int8": "I hear it coming. I'm saying.",
+     "encoder_cosine": 0.7705660462379456
+    },
+    {
+     "id": "1272-135031-0008",
+     "set": "eval",
+     "int8": "So, we'll be better at work.",
+     "encoder_cosine": 0.8099334836006165
+    },
+    {
+     "id": "1272-135031-0009",
+     "set": "eval",
+     "int8": "It is what's going on.",
+     "encoder_cosine": 0.7549554705619812
+    },
+    {
+     "id": "1272-135031-0011",
+     "set": "eval",
+     "int8": "That's exactly.",
+     "encoder_cosine": 0.7955825924873352
+    },
+    {
+     "id": "1272-135031-0012",
+     "set": "eval",
+     "int8": "I don't know.",
+     "encoder_cosine": 0.7732036709785461
+    },
+    {
+     "id": "1272-135031-0013",
+     "set": "eval",
+     "int8": "I'm sure. I'm sure.",
+     "encoder_cosine": 0.7962714433670044
+    },
+    {
+     "id": "1272-135031-0014",
+     "set": "eval",
+     "int8": "Says the scissors.",
+     "encoder_cosine": 0.7106868624687195
+    },
+    {
+     "id": "1272-135031-0016",
+     "set": "eval",
+     "int8": "Yes, yes.",
+     "encoder_cosine": 0.7541940212249756
+    },
+    {
+     "id": "1272-135031-0018",
+     "set": "eval",
+     "int8": "Is this a good thing? Is this a good thing?",
+     "encoder_cosine": 0.7795516848564148
+    },
+    {
+     "id": "1272-135031-0019",
+     "set": "eval",
+     "int8": "So that's funny. We might have been too stunting.",
+     "encoder_cosine": 0.8196608424186707
+    },
+    {
+     "id": "1272-135031-0021",
+     "set": "eval",
+     "int8": "I do not know.",
+     "encoder_cosine": 0.8191858530044556
+    },
+    {
+     "id": "1272-135031-0022",
+     "set": "eval",
+     "int8": "This is the first time. This is the first time.",
+     "encoder_cosine": 0.7569615244865417
+    },
+    {
+     "id": "1272-141231-0013",
+     "set": "eval",
+     "int8": "156. 666. 666. 666. 666.",
+     "encoder_cosine": 0.7517896890640259
+    },
+    {
+     "id": "1272-141231-0016",
+     "set": "eval",
+     "int8": "600. 600. 600. 600. 600.",
+     "encoder_cosine": 0.7347419857978821
+    },
+    {
+     "id": "1272-141231-0017",
+     "set": "eval",
+     "int8": "You can't do any of these. You can't do some.",
+     "encoder_cosine": 0.7897523045539856
+    },
+    {
+     "id": "1272-141231-0024",
+     "set": "eval",
+     "int8": "This is basically impossible.",
+     "encoder_cosine": 0.8224138021469116
+    },
+    {
+     "id": "1272-128104-0001",
+     "set": "agreement",
+     "int8": "No, it's completely different.",
+     "encoder_cosine": 0.7815986275672913
+    },
+    {
+     "id": "1272-128104-0009",
+     "set": "agreement",
+     "int8": "The next time you're in the middle of the road, you're in the middle of the road.",
+     "encoder_cosine": 0.8381704092025757
+    },
+    {
+     "id": "1272-135031-0002",
+     "set": "agreement",
+     "int8": "The same way. The same way. The same way. The same way. The same way.",
+     "encoder_cosine": 0.7402310371398926
+    },
+    {
+     "id": "1272-135031-0017",
+     "set": "agreement",
+     "int8": "If you're not sure, maybe you can use the one you want to use.",
+     "encoder_cosine": 0.7947632670402527
+    },
+    {
+     "id": "1272-141231-0004",
+     "set": "agreement",
+     "int8": "One minute.",
+     "encoder_cosine": 0.7858527898788452
+    },
+    {
+     "id": "1272-141231-0012",
+     "set": "agreement",
+     "int8": "I'm just going to put the same thing in the middle of the room.",
+     "encoder_cosine": 0.8022980093955994
+    },
+    {
+     "id": "1272-141231-0022",
+     "set": "agreement",
+     "int8": "So see, I'm just going to do it.",
+     "encoder_cosine": 0.8009026050567627
+    },
+    {
+     "id": "1272-141231-0031",
+     "set": "agreement",
+     "int8": "I'm going to say that I'm going to be able to do this.",
+     "encoder_cosine": 0.7658736109733582
+    }
+   ],
+   "wer_int8_vs_float_all": 1.1090909090909091,
+   "wer_int8_vs_float_eval": 1.0632911392405062,
+   "wer_int8_vs_float_agreement": 1.1511627906976745,
+   "wer_int8_vs_reference_eval": 1.0625,
+   "mean_encoder_cosine": 0.7812142347296079,
+   "identical_transcripts": 0
+  },
+  "nl": {
+   "ir": "<repo>/out/rocket_moonshine_enc/enc/ir",
+   "gen": "<repo>/out/rocket_moonshine_enc/enc_nl/gen",
+   "input_scale": 0.005243496632012796,
+   "output_scale": 0.058067137800802394,
+   "rows": [
+    {
+     "id": "1272-128104-0014",
+     "set": "eval",
+     "int8": "I hear it. I'm sorry.",
+     "encoder_cosine": 0.7678939700126648
+    },
+    {
+     "id": "1272-135031-0008",
+     "set": "eval",
+     "int8": "So, we'll be better at work. Do you have a sense of sense?",
+     "encoder_cosine": 0.8111100196838379
+    },
+    {
+     "id": "1272-135031-0009",
+     "set": "eval",
+     "int8": "Says the best.",
+     "encoder_cosine": 0.7457807064056396
+    },
+    {
+     "id": "1272-135031-0011",
+     "set": "eval",
+     "int8": "I'm sorry. I'm sorry.",
+     "encoder_cosine": 0.7954416871070862
+    },
+    {
+     "id": "1272-135031-0012",
+     "set": "eval",
+     "int8": "I don't know.",
+     "encoder_cosine": 0.7669396996498108
+    },
+    {
+     "id": "1272-135031-0013",
+     "set": "eval",
+     "int8": "I'm sure it's a good thing. It's a good thing. It's a good thing. It",
+     "encoder_cosine": 0.7959398627281189
+    },
+    {
+     "id": "1272-135031-0014",
+     "set": "eval",
+     "int8": "Says the scissors.",
+     "encoder_cosine": 0.715354323387146
+    },
+    {
+     "id": "1272-135031-0016",
+     "set": "eval",
+     "int8": "Yes, yes.",
+     "encoder_cosine": 0.7477575540542603
+    },
+    {
+     "id": "1272-135031-0018",
+     "set": "eval",
+     "int8": "Says.",
+     "encoder_cosine": 0.7762293815612793
+    },
+    {
+     "id": "1272-135031-0019",
+     "set": "eval",
+     "int8": "Mm-hmm.",
+     "encoder_cosine": 0.8209023475646973
+    },
+    {
+     "id": "1272-135031-0021",
+     "set": "eval",
+     "int8": "I do that now.",
+     "encoder_cosine": 0.8161460757255554
+    },
+    {
+     "id": "1272-135031-0022",
+     "set": "eval",
+     "int8": "This is the most. This is the most.",
+     "encoder_cosine": 0.7482304573059082
+    },
+    {
+     "id": "1272-141231-0013",
+     "set": "eval",
+     "int8": "166. 666. 666. 666. 666.",
+     "encoder_cosine": 0.7512231469154358
+    },
+    {
+     "id": "1272-141231-0016",
+     "set": "eval",
+     "int8": "600. 600. 600. 600. 600.",
+     "encoder_cosine": 0.7358735203742981
+    },
+    {
+     "id": "1272-141231-0017",
+     "set": "eval",
+     "int8": "You can use it.",
+     "encoder_cosine": 0.7876293659210205
+    },
+    {
+     "id": "1272-141231-0024",
+     "set": "eval",
+     "int8": "This is basically impossible.",
+     "encoder_cosine": 0.8191004991531372
+    },
+    {
+     "id": "1272-128104-0001",
+     "set": "agreement",
+     "int8": "Nor is, you can do it.",
+     "encoder_cosine": 0.7863178849220276
+    },
+    {
+     "id": "1272-128104-0009",
+     "set": "agreement",
+     "int8": "The next time you're in the middle of the night, you're in the middle of the night.",
+     "encoder_cosine": 0.8379225730895996
+    },
+    {
+     "id": "1272-135031-0002",
+     "set": "agreement",
+     "int8": "The music is a bit of a bit of a bit of a bit of a bit of a bit of a bit of a bit",
+     "encoder_cosine": 0.7465658187866211
+    },
+    {
+     "id": "1272-135031-0017",
+     "set": "agreement",
+     "int8": "If you're not sure, you may be able to use a little bit of use.",
+     "encoder_cosine": 0.7997243404388428
+    },
+    {
+     "id": "1272-141231-0004",
+     "set": "agreement",
+     "int8": "One minute.",
+     "encoder_cosine": 0.7879377603530884
+    },
+    {
+     "id": "1272-141231-0012",
+     "set": "agreement",
+     "int8": "So I'm going to do part of this.",
+     "encoder_cosine": 0.8045597076416016
+    },
+    {
+     "id": "1272-141231-0022",
+     "set": "agreement",
+     "int8": "So see, I'm just... I'm just... I'm just... I'm just... I'm",
+     "encoder_cosine": 0.8003813028335571
+    },
+    {
+     "id": "1272-141231-0031",
+     "set": "agreement",
+     "int8": "So, it's a very, very, very, very, very, very, very, very, very, very,",
+     "encoder_cosine": 0.7644692659378052
+    }
+   ],
+   "wer_int8_vs_float_all": 1.1757575757575758,
+   "wer_int8_vs_float_eval": 1.1518987341772151,
+   "wer_int8_vs_float_agreement": 1.197674418604651,
+   "wer_int8_vs_reference_eval": 1.15,
+   "mean_encoder_cosine": 0.7803929696480433,
+   "identical_transcripts": 0
+  },
+  "ew": {
+   "ir": "<repo>/out/rocket_moonshine_enc/enc/ir",
+   "gen": "<repo>/out/rocket_moonshine_enc/enc_ew/gen",
+   "input_scale": 0.005243496632012796,
+   "output_scale": 0.058067137800802394,
+   "rows": [
+    {
+     "id": "1272-128104-0014",
+     "set": "eval",
+     "int8": "I hear it. I'm just saying.",
+     "encoder_cosine": 0.7647772431373596
+    },
+    {
+     "id": "1272-135031-0008",
+     "set": "eval",
+     "int8": "So, we'll be better at the work.",
+     "encoder_cosine": 0.8029584884643555
+    },
+    {
+     "id": "1272-135031-0009",
+     "set": "eval",
+     "int8": "It is a little bit.",
+     "encoder_cosine": 0.7483946681022644
+    },
+    {
+     "id": "1272-135031-0011",
+     "set": "eval",
+     "int8": "I'm sorry. I'm sorry. I'm sorry.",
+     "encoder_cosine": 0.7934613823890686
+    },
+    {
+     "id": "1272-135031-0012",
+     "set": "eval",
+     "int8": "I don't know.",
+     "encoder_cosine": 0.7682905197143555
+    },
+    {
+     "id": "1272-135031-0013",
+     "set": "eval",
+     "int8": "I'm sorry. I'm sorry. I'm sorry. I'm sorry. I'm sorry. I",
+     "encoder_cosine": 0.7920653223991394
+    },
+    {
+     "id": "1272-135031-0014",
+     "set": "eval",
+     "int8": "Siss.",
+     "encoder_cosine": 0.7108818292617798
+    },
+    {
+     "id": "1272-135031-0016",
+     "set": "eval",
+     "int8": "Yes, yes.",
+     "encoder_cosine": 0.7506896257400513
+    },
+    {
+     "id": "1272-135031-0018",
+     "set": "eval",
+     "int8": "This is a good one.",
+     "encoder_cosine": 0.7711002826690674
+    },
+    {
+     "id": "1272-135031-0019",
+     "set": "eval",
+     "int8": "That's funny, we might be able to do something.",
+     "encoder_cosine": 0.8248769640922546
+    },
+    {
+     "id": "1272-135031-0021",
+     "set": "eval",
+     "int8": "I do that now.",
+     "encoder_cosine": 0.8168477416038513
+    },
+    {
+     "id": "1272-135031-0022",
+     "set": "eval",
+     "int8": "This is the reason. This is the reason. This is the reason.",
+     "encoder_cosine": 0.7540897130966187
+    },
+    {
+     "id": "1272-141231-0013",
+     "set": "eval",
+     "int8": "20. 60. 60. 60. 60. 60. 6",
+     "encoder_cosine": 0.752713143825531
+    },
+    {
+     "id": "1272-141231-0016",
+     "set": "eval",
+     "int8": "6000000000000000000000000",
+     "encoder_cosine": 0.7361853718757629
+    },
+    {
+     "id": "1272-141231-0017",
+     "set": "eval",
+     "int8": "You can use the computer.",
+     "encoder_cosine": 0.7843777537345886
+    },
+    {
+     "id": "1272-141231-0024",
+     "set": "eval",
+     "int8": "This is basically impossible.",
+     "encoder_cosine": 0.8199899792671204
+    },
+    {
+     "id": "1272-128104-0001",
+     "set": "agreement",
+     "int8": "Nor is, you can do it, you can do it, you can do it, you can do it.",
+     "encoder_cosine": 0.7974154949188232
+    },
+    {
+     "id": "1272-128104-0009",
+     "set": "agreement",
+     "int8": "The next time you're in the hospital, you're in the hospital.",
+     "encoder_cosine": 0.8487474322319031
+    },
+    {
+     "id": "1272-135031-0002",
+     "set": "agreement",
+     "int8": "The museum is a museum that is a museum that is a museum that is a museum that is a museum that is a museum that",
+     "encoder_cosine": 0.7445773482322693
+    },
+    {
+     "id": "1272-135031-0017",
+     "set": "agreement",
+     "int8": "If we look sharp, we may be able to do something more easy.",
+     "encoder_cosine": 0.796072781085968
+    },
+    {
+     "id": "1272-141231-0004",
+     "set": "agreement",
+     "int8": "One minute.",
+     "encoder_cosine": 0.7966374158859253
+    },
+    {
+     "id": "1272-141231-0012",
+     "set": "agreement",
+     "int8": "I'm going to do more.",
+     "encoder_cosine": 0.8002861142158508
+    },
+    {
+     "id": "1272-141231-0022",
+     "set": "agreement",
+     "int8": "So see, you see some stuff.",
+     "encoder_cosine": 0.8044987916946411
+    },
+    {
+     "id": "1272-141231-0031",
+     "set": "agreement",
+     "int8": "So, you know, it's a good thing.",
+     "encoder_cosine": 0.7573822736740112
+    }
+   ],
+   "wer_int8_vs_float_all": 1.1636363636363636,
+   "wer_int8_vs_float_eval": 1.1772151898734178,
+   "wer_int8_vs_float_agreement": 1.1511627906976745,
+   "wer_int8_vs_reference_eval": 1.175,
+   "mean_encoder_cosine": 0.78072157005469,
+   "identical_transcripts": 0
+  }
+ },
+ "float_wer_vs_reference_eval": 0.1,
+ "utterances": [
+  {
+   "id": "1272-128104-0014",
+   "set": "eval",
+   "reference": "BY HARRY QUILTER M A",
+   "seconds": 2.245,
+   "float": "By Harry Quilter M. A."
+  },
+  {
+   "id": "1272-135031-0008",
+   "set": "eval",
+   "reference": "I HOPE HE DOESN'T WORK TOO HARD SAID SHAGGY",
+   "seconds": 3.67,
+   "float": "I hope he doesn't work too hard, said Shaggy."
+  },
+  {
+   "id": "1272-135031-0009",
+   "set": "eval",
+   "reference": "HE DOESN'T WORK AT ALL",
+   "seconds": 1.91,
+   "float": "He doesn't work at all."
+  },
+  {
+   "id": "1272-135031-0011",
+   "set": "eval",
+   "reference": "NOT EXACTLY RETURNED KALIKO",
+   "seconds": 3.18,
+   "float": "But exactly, return Calico."
+  },
+  {
+   "id": "1272-135031-0012",
+   "set": "eval",
+   "reference": "WHERE IS MY BROTHER NOW",
+   "seconds": 2.04,
+   "float": "Where is my brother now?"
+  },
+  {
+   "id": "1272-135031-0013",
+   "set": "eval",
+   "reference": "INQUIRED SHAGGY IN THE METAL FOREST",
+   "seconds": 3.7,
+   "float": "Inquired shaggy in the metal forest."
+  },
+  {
+   "id": "1272-135031-0014",
+   "set": "eval",
+   "reference": "WHERE IS THAT",
+   "seconds": 1.74,
+   "float": "Where is that?"
+  },
+  {
+   "id": "1272-135031-0016",
+   "set": "eval",
+   "reference": "KALIKO HESITATED",
+   "seconds": 2.28,
+   "float": "Galico hesitated."
+  },
+  {
+   "id": "1272-135031-0018",
+   "set": "eval",
+   "reference": "OH NO I'M QUITE SURE HE DIDN'T",
+   "seconds": 2.445,
+   "float": "Oh no, I'm quite sure he didn't."
+  },
+  {
+   "id": "1272-135031-0019",
+   "set": "eval",
+   "reference": "THAT'S FUNNY REMARKED BETSY THOUGHTFULLY",
+   "seconds": 3.525,
+   "float": "That's funny, remarked Betsy thoughtfully."
+  },
+  {
+   "id": "1272-135031-0021",
+   "set": "eval",
+   "reference": "I DO NOT KNOW CONFESSED SHAGGY",
+   "seconds": 2.595,
+   "float": "I do not know confessed Shaggy."
+  },
+  {
+   "id": "1272-135031-0022",
+   "set": "eval",
+   "reference": "TRUE AGREED KALIKO",
+   "seconds": 2.695,
+   "float": "True, agreed Calico."
+  },
+  {
+   "id": "1272-141231-0013",
+   "set": "eval",
+   "reference": "THE TWENTIES",
+   "seconds": 1.64,
+   "float": "The twenties"
+  },
+  {
+   "id": "1272-141231-0016",
+   "set": "eval",
+   "reference": "TEN SECONDS",
+   "seconds": 1.85,
+   "float": "10 seconds."
+  },
+  {
+   "id": "1272-141231-0017",
+   "set": "eval",
+   "reference": "HE ASKED THE HANDLER WHO WAS KNEADING HIS ACHING MUSCLES",
+   "seconds": 3.735,
+   "float": "He asked the handler who was needing his aching levels."
+  },
+  {
+   "id": "1272-141231-0024",
+   "set": "eval",
+   "reference": "THIS IS PHYSICALLY IMPOSSIBLE WHEN CONSCIOUS",
+   "seconds": 3.64,
+   "float": "This is physically impossible when conscious."
+  },
+  {
+   "id": "1272-128104-0001",
+   "set": "agreement",
+   "reference": "NOR IS MISTER QUILTER'S MANNER LESS INTERESTING THAN HIS MATTER",
+   "seconds": 4.815,
+   "float": "Nor is Mr. Quilter's manner less interesting than his matter."
+  },
+  {
+   "id": "1272-128104-0009",
+   "set": "agreement",
+   "reference": "HE LAMENTS MOST BITTERLY THE DIVORCE THAT HAS BEEN MADE BETWEEN DECORATIVE ART AND WHAT WE USUALLY CALL PICTURES MAKES THE CUSTOMARY APPEAL TO THE LAST JUDGMENT AND REMINDS US THAT IN THE GREAT DAYS OF ART MICHAEL ANGELO WAS THE FURNISHING UPHOLSTERER",
+   "seconds": 18.29,
+   "float": "Call pictures. Makes the customary appeal to the last 2000."
+  },
+  {
+   "id": "1272-135031-0002",
+   "set": "agreement",
+   "reference": "I HAVE REMAINED A PRISONER ONLY BECAUSE I WISHED TO BE ONE AND WITH THIS HE STEPPED FORWARD AND BURST THE STOUT CHAINS AS EASILY AS IF THEY HAD BEEN THREADS",
+   "seconds": 11.475,
+   "float": "And with this, he stepped forward and burnt."
+  },
+  {
+   "id": "1272-135031-0017",
+   "set": "agreement",
+   "reference": "HOWEVER IF WE LOOK SHARP WE MAY BE ABLE TO DISCOVER ONE OF THESE SECRET WAYS",
+   "seconds": 6.86,
+   "float": "If we look sharp, we may be able to discover one of these"
+  },
+  {
+   "id": "1272-141231-0004",
+   "set": "agreement",
+   "reference": "ONE MINUTE A VOICE SAID AND THE TIME BUZZER SOUNDED",
+   "seconds": 5.09,
+   "float": "One minute a voice said, and the time buzzers sounded."
+  },
+  {
+   "id": "1272-141231-0012",
+   "set": "agreement",
+   "reference": "I'M HERE BECAUSE THE MATTER IS OF UTMOST IMPORTANCE AND BRANDD IS THE ONE I MUST SEE NOW STAND ASIDE",
+   "seconds": 7.74,
+   "float": "is of utmost importance. And brand is the one I must see."
+  },
+  {
+   "id": "1272-141231-0022",
+   "set": "agreement",
+   "reference": "THERE APPEARED TO BE AN IMMEDIATE ASSOCIATION WITH THE DEATH TRAUMA AS IF THE TWO WERE INEXTRICABLY LINKED INTO ONE",
+   "seconds": 8.35,
+   "float": "Association, what's the death trauma as if the two were in a."
+  },
+  {
+   "id": "1272-141231-0031",
+   "set": "agreement",
+   "reference": "A WAVE OF DESPAIR ROLLED OUT FROM IROLG BRION SENSED IT AND KNEW THE FIFTH POINT WAS HIS",
+   "seconds": 7.115,
+   "float": "A rolled out from Irogl, reincensed it and knew the fist point."
+  }
+ ]
+}

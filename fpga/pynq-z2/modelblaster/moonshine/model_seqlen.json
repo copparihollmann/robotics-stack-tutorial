@@ -1,0 +1,634 @@
+{
+ "what": "What shortening the ENCODER SEQUENCE costs in WER -- as a curve, over the ways of shortening it.",
+ "window_s": 4.0,
+ "n_samples": 64000,
+ "max_new_tokens": 40,
+ "greedy": true,
+ "device": "cuda",
+ "whole_set": true,
+ "variants": [
+  {
+   "name": "base",
+   "conv_strides": [
+    64,
+    3,
+    2
+   ],
+   "post": null,
+   "post_k": 1,
+   "rope": "index",
+   "T1": 999,
+   "T2": 331,
+   "T3_before_post": 165,
+   "T": 165,
+   "samples_per_frame": 384,
+   "rope_position_step": 1.0,
+   "ms_per_frame": 24.0,
+   "T_vs_base": 1.0
+  },
+  {
+   "name": "c3s3.index",
+   "conv_strides": [
+    64,
+    3,
+    3
+   ],
+   "post": null,
+   "post_k": 1,
+   "rope": "index",
+   "T1": 999,
+   "T2": 331,
+   "T3_before_post": 110,
+   "T": 110,
+   "samples_per_frame": 576,
+   "rope_position_step": 1.0,
+   "ms_per_frame": 36.0,
+   "T_vs_base": 0.6666666666666666
+  },
+  {
+   "name": "c3s4.index",
+   "conv_strides": [
+    64,
+    3,
+    4
+   ],
+   "post": null,
+   "post_k": 1,
+   "rope": "index",
+   "T1": 999,
+   "T2": 331,
+   "T3_before_post": 83,
+   "T": 83,
+   "samples_per_frame": 768,
+   "rope_position_step": 1.0,
+   "ms_per_frame": 48.0,
+   "T_vs_base": 0.503030303030303
+  },
+  {
+   "name": "c1s128.time",
+   "conv_strides": [
+    128,
+    3,
+    2
+   ],
+   "post": null,
+   "post_k": 1,
+   "rope": "time",
+   "T1": 500,
+   "T2": 165,
+   "T3_before_post": 82,
+   "T": 82,
+   "samples_per_frame": 768,
+   "rope_position_step": 2.0,
+   "ms_per_frame": 48.0,
+   "T_vs_base": 0.49696969696969695
+  },
+  {
+   "name": "c2s6.time",
+   "conv_strides": [
+    64,
+    6,
+    2
+   ],
+   "post": null,
+   "post_k": 1,
+   "rope": "time",
+   "T1": 999,
+   "T2": 166,
+   "T3_before_post": 82,
+   "T": 82,
+   "samples_per_frame": 768,
+   "rope_position_step": 2.0,
+   "ms_per_frame": 48.0,
+   "T_vs_base": 0.49696969696969695
+  },
+  {
+   "name": "c3s3.time",
+   "conv_strides": [
+    64,
+    3,
+    3
+   ],
+   "post": null,
+   "post_k": 1,
+   "rope": "time",
+   "T1": 999,
+   "T2": 331,
+   "T3_before_post": 110,
+   "T": 110,
+   "samples_per_frame": 576,
+   "rope_position_step": 1.5,
+   "ms_per_frame": 36.0,
+   "T_vs_base": 0.6666666666666666
+  },
+  {
+   "name": "c3s4.time",
+   "conv_strides": [
+    64,
+    3,
+    4
+   ],
+   "post": null,
+   "post_k": 1,
+   "rope": "time",
+   "T1": 999,
+   "T2": 331,
+   "T3_before_post": 83,
+   "T": 83,
+   "samples_per_frame": 768,
+   "rope_position_step": 2.0,
+   "ms_per_frame": 48.0,
+   "T_vs_base": 0.503030303030303
+  },
+  {
+   "name": "c3s5.time",
+   "conv_strides": [
+    64,
+    3,
+    5
+   ],
+   "post": null,
+   "post_k": 1,
+   "rope": "time",
+   "T1": 999,
+   "T2": 331,
+   "T3_before_post": 66,
+   "T": 66,
+   "samples_per_frame": 960,
+   "rope_position_step": 2.5,
+   "ms_per_frame": 60.0,
+   "T_vs_base": 0.4
+  },
+  {
+   "name": "c3s6.time",
+   "conv_strides": [
+    64,
+    3,
+    6
+   ],
+   "post": null,
+   "post_k": 1,
+   "rope": "time",
+   "T1": 999,
+   "T2": 331,
+   "T3_before_post": 55,
+   "T": 55,
+   "samples_per_frame": 1152,
+   "rope_position_step": 3.0,
+   "ms_per_frame": 72.0,
+   "T_vs_base": 0.3333333333333333
+  },
+  {
+   "name": "dec2.time",
+   "conv_strides": [
+    64,
+    3,
+    2
+   ],
+   "post": "decimate",
+   "post_k": 2,
+   "rope": "time",
+   "T1": 999,
+   "T2": 331,
+   "T3_before_post": 165,
+   "T": 82,
+   "samples_per_frame": 768,
+   "rope_position_step": 2.0,
+   "ms_per_frame": 48.0,
+   "T_vs_base": 0.49696969696969695
+  },
+  {
+   "name": "pool2.time",
+   "conv_strides": [
+    64,
+    3,
+    2
+   ],
+   "post": "pool",
+   "post_k": 2,
+   "rope": "time",
+   "T1": 999,
+   "T2": 331,
+   "T3_before_post": 165,
+   "T": 82,
+   "samples_per_frame": 768,
+   "rope_position_step": 2.0,
+   "ms_per_frame": 48.0,
+   "T_vs_base": 0.49696969696969695
+  }
+ ],
+ "sets": {
+  "dev": {
+   "utterances": 765,
+   "words": 5944,
+   "encoder_gate_max_abs_diff_vs_hf": 0.0,
+   "variants": {
+    "c3s3.index": {
+     "T": 110,
+     "T_vs_base": 0.6666666666666666,
+     "wer_vs_reference": 0.10296096904441454,
+     "errors": 612,
+     "words": 5944,
+     "non_empty_hypotheses": 765,
+     "identical_to_base_transcript": 511,
+     "minus_base": {
+      "delta_wer": 0.029946164199192462,
+      "ci95": [
+       0.02280575559337546,
+       0.037571726025162386
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c3s4.index": {
+     "T": 83,
+     "T_vs_base": 0.503030303030303,
+     "wer_vs_reference": 0.21971736204576042,
+     "errors": 1306,
+     "words": 5944,
+     "non_empty_hypotheses": 765,
+     "identical_to_base_transcript": 281,
+     "minus_base": {
+      "delta_wer": 0.14670255720053835,
+      "ci95": [
+       0.1321927961826764,
+       0.16151755014045382
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c1s128.time": {
+     "T": 82,
+     "T_vs_base": 0.49696969696969695,
+     "wer_vs_reference": 0.33378196500672946,
+     "errors": 1984,
+     "words": 5944,
+     "non_empty_hypotheses": 763,
+     "identical_to_base_transcript": 157,
+     "minus_base": {
+      "delta_wer": 0.2607671601615074,
+      "ci95": [
+       0.23919866503007547,
+       0.2840247546435525
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c2s6.time": {
+     "T": 82,
+     "T_vs_base": 0.49696969696969695,
+     "wer_vs_reference": 0.14098250336473755,
+     "errors": 838,
+     "words": 5944,
+     "non_empty_hypotheses": 765,
+     "identical_to_base_transcript": 416,
+     "minus_base": {
+      "delta_wer": 0.06796769851951548,
+      "ci95": [
+       0.0575989386923272,
+       0.07947565834877567
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c3s3.time": {
+     "T": 110,
+     "T_vs_base": 0.6666666666666666,
+     "wer_vs_reference": 0.08041722745625841,
+     "errors": 478,
+     "words": 5944,
+     "non_empty_hypotheses": 765,
+     "identical_to_base_transcript": 626,
+     "minus_base": {
+      "delta_wer": 0.007402422611036339,
+      "ci95": [
+       0.0029064424903007297,
+       0.012375136225743018
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c3s4.time": {
+     "T": 83,
+     "T_vs_base": 0.503030303030303,
+     "wer_vs_reference": 0.09740915208613728,
+     "errors": 579,
+     "words": 5944,
+     "non_empty_hypotheses": 765,
+     "identical_to_base_transcript": 536,
+     "minus_base": {
+      "delta_wer": 0.024394347240915208,
+      "ci95": [
+       0.017877397974800573,
+       0.03130229197850783
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c3s5.time": {
+     "T": 66,
+     "T_vs_base": 0.4,
+     "wer_vs_reference": 0.14670255720053835,
+     "errors": 872,
+     "words": 5944,
+     "non_empty_hypotheses": 765,
+     "identical_to_base_transcript": 393,
+     "minus_base": {
+      "delta_wer": 0.07368775235531629,
+      "ci95": [
+       0.06397894326466969,
+       0.08493849813115868
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c3s6.time": {
+     "T": 55,
+     "T_vs_base": 0.3333333333333333,
+     "wer_vs_reference": 0.2651413189771198,
+     "errors": 1576,
+     "words": 5944,
+     "non_empty_hypotheses": 765,
+     "identical_to_base_transcript": 215,
+     "minus_base": {
+      "delta_wer": 0.1921265141318977,
+      "ci95": [
+       0.17665650130700694,
+       0.20915832461991796
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "dec2.time": {
+     "T": 82,
+     "T_vs_base": 0.49696969696969695,
+     "wer_vs_reference": 0.09740915208613728,
+     "errors": 579,
+     "words": 5944,
+     "non_empty_hypotheses": 765,
+     "identical_to_base_transcript": 536,
+     "minus_base": {
+      "delta_wer": 0.024394347240915208,
+      "ci95": [
+       0.017877397974800573,
+       0.03130229197850783
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "pool2.time": {
+     "T": 82,
+     "T_vs_base": 0.49696969696969695,
+     "wer_vs_reference": 0.1063257065948856,
+     "errors": 632,
+     "words": 5944,
+     "non_empty_hypotheses": 765,
+     "identical_to_base_transcript": 505,
+     "minus_base": {
+      "delta_wer": 0.03331090174966353,
+      "ci95": [
+       0.025080770518439963,
+       0.041932205180533644
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    }
+   },
+   "baseline": {
+    "wer_vs_reference": 0.07301480484522208,
+    "errors": 434,
+    "words": 5944,
+    "non_empty_hypotheses": 765
+   }
+  },
+  "test": {
+   "utterances": 772,
+   "words": 6146,
+   "encoder_gate_max_abs_diff_vs_hf": 0.0,
+   "variants": {
+    "c3s3.index": {
+     "T": 110,
+     "T_vs_base": 0.6666666666666666,
+     "wer_vs_reference": 0.10592255125284739,
+     "errors": 651,
+     "words": 6146,
+     "non_empty_hypotheses": 772,
+     "identical_to_base_transcript": 496,
+     "minus_base": {
+      "delta_wer": 0.030751708428246014,
+      "ci95": [
+       0.022776479627113624,
+       0.0384649404953361
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c3s4.index": {
+     "T": 83,
+     "T_vs_base": 0.503030303030303,
+     "wer_vs_reference": 0.22925479986983405,
+     "errors": 1409,
+     "words": 6146,
+     "non_empty_hypotheses": 772,
+     "identical_to_base_transcript": 267,
+     "minus_base": {
+      "delta_wer": 0.15408395704523267,
+      "ci95": [
+       0.13850129989294999,
+       0.17018262139464976
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c1s128.time": {
+     "T": 82,
+     "T_vs_base": 0.49696969696969695,
+     "wer_vs_reference": 0.3641392775789131,
+     "errors": 2238,
+     "words": 6146,
+     "non_empty_hypotheses": 772,
+     "identical_to_base_transcript": 143,
+     "minus_base": {
+      "delta_wer": 0.2889684347543117,
+      "ci95": [
+       0.2687043428699207,
+       0.3105742018974525
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c2s6.time": {
+     "T": 82,
+     "T_vs_base": 0.49696969696969695,
+     "wer_vs_reference": 0.14367068011714937,
+     "errors": 883,
+     "words": 6146,
+     "non_empty_hypotheses": 772,
+     "identical_to_base_transcript": 372,
+     "minus_base": {
+      "delta_wer": 0.068499837292548,
+      "ci95": [
+       0.05829921069865233,
+       0.07899017489230377
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c3s3.time": {
+     "T": 110,
+     "T_vs_base": 0.6666666666666666,
+     "wer_vs_reference": 0.08314350797266515,
+     "errors": 511,
+     "words": 6146,
+     "non_empty_hypotheses": 772,
+     "identical_to_base_transcript": 613,
+     "minus_base": {
+      "delta_wer": 0.007972665148063782,
+      "ci95": [
+       0.002304159245932226,
+       0.013825915681675223
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c3s4.time": {
+     "T": 83,
+     "T_vs_base": 0.503030303030303,
+     "wer_vs_reference": 0.10185486495281484,
+     "errors": 626,
+     "words": 6146,
+     "non_empty_hypotheses": 772,
+     "identical_to_base_transcript": 510,
+     "minus_base": {
+      "delta_wer": 0.026684022128213473,
+      "ci95": [
+       0.019601121431544882,
+       0.03431141300998334
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c3s5.time": {
+     "T": 66,
+     "T_vs_base": 0.4,
+     "wer_vs_reference": 0.1560364464692483,
+     "errors": 959,
+     "words": 6146,
+     "non_empty_hypotheses": 772,
+     "identical_to_base_transcript": 390,
+     "minus_base": {
+      "delta_wer": 0.08086560364464693,
+      "ci95": [
+       0.06933696638446515,
+       0.09241990136077462
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "c3s6.time": {
+     "T": 55,
+     "T_vs_base": 0.3333333333333333,
+     "wer_vs_reference": 0.2762772534982102,
+     "errors": 1698,
+     "words": 6146,
+     "non_empty_hypotheses": 772,
+     "identical_to_base_transcript": 209,
+     "minus_base": {
+      "delta_wer": 0.20110641067360885,
+      "ci95": [
+       0.18426938365154574,
+       0.21746729739730472
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "dec2.time": {
+     "T": 82,
+     "T_vs_base": 0.49696969696969695,
+     "wer_vs_reference": 0.10185486495281484,
+     "errors": 626,
+     "words": 6146,
+     "non_empty_hypotheses": 772,
+     "identical_to_base_transcript": 510,
+     "minus_base": {
+      "delta_wer": 0.026684022128213473,
+      "ci95": [
+       0.019601121431544882,
+       0.03431141300998334
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    },
+    "pool2.time": {
+     "T": 82,
+     "T_vs_base": 0.49696969696969695,
+     "wer_vs_reference": 0.11226814188089815,
+     "errors": 690,
+     "words": 6146,
+     "non_empty_hypotheses": 772,
+     "identical_to_base_transcript": 501,
+     "minus_base": {
+      "delta_wer": 0.03709729905629678,
+      "ci95": [
+       0.028794424142137256,
+       0.04628192551207438
+      ],
+      "resamples": 2000,
+      "unit": "utterance"
+     }
+    }
+   },
+   "baseline": {
+    "wer_vs_reference": 0.07517084282460136,
+    "errors": 462,
+    "words": 6146,
+    "non_empty_hypotheses": 772
+   }
+  }
+ },
+ "elapsed_s": 60.9,
+ "inference_time_or_retrain": {
+  "weights": "UNCHANGED.  Every variant runs the pinned checkpoint's own tensors; a convolution at stride k*s is the same convolution evaluated at a subset of its positions, and the post-stem variants add no parameter at all.  No variant introduces a tensor.",
+  "activation_ranges_measured": {
+   "what": "the statistic an int8 rebuild would have to recalibrate, measured over 96 dev utterances on the float model",
+   "encoder_output_absmax": {
+    "T165": 7.4499,
+    "T110": 7.4554,
+    "T83": 7.3891
+   },
+   "prologue_kx_vx_absmax": {
+    "T165": 17.0676,
+    "T110": 16.9603,
+    "T83": 17.2394
+   },
+   "verdict": "the ranges move by under 1 %, so the deployed scales carry over; this is the analogue of the max-|W| row surviving the vocabulary prune.  It is an ABSMAX over 96 utterances, and the extractor's policy is p99.9, so it indicates rather than proves that no recalibration is needed."
+  },
+  "what_it_DOES_need": "a re-extraction at the new shapes, of BOTH graphs: the encoder IR is built for one shape, and the decoder IR takes kx*/vx* as [1, T, 288] inputs, so T=83 changes its input tensors too.  That is a rebuild (the shape-ladder machinery already contemplated, ROCC_DECOUPLED s8.15.11), not a retrain.",
+  "not_measured": "the int8 WER of any variant.  Everything in this file is the FLOAT model. On the one prior float-to-int8 comparison this workstream has (the lm_head prune, L300) the int8 delta was 1.4x-2.1x the float delta; that is an extrapolation from a different knob and is not quoted as a prediction.",
+  "if_the_WER_must_be_recovered": {
+   "lever": "QAT at the new stride",
+   "script": "model_train.py",
+   "price": "the long QAT run's own budget: 480 GPU-minutes on a TITAN RTX, 101,987 steps over 162.7 h of LibriSpeech train_big (model_pilot_qat_long.json)",
+   "note": "this changes the schedule, not just the number, and it is a separate decision"
+  }
+ }
+}

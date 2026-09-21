@@ -1,0 +1,125 @@
+{
+ "what": "RTF_e2e on silicon, composed from two board records -- ENCODER RE-MEASURED with both lanes in ONE image (B45), DECODER carried forward unchanged and STALE",
+ "composed_not_measured": true,
+ "rtf_e2e_per_iteration": 4.772620509895292,
+ "supersedes": {
+  "record": "model_rtf_e2e.json",
+  "rtf_e2e_per_iteration": 5.533260334278254,
+  "what_changed": "the encoder half only: 3.9723 -> 3.2116, measured"
+ },
+ "encoder": {
+  "record": "board/b45_bothlanes_on_run.json",
+  "lab": "B45",
+  "measured": true,
+  "soc_magic": "0x5A5A002D",
+  "bitstream_md5": "1bae0310c1e13048b22b4da9c72901ab",
+  "rtf_steady": 3.211619174672189,
+  "steady_cycles": 442981960,
+  "control_in_session": {
+   "rtf_steady": 3.8056126686382608,
+   "steady_cycles": 524912098
+  },
+  "lanes": {
+   "layernorm_s8": "roccmoon_lane",
+   "gelu_s8": "roccmoon_lut",
+   "tanh_s8": "roccmoon_lut"
+  },
+  "cap_asked": 3
+ },
+ "decoder": {
+  "record": "<repo>/out/dec_cse_on/run.json",
+  "accounting": "rows_include_image",
+  "steps_unrolled": 24,
+  "mean_steps": 11.976470588235294,
+  "image_cycles_once": 416495624,
+  "step_cycles_incl_image": [
+   435773639,
+   17099424,
+   17121452,
+   17344315,
+   18001552,
+   17886573,
+   17868459,
+   17911175,
+   18341036,
+   18116276,
+   18205649,
+   18573632,
+   18547581,
+   18560732,
+   18636130,
+   18886009,
+   18846650,
+   18642325,
+   19474960,
+   19513486,
+   19563057,
+   19708755,
+   19914694,
+   19891134
+  ],
+  "step_cycles_steady": [
+   19278015,
+   17099424,
+   17121452,
+   17344315,
+   18001552,
+   17886573,
+   17868459,
+   17911175,
+   18341036,
+   18116276,
+   18205649,
+   18573632,
+   18547581,
+   18560732,
+   18636130,
+   18886009,
+   18846650,
+   18642325,
+   19474960,
+   19513486,
+   19563057,
+   19708755,
+   19914694,
+   19891134
+  ],
+  "cycles_per_iteration": 215310531.3647059,
+  "rtf_per_iteration": 1.561001335223103,
+  "cycles_cold": 631806155.3647059,
+  "rtf_cold": 4.580594576007577,
+  "measured": false,
+  "stale_because": [
+   "no lane at all: layernorm_s8 (456 dispatches) and silu_s8 are both on P-ext",
+   "predates MBXR_RT_CAP=4, MBXR_RT_PLACE_EARLY and MB_BUF_ALIGN64",
+   "measured on a different bitstream from the encoder half above"
+  ]
+ },
+ "assumes": [
+  "the two halves were measured in separate board runs and are ADDED; the harness runs one model per image, so they cannot be run as one without a multi-model build. Nothing here measures the transition between them.",
+  "the decoder's per-token cost is independent of the encoder having just run. In a real pipeline the decoder would start with the encoder's working set in cache, not its own -- so this composition is, if anything, optimistic about the decoder and pessimistic about nothing.",
+  "the mean token count is decoder_tokens_dev.json models.R.mean (dev_clean, 765 utterances); it was measured for candidate R's decoder, not for the exact decoder graph priced here.",
+  "the weight image build is charged once per BOOT, not once per utterance: the per-iteration figures subtract it (decoder step 0 carries all of it) and the cold figures keep it. A deployment that re-images per utterance pays the cold number.",
+  "the cross-attention prologue (float, off-board) is not counted at all.",
+  "NEW: the two halves are now on DIFFERENT BITSTREAMS -- the encoder on 0x5A5A002D with both lanes, the decoder on the record it was measured on -- where the previous composition had both halves on one config. Adding them assumes the SoC difference costs nothing.",
+  "NEW: the encoder half ran at MBXR_RT_CAP=3 because 0x5A5A002D is not in scripts/57's cap-4 list, while the decoder half was measured at cap 4. Both of B45's own arms are cap 3 so the -15.61 % is clean, but the ABSOLUTE encoder figure is a cap-3 figure.",
+  "NEW: the decoder half is stale in the direction of being too SLOW -- it has no lane and predates three measured improvements -- so this composition is pessimistic about the decoder, which is the opposite of the earlier assumption about cache state."
+ ],
+ "labels": {
+  "model": "Moonshine Tiny int8, candidate QATU (encoder, B45); decoder DEC (dec_cse_on), carried forward",
+  "clock_hz": 34482759.0,
+  "window_s": 4.0,
+  "eval_set": "timing on the baked 4.0 s calibration window; mean token count from decoder_tokens_dev.json (dev_clean, 765 utterances)",
+  "cold_or_steady": "per-iteration STEADY; cold not composed here because the two halves' image builds are on different bitstreams and cannot be added",
+  "stage": "generated C, backend roccmoon, curated MBP kernels",
+  "scope": "whole encoder + whole decoder, ADDED; nothing measures the transition"
+ },
+ "accuracy": {
+  "encoder_wer_dev_clean": "B44: the LayerNorm lane's core is 625 errors of 5,944 words over 765 utterances against the control's 643, paired-bootstrap CI [-1.033,+0.273] WER points -- no detectable change. The LUT lane's gelu is bit-identical to pext_int_lut by construction. No WER was run on THIS image."
+ },
+ "goal": {
+  "target": 1.0,
+  "measured_composed": 4.772620509895292,
+  "short_by_factor": 4.772620509895292
+ }
+}

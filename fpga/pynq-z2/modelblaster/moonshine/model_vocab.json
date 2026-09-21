@@ -1,0 +1,540 @@
+{
+ "what": "How much of Moonshine Tiny's 32,768-row lm_head an English demo actually uses, and what the",
+ "vocab": 32768,
+ "hidden": 288,
+ "lm_head_tied_to_embed_tokens": true,
+ "window_s": 4.0,
+ "max_new_tokens": 40,
+ "sets": {
+  "dev": {
+   "name": "dev_clean <= 4.0 s",
+   "utterances": 765,
+   "speakers": 40,
+   "words": 5944,
+   "float_wer_vs_reference": 0.07301480484522208,
+   "tokens_emitted_total": 8328,
+   "tokens_per_utterance_mean": 10.886274509803922,
+   "tokens_per_utterance_p50": 11.0,
+   "tokens_per_utterance_p95": 17.0,
+   "tokens_per_utterance_max": 23,
+   "distinct_rows_emitted": 2189,
+   "distinct_rows_in_reference_tokenisation": 558,
+   "max_row_id_emitted": 29991,
+   "frequency_coverage": {
+    "64": 0.4743035542747358,
+    "128": 0.5595581171950048,
+    "256": 0.6498559077809798,
+    "512": 0.7526416906820365,
+    "1024": 0.8601104707012488,
+    "2048": 0.9830691642651297,
+    "4096": 1.0,
+    "8192": 1.0
+   }
+  },
+  "test": {
+   "name": "test_clean <= 4.0 s",
+   "utterances": 772,
+   "speakers": 40,
+   "words": 6146,
+   "float_wer_vs_reference": 0.07517084282460136,
+   "tokens_emitted_total": 8537,
+   "tokens_per_utterance_mean": 11.058290155440414,
+   "tokens_per_utterance_p50": 11.0,
+   "tokens_per_utterance_p95": 17.449999999999932,
+   "tokens_per_utterance_max": 23,
+   "distinct_rows_emitted": 2177,
+   "distinct_rows_in_reference_tokenisation": 558,
+   "max_row_id_emitted": 29991,
+   "frequency_coverage": {
+    "64": 0.47686540939440086,
+    "128": 0.5641325992737496,
+    "256": 0.6549139041817968,
+    "512": 0.7576432001874195,
+    "1024": 0.8649408457303502,
+    "2048": 0.984889305376596,
+    "4096": 1.0,
+    "8192": 1.0
+   }
+  }
+ },
+ "row_inventory": {
+  "bpe_entries": 32000,
+  "added_token_rows": 771,
+  "rows_above_bpe_vocab": 768,
+  "rows_with_only_ascii_or_wordmark": 25491,
+  "rows_with_a_non_ascii_character": 6509,
+  "note": "the checkpoint carries a 32,000-entry Llama-style SentencePiece BPE plus 768 rows above it; the non-ASCII rows (CJK, Cyrillic, accented Latin) cannot be produced by an English transcript"
+ },
+ "kept_set_selection": {
+  "source": "train",
+  "rule": "rows the float model EMITS on LibriSpeech train-clean-100 (model_trainset.py --emit), most frequent first; disjoint from dev-clean and test-clean",
+  "always_kept": "<unk>/<s>/</s> + the 256 <0xNN> byte-fallback rows",
+  "byte_fallback": true,
+  "rows_emitted_by_the_source": 10549,
+  "source_tokens": 311950
+ },
+ "static_prune": [
+  {
+   "V_kept": 32768,
+   "fetched_bytes": 9961472,
+   "fetched_bytes_vs_full": 1.0,
+   "dev_tokens_outside_kept_pct": 0.0,
+   "dev_utterances_touched_pct": 0.0,
+   "test_tokens_outside_kept_pct": 0.0,
+   "test_utterances_touched_pct": 0.0
+  },
+  {
+   "V_kept": 16384,
+   "fetched_bytes": 4980736,
+   "fetched_bytes_vs_full": 0.5,
+   "dev_tokens_outside_kept_pct": 0.696445725264169,
+   "dev_utterances_touched_pct": 7.0588235294117645,
+   "test_tokens_outside_kept_pct": 0.784819023076022,
+   "test_utterances_touched_pct": 8.031088082901555
+  },
+  {
+   "V_kept": 11000,
+   "fetched_bytes": 3342336,
+   "fetched_bytes_vs_full": 0.3355263157894737,
+   "dev_tokens_outside_kept_pct": 1.0566762728146013,
+   "dev_utterances_touched_pct": 10.457516339869281,
+   "test_tokens_outside_kept_pct": 1.1362305259458827,
+   "test_utterances_touched_pct": 11.139896373056995
+  },
+  {
+   "V_kept": 8451,
+   "fetched_bytes": 2588672,
+   "fetched_bytes_vs_full": 0.2598684210526316,
+   "dev_tokens_outside_kept_pct": 2.5456292026897214,
+   "dev_utterances_touched_pct": 21.568627450980394,
+   "test_tokens_outside_kept_pct": 2.249033618367108,
+   "test_utterances_touched_pct": 20.72538860103627
+  },
+  {
+   "V_kept": 6403,
+   "fetched_bytes": 1966080,
+   "fetched_bytes_vs_full": 0.19736842105263158,
+   "dev_tokens_outside_kept_pct": 4.298751200768492,
+   "dev_utterances_touched_pct": 33.59477124183007,
+   "test_tokens_outside_kept_pct": 3.8655265315684666,
+   "test_utterances_touched_pct": 32.512953367875646
+  },
+  {
+   "V_kept": 4355,
+   "fetched_bytes": 1343488,
+   "fetched_bytes_vs_full": 0.13486842105263158,
+   "dev_tokens_outside_kept_pct": 7.312680115273775,
+   "dev_utterances_touched_pct": 51.89542483660131,
+   "test_tokens_outside_kept_pct": 7.239076959119129,
+   "test_utterances_touched_pct": 51.03626943005181
+  },
+  {
+   "V_kept": 3331,
+   "fetched_bytes": 1015808,
+   "fetched_bytes_vs_full": 0.10197368421052631,
+   "dev_tokens_outside_kept_pct": 10.434678194044189,
+   "dev_utterances_touched_pct": 66.66666666666667,
+   "test_tokens_outside_kept_pct": 10.460349068759518,
+   "test_utterances_touched_pct": 64.63730569948187
+  },
+  {
+   "V_kept": 2307,
+   "fetched_bytes": 720896,
+   "fetched_bytes_vs_full": 0.07236842105263158,
+   "dev_tokens_outside_kept_pct": 14.889529298751201,
+   "dev_utterances_touched_pct": 78.95424836601308,
+   "test_tokens_outside_kept_pct": 14.09160126508141,
+   "test_utterances_touched_pct": 78.62694300518135
+  },
+  {
+   "V_kept": 1283,
+   "fetched_bytes": 393216,
+   "fetched_bytes_vs_full": 0.039473684210526314,
+   "dev_tokens_outside_kept_pct": 22.23823246878002,
+   "dev_utterances_touched_pct": 90.98039215686275,
+   "test_tokens_outside_kept_pct": 21.693803443832728,
+   "test_utterances_touched_pct": 91.32124352331606
+  }
+ ],
+ "static_prune_wer": [
+  {
+   "V_kept": 16384,
+   "fetched_bytes": 4980736,
+   "dev": {
+    "wer_vs_reference": 0.0765477792732167,
+    "delta_vs_float": {
+     "delta_wer": 0.0035329744279946162,
+     "ci95": [
+      0.0010382608527916824,
+      0.005811130009382637
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "test": {
+    "wer_vs_reference": 0.07809957696062479,
+    "delta_vs_float": {
+     "delta_wer": 0.00292873413602343,
+     "ci95": [
+      0.0004914588934886068,
+      0.005490248981758111
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   }
+  },
+  {
+   "V_kept": 11000,
+   "fetched_bytes": 3342336,
+   "dev": {
+    "wer_vs_reference": 0.077557200538358,
+    "delta_vs_float": {
+     "delta_wer": 0.004542395693135935,
+     "ci95": [
+      0.001693709638381905,
+      0.007371418998157145
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "test": {
+    "wer_vs_reference": 0.08135372600065083,
+    "delta_vs_float": {
+     "delta_wer": 0.006182883176049463,
+     "ci95": [
+      0.003170134923238717,
+      0.009229761308502433
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   }
+  },
+  {
+   "V_kept": 8451,
+   "fetched_bytes": 2588672,
+   "dev": {
+    "wer_vs_reference": 0.08798788694481831,
+    "delta_vs_float": {
+     "delta_wer": 0.014973082099596231,
+     "ci95": [
+      0.009853777030727434,
+      0.020839028134304598
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "test": {
+    "wer_vs_reference": 0.09209241783273674,
+    "delta_vs_float": {
+     "delta_wer": 0.016921575008135372,
+     "ci95": [
+      0.012271986283377605,
+      0.021306310187645526
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   }
+  },
+  {
+   "V_kept": 6403,
+   "fetched_bytes": 1966080,
+   "dev": {
+    "wer_vs_reference": 0.1009421265141319,
+    "delta_vs_float": {
+     "delta_wer": 0.027927321668909825,
+     "ci95": [
+      0.02181804347157746,
+      0.034604390286953196
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "test": {
+    "wer_vs_reference": 0.10413276928083307,
+    "delta_vs_float": {
+     "delta_wer": 0.028961926456231694,
+     "ci95": [
+      0.02301197907613759,
+      0.03480426887354132
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   }
+  },
+  {
+   "V_kept": 4355,
+   "fetched_bytes": 1343488,
+   "dev": {
+    "wer_vs_reference": 0.1335800807537012,
+    "delta_vs_float": {
+     "delta_wer": 0.06056527590847914,
+     "ci95": [
+      0.05251299239785086,
+      0.06927440837359773
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "test": {
+    "wer_vs_reference": 0.14383338756915068,
+    "delta_vs_float": {
+     "delta_wer": 0.0686625447445493,
+     "ci95": [
+      0.05856217598666663,
+      0.07987531398211085
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   }
+  },
+  {
+   "V_kept": 3331,
+   "fetched_bytes": 1015808,
+   "dev": {
+    "wer_vs_reference": 0.1727792732166891,
+    "delta_vs_float": {
+     "delta_wer": 0.09976446837146702,
+     "ci95": [
+      0.08592135206993931,
+      0.11757820945045545
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "test": {
+    "wer_vs_reference": 0.17946631955743572,
+    "delta_vs_float": {
+     "delta_wer": 0.10429547673283436,
+     "ci95": [
+      0.08836019358771068,
+      0.12305792966275025
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   }
+  },
+  {
+   "V_kept": 2307,
+   "fetched_bytes": 720896,
+   "dev": {
+    "wer_vs_reference": 0.24041049798115746,
+    "delta_vs_float": {
+     "delta_wer": 0.1673956931359354,
+     "ci95": [
+      0.1465183246966523,
+      0.19299166774893473
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "test": {
+    "wer_vs_reference": 0.22909209241783274,
+    "delta_vs_float": {
+     "delta_wer": 0.15392124959323136,
+     "ci95": [
+      0.13750022661609698,
+      0.17252380860286717
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   }
+  },
+  {
+   "V_kept": 1283,
+   "fetched_bytes": 393216,
+   "dev": {
+    "wer_vs_reference": 0.3684387617765814,
+    "delta_vs_float": {
+     "delta_wer": 0.29542395693135937,
+     "ci95": [
+      0.26477700896077333,
+      0.33087812870321237
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "test": {
+    "wer_vs_reference": 0.35600390497884804,
+    "delta_vs_float": {
+     "delta_wer": 0.28083306215424664,
+     "ci95": [
+      0.25723305155499626,
+      0.30836898411461955
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   }
+  }
+ ],
+ "two_stage": {
+  "note": "measured on the hidden states the float model actually fed to lm_head, one per decoded token, over the sets below",
+  "norm_bound": {
+   "dev": {
+    "steps": 9093,
+    "rows_visited_mean": 32767.623046875,
+    "rows_visited_p50": 32768.0,
+    "rows_visited_p95": 32768.0,
+    "fraction_of_rows_mean": 0.9999884963035583,
+    "exact": true,
+    "extra_table_bytes": 65536,
+    "why": "|h|.|w_v| is a loose bound: the best row's cosine with h is far below 1, so the bound of a high-norm row stays above the winning score"
+   },
+   "test": {
+    "steps": 9309,
+    "rows_visited_mean": 32767.982421875,
+    "rows_visited_p50": 32768.0,
+    "rows_visited_p95": 32768.0,
+    "fraction_of_rows_mean": 0.999999463558197,
+    "exact": true,
+    "extra_table_bytes": 65536,
+    "why": "|h|.|w_v| is a loose bound: the best row's cosine with h is far below 1, so the bound of a high-norm row stays above the winning score"
+   }
+  },
+  "frequency_ranking_source": "dev-clean",
+  "frequency_first_stage": {
+   "dev": {
+    "256": 0.5659298300743103,
+    "512": 0.6381831765174866,
+    "1024": 0.7123061418533325,
+    "2048": 0.7799406051635742,
+    "4096": 0.8484548330307007,
+    "8192": 0.8931045532226562
+   },
+   "test": {
+    "256": 0.5722419023513794,
+    "512": 0.644859790802002,
+    "1024": 0.7182296514511108,
+    "2048": 0.7876248359680176,
+    "4096": 0.850896954536438,
+    "8192": 0.8967665433883667
+   }
+  },
+  "clusters": {
+   "256": {
+    "dev": {
+     "open_best_cluster_only": {
+      "exact": false,
+      "top1_agreement": 0.1116243228316307,
+      "rows_fetched_mean": 65.89871215820312,
+      "fraction_of_rows_mean": 0.0020110690966248512,
+      "stage1_bytes": 73728
+     },
+     "open_top_k_clusters": {
+      "1": {
+       "exact": false,
+       "top1_agreement": 0.1116243228316307,
+       "rows_fetched_mean": 65.89871215820312,
+       "fraction_of_rows_mean": 0.0020110690966248512,
+       "stage1_bytes": 73728
+      },
+      "2": {
+       "exact": false,
+       "top1_agreement": 0.31628724932670593,
+       "rows_fetched_mean": 178.9518280029297,
+       "fraction_of_rows_mean": 0.0054611763916909695,
+       "stage1_bytes": 73728
+      },
+      "4": {
+       "exact": false,
+       "top1_agreement": 0.5870449542999268,
+       "rows_fetched_mean": 382.17034912109375,
+       "fraction_of_rows_mean": 0.011662913486361504,
+       "stage1_bytes": 73728
+      },
+      "8": {
+       "exact": false,
+       "top1_agreement": 0.7536566257476807,
+       "rows_fetched_mean": 698.1235961914062,
+       "fraction_of_rows_mean": 0.021305041387677193,
+       "stage1_bytes": 73728
+      },
+      "16": {
+       "exact": false,
+       "top1_agreement": 0.8852963447570801,
+       "rows_fetched_mean": 1410.1107177734375,
+       "fraction_of_rows_mean": 0.043033163994550705,
+       "stage1_bytes": 73728
+      }
+     },
+     "bound_branch_and_bound": {
+      "exact": true,
+      "clusters_opened_mean": 156.28416442871094,
+      "rows_fetched_mean": 32654.138671875,
+      "fraction_of_rows_mean": 0.996525228023529,
+      "stage1_bytes": 73728
+     }
+    },
+    "test": {
+     "open_best_cluster_only": {
+      "exact": false,
+      "top1_agreement": 0.1235363632440567,
+      "rows_fetched_mean": 67.47566986083984,
+      "fraction_of_rows_mean": 0.002059194026514888,
+      "stage1_bytes": 73728
+     },
+     "open_top_k_clusters": {
+      "1": {
+       "exact": false,
+       "top1_agreement": 0.1235363632440567,
+       "rows_fetched_mean": 67.47566986083984,
+       "fraction_of_rows_mean": 0.002059194026514888,
+       "stage1_bytes": 73728
+      },
+      "2": {
+       "exact": false,
+       "top1_agreement": 0.32420238852500916,
+       "rows_fetched_mean": 178.68890380859375,
+       "fraction_of_rows_mean": 0.00545315258204937,
+       "stage1_bytes": 73728
+      },
+      "4": {
+       "exact": false,
+       "top1_agreement": 0.5951229929924011,
+       "rows_fetched_mean": 380.319580078125,
+       "fraction_of_rows_mean": 0.011606432497501373,
+       "stage1_bytes": 73728
+      },
+      "8": {
+       "exact": false,
+       "top1_agreement": 0.7621656060218811,
+       "rows_fetched_mean": 692.2861328125,
+       "fraction_of_rows_mean": 0.021126896142959595,
+       "stage1_bytes": 73728
+      },
+      "16": {
+       "exact": false,
+       "top1_agreement": 0.8861317038536072,
+       "rows_fetched_mean": 1404.3070068359375,
+       "fraction_of_rows_mean": 0.04285604879260063,
+       "stage1_bytes": 73728
+      }
+     },
+     "bound_branch_and_bound": {
+      "exact": true,
+      "clusters_opened_mean": 156.48403930664062,
+      "rows_fetched_mean": 32654.65625,
+      "fraction_of_rows_mean": 0.9965410232543945,
+      "stage1_bytes": 73728
+     }
+    }
+   }
+  }
+ },
+ "elapsed_s": 63.97764277458191
+}

@@ -1,0 +1,194 @@
+{
+ "what": "Do the vocabulary prune and beam search COMPOSE?  The one measurement MOONSHINE_MODEL.md \u00a74.3",
+ "set": {
+  "name": "dev_clean <= 4.0 s",
+  "utterances": 765,
+  "speakers": 40,
+  "words": 5944
+ },
+ "prune": {
+  "rows_kept": 16384,
+  "requested": 16384,
+  "source": "model_train_row_counts.npy",
+  "lm_head_bytes": 4980736
+ },
+ "beams": 2,
+ "device": "cpu",
+ "encoders": {
+  "float": {
+   "cells": {
+    "base": {
+     "wer": 0.07301480484522208,
+     "errors": 434
+    },
+    "prune": {
+     "wer": 0.0765477792732167,
+     "errors": 455
+    },
+    "beam": {
+     "wer": 0.06527590847913863,
+     "errors": 388
+    },
+    "both": {
+     "wer": 0.06796769851951548,
+     "errors": 404
+    }
+   },
+   "delta_prune": {
+    "delta_wer": 0.0035329744279946162,
+    "ci95": [
+     0.0010382608527916824,
+     0.005811130009382637
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "delta_beam": {
+    "delta_wer": -0.007738896366083445,
+    "ci95": [
+     -0.011575481986167306,
+     -0.00449500151762708
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "delta_both": {
+    "delta_wer": -0.0050471063257065945,
+    "ci95": [
+     -0.009331802393955996,
+     -0.0008432876698160944
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "sum_of_parts_wer": 0.06880888290713325,
+   "interaction": {
+    "interaction_wer_points": -0.08411843876177658,
+    "ci95": [
+     -0.39672485054796597,
+     0.2259269302517063
+    ],
+    "resamples": 2000,
+    "unit": "utterance",
+    "reading": "0 means the prune's cost and the beam's gain add; positive means the two together are worse than the sum of their parts"
+   }
+  },
+  "F3PR": {
+   "cells": {
+    "base": {
+     "wer": 0.07890309555854644,
+     "errors": 469
+    },
+    "prune": {
+     "wer": 0.08243606998654104,
+     "errors": 490
+    },
+    "beam": {
+     "wer": 0.07099596231493943,
+     "errors": 422
+    },
+    "both": {
+     "wer": 0.07351951547779273,
+     "errors": 437
+    }
+   },
+   "delta_prune": {
+    "delta_wer": 0.0035329744279946162,
+    "ci95": [
+     0.0009793616458904668,
+     0.006278983815367149
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "delta_beam": {
+    "delta_wer": -0.007907133243607,
+    "ci95": [
+     -0.01184071051864026,
+     -0.004216420614575265
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "delta_both": {
+    "delta_wer": -0.005383580080753701,
+    "ci95": [
+     -0.010161258684200319,
+     -0.0008201088426491778
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "sum_of_parts_wer": 0.07452893674293404,
+   "interaction": {
+    "interaction_wer_points": -0.1009421265141319,
+    "ci95": [
+     -0.35276775921186554,
+     0.1362409424914937
+    ],
+    "resamples": 2000,
+    "unit": "utterance",
+    "reading": "0 means the prune's cost and the beam's gain add; positive means the two together are worse than the sum of their parts"
+   }
+  },
+  "R": {
+   "cells": {
+    "base": {
+     "wer": 0.08462314939434724,
+     "errors": 503
+    },
+    "prune": {
+     "wer": 0.0883243606998654,
+     "errors": 525
+    },
+    "beam": {
+     "wer": 0.07217362045760431,
+     "errors": 429
+    },
+    "both": {
+     "wer": 0.07604306864064603,
+     "errors": 452
+    }
+   },
+   "delta_prune": {
+    "delta_wer": 0.0037012113055181696,
+    "ci95": [
+     0.001352236495877259,
+     0.006284157691918459
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "delta_beam": {
+    "delta_wer": -0.012449528936742935,
+    "ci95": [
+     -0.01773843487950124,
+     -0.007958813163317226
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "delta_both": {
+    "delta_wer": -0.008580080753701211,
+    "ci95": [
+     -0.013968112785207987,
+     -0.0036449090423267614
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "sum_of_parts_wer": 0.07587483176312247,
+   "interaction": {
+    "interaction_wer_points": 0.016823687752355317,
+    "ci95": [
+     -0.30702370342838076,
+     0.3684136427952546
+    ],
+    "resamples": 2000,
+    "unit": "utterance",
+    "reading": "0 means the prune's cost and the beam's gain add; positive means the two together are worse than the sum of their parts"
+   }
+  }
+ },
+ "elapsed_s": 1380.4910023212433
+}

@@ -1,0 +1,311 @@
+{
+ "lever": "vocab",
+ "tag": "vocab6144",
+ "minutes_budget": 50.0,
+ "batch": 8,
+ "lr": 5e-05,
+ "alpha": 1.0,
+ "archive": "<training-host>/…",
+ "train_split": {
+  "source": "LibriSpeech train-clean-100, model_fetch_train.sh shards",
+  "utterances": 8156,
+  "hours": 29.214004340277775,
+  "disjoint_from": "dev-clean and test-clean"
+ },
+ "gpu": "NVIDIA TITAN RTX",
+ "prune": {
+  "kind": "lm_head rows (tied: embed_tokens too)",
+  "rows_kept": 6403,
+  "from": 32768,
+  "source": "model_trainset.py --emit counts on train-clean-100",
+  "lm_head_fetched_bytes": 1966080,
+  "applied_as": "a hard logit mask, which is the pruned model exactly",
+  "objective": "cross-entropy against the teacher's transcript RE-TOKENISED in the kept vocabulary (RestrictedBPE), not distillation: a masked teacher and a masked student are the same distribution and give zero gradient"
+ },
+ "encoder": "frozen (a vocabulary lever must not move the measured encoder)",
+ "student_params": 27092736,
+ "teacher_params": 27092736,
+ "dev_before_finetune": {
+  "set": "dev_clean <= 4 s",
+  "utterances": 765,
+  "words": 5944,
+  "wer": 0.1009421265141319
+ },
+ "steps": 13899,
+ "windows_seen": 111192,
+ "epochs_equivalent": 13.633153506620893,
+ "history": [
+  {
+   "step": 11900,
+   "kd": 0.19601675868034363,
+   "enc_mse": 0.0,
+   "minutes": 43.362172118822734
+  },
+  {
+   "step": 11950,
+   "kd": 0.31272855401039124,
+   "enc_mse": 0.0,
+   "minutes": 43.5284919500351
+  },
+  {
+   "step": 12000,
+   "kd": 0.05225449800491333,
+   "enc_mse": 0.0,
+   "minutes": 43.699252736568454
+  },
+  {
+   "step": 12050,
+   "kd": 0.2526502013206482,
+   "enc_mse": 0.0,
+   "minutes": 43.868445400396986
+  },
+  {
+   "step": 12100,
+   "kd": 0.15843692421913147,
+   "enc_mse": 0.0,
+   "minutes": 44.03752991755803
+  },
+  {
+   "step": 12150,
+   "kd": 0.022449582815170288,
+   "enc_mse": 0.0,
+   "minutes": 44.20670304298401
+  },
+  {
+   "step": 12200,
+   "kd": 0.2502211928367615,
+   "enc_mse": 0.0,
+   "minutes": 44.374620954195656
+  },
+  {
+   "step": 12250,
+   "kd": 0.1697499006986618,
+   "enc_mse": 0.0,
+   "minutes": 44.5403015255928
+  },
+  {
+   "step": 12300,
+   "kd": 0.14248113334178925,
+   "enc_mse": 0.0,
+   "minutes": 44.706063636144
+  },
+  {
+   "step": 12350,
+   "kd": 0.10582137107849121,
+   "enc_mse": 0.0,
+   "minutes": 44.877512602011365
+  },
+  {
+   "step": 12400,
+   "kd": 0.15512658655643463,
+   "enc_mse": 0.0,
+   "minutes": 45.05069789886475
+  },
+  {
+   "step": 12450,
+   "kd": 0.2990732192993164,
+   "enc_mse": 0.0,
+   "minutes": 45.2193864663442
+  },
+  {
+   "step": 12500,
+   "kd": 0.287710577249527,
+   "enc_mse": 0.0,
+   "minutes": 45.389770146210985
+  },
+  {
+   "step": 12550,
+   "kd": 0.20524929463863373,
+   "enc_mse": 0.0,
+   "minutes": 45.57039610147476
+  },
+  {
+   "step": 12600,
+   "kd": 0.03016381897032261,
+   "enc_mse": 0.0,
+   "minutes": 45.735960161685945
+  },
+  {
+   "step": 12650,
+   "kd": 0.0892486572265625,
+   "enc_mse": 0.0,
+   "minutes": 45.902307037512465
+  },
+  {
+   "step": 12700,
+   "kd": 0.1445578932762146,
+   "enc_mse": 0.0,
+   "minutes": 46.066763536135355
+  },
+  {
+   "step": 12750,
+   "kd": 0.11567629128694534,
+   "enc_mse": 0.0,
+   "minutes": 46.22906665007273
+  },
+  {
+   "step": 12800,
+   "kd": 0.264999657869339,
+   "enc_mse": 0.0,
+   "minutes": 46.404071187973024
+  },
+  {
+   "step": 12850,
+   "kd": 0.39872971177101135,
+   "enc_mse": 0.0,
+   "minutes": 46.60703453222911
+  },
+  {
+   "step": 12900,
+   "kd": 0.19863127171993256,
+   "enc_mse": 0.0,
+   "minutes": 46.78753781716029
+  },
+  {
+   "step": 12950,
+   "kd": 0.09094294905662537,
+   "enc_mse": 0.0,
+   "minutes": 46.95072117646535
+  },
+  {
+   "step": 13000,
+   "kd": 0.06267739087343216,
+   "enc_mse": 0.0,
+   "minutes": 47.14721945524216
+  },
+  {
+   "step": 13050,
+   "kd": 0.029301058501005173,
+   "enc_mse": 0.0,
+   "minutes": 47.353168372313185
+  },
+  {
+   "step": 13100,
+   "kd": 0.4489516317844391,
+   "enc_mse": 0.0,
+   "minutes": 47.52349389394124
+  },
+  {
+   "step": 13150,
+   "kd": 0.3641493320465088,
+   "enc_mse": 0.0,
+   "minutes": 47.68445120652517
+  },
+  {
+   "step": 13200,
+   "kd": 0.08044975996017456,
+   "enc_mse": 0.0,
+   "minutes": 47.848773403962454
+  },
+  {
+   "step": 13250,
+   "kd": 0.20053912699222565,
+   "enc_mse": 0.0,
+   "minutes": 48.014195597171785
+  },
+  {
+   "step": 13300,
+   "kd": 0.12891322374343872,
+   "enc_mse": 0.0,
+   "minutes": 48.17964684168498
+  },
+  {
+   "step": 13350,
+   "kd": 0.06491276621818542,
+   "enc_mse": 0.0,
+   "minutes": 48.340751890341444
+  },
+  {
+   "step": 13400,
+   "kd": 0.2884747385978699,
+   "enc_mse": 0.0,
+   "minutes": 48.50462827682495
+  },
+  {
+   "step": 13450,
+   "kd": 0.19640350341796875,
+   "enc_mse": 0.0,
+   "minutes": 48.666465504964194
+  },
+  {
+   "step": 13500,
+   "kd": 0.09251882135868073,
+   "enc_mse": 0.0,
+   "minutes": 48.83022735913595
+  },
+  {
+   "step": 13550,
+   "kd": 0.22998416423797607,
+   "enc_mse": 0.0,
+   "minutes": 48.99171109994253
+  },
+  {
+   "step": 13600,
+   "kd": 0.23428332805633545,
+   "enc_mse": 0.0,
+   "minutes": 49.1546244541804
+  },
+  {
+   "step": 13650,
+   "kd": 0.14376483857631683,
+   "enc_mse": 0.0,
+   "minutes": 49.31805873711904
+  },
+  {
+   "step": 13700,
+   "kd": 0.08068103343248367,
+   "enc_mse": 0.0,
+   "minutes": 49.48082368771235
+  },
+  {
+   "step": 13750,
+   "kd": 0.16081781685352325,
+   "enc_mse": 0.0,
+   "minutes": 49.64718608856201
+  },
+  {
+   "step": 13800,
+   "kd": 0.1998598724603653,
+   "enc_mse": 0.0,
+   "minutes": 49.80855877796809
+  },
+  {
+   "step": 13850,
+   "kd": 0.12912175059318542,
+   "enc_mse": 0.0,
+   "minutes": 50.00193444093068
+  }
+ ],
+ "dev_after_finetune": {
+  "set": "dev_clean <= 4 s",
+  "utterances": 765,
+  "words": 5944,
+  "wer": 0.0930349932705249
+ },
+ "dev_delta_vs_float_teacher": {
+  "delta_wer": 0.020020188425302825,
+  "ci95": [
+   0.013323050786230247,
+   0.02706820148324056
+  ],
+  "resamples": 2000,
+  "unit": "utterance"
+ },
+ "test_after_finetune": {
+  "set": "test_clean <= 4 s",
+  "utterances": 772,
+  "words": 6146,
+  "wer": 0.09908883826879271
+ },
+ "test_delta_vs_float_teacher": {
+  "delta_wer": 0.023917995444191344,
+  "ci95": [
+   0.017121456453033666,
+   0.030428367771759612
+  ],
+  "resamples": 2000,
+  "unit": "utterance"
+ },
+ "checkpoint": "<training-host>/…",
+ "elapsed_min": 50.51535067160924
+}

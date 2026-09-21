@@ -1,0 +1,16 @@
+{
+ "hart0_wer": 0.1440107671601615,
+ "engine_wer": 0.1440107671601615,
+ "identical_sequences": 765,
+ "utterances": 765,
+ "words": 5944,
+ "engine_minus_hart0": {
+  "delta_wer": 0.0,
+  "ci95": [
+   0.0,
+   0.0
+  ],
+  "resamples": 2000,
+  "unit": "utterance"
+ }
+}

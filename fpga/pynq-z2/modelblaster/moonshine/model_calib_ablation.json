@@ -1,0 +1,92 @@
+{
+ "what": "Which half of the int8 calibration fix does the work: a 2x2 over activation-range policy and calibration set, plus one arm with the GELU-aware narrowing disabled. Every arm is the SAME graph -- plain extract_graph int8, Moonshine encoder, 4.0 s, stock checkpoint, 154 ops / 129 dispatches -- lowered to gen_nl and scored by model_rung_gate.py on dev-clean 765.",
+ "set": {
+  "name": "dev_clean <= 4 s",
+  "utterances": 765,
+  "words": 5944,
+  "speakers": 40
+ },
+ "float_wer": 0.07301480484522208,
+ "arms": [
+  {
+   "label": "abl_neither",
+   "policy": "max",
+   "calibration_set": "speech (16 windows, 1 speaker)",
+   "wer": 1.0965679676985196,
+   "sqnr_db": 3.729168204141314,
+   "minus_float": {
+    "delta_wer": 1.0235531628532974,
+    "ci95": [
+     0.9766790510489998,
+     1.070644682921428
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   }
+  },
+  {
+   "label": "abl_set_only",
+   "policy": "max",
+   "calibration_set": "librispeech (64 windows, 40 speakers)",
+   "wer": 1.1068304172274563,
+   "sqnr_db": 3.259103170277231,
+   "minus_float": {
+    "delta_wer": 1.0338156123822342,
+    "ci95": [
+     0.9979785949062432,
+     1.0735242605370883
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   }
+  },
+  {
+   "label": "abl_policy_only",
+   "policy": "p99.9 pooled",
+   "calibration_set": "speech (16 windows, 1 speaker)",
+   "wer": 0.314771197846568,
+   "sqnr_db": 6.095441589081451,
+   "minus_float": {
+    "delta_wer": 0.24175639300134588,
+    "ci95": [
+     0.21000876983162536,
+     0.2771795469580772
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   }
+  },
+  {
+   "label": "plainfix",
+   "policy": "p99.9 pooled",
+   "calibration_set": "librispeech (64 windows, 40 speakers)",
+   "wer": 0.19532301480484524,
+   "sqnr_db": 7.439654810575757,
+   "minus_float": {
+    "delta_wer": 0.12230820995962315,
+    "ci95": [
+     0.1075075983203833,
+     0.13859479527385443
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   }
+  },
+  {
+   "label": "abl_nogelu",
+   "policy": "p99.9 pooled, GELU-aware narrowing OFF",
+   "calibration_set": "librispeech (64 windows, 40 speakers)",
+   "wer": 0.8331090174966352,
+   "sqnr_db": 3.8997730250718194,
+   "minus_float": {
+    "delta_wer": 0.7600942126514132,
+    "ci95": [
+     0.7279971872990524,
+     0.793960200081211
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   }
+  }
+ ]
+}

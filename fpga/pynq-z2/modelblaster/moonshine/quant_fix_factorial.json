@@ -1,0 +1,455 @@
+{
+ "what": "step 2 candidates, FLOAT SIMULATION (estimates), selected on dev-clean only",
+ "tune": {
+  "utterances": 765,
+  "speakers": 40,
+  "float_wer_vs_reference": 0.07301480484522208
+ },
+ "calibration_windows": 64,
+ "candidates": {
+  "W8A8 (as extracted)": {
+   "knobs": {},
+   "sqnr_db": 3.5629344573382635,
+   "cosine": 0.7665062904494659,
+   "wer_vs_float": {
+    "wer": 1.2036663303060882,
+    "errors": 7157,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 1.2049125168236878,
+    "errors": 7162,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "WDIAG: activations float, weights W8 per-tensor (reference)": {
+   "knobs": {
+    "afloat": true
+   },
+   "sqnr_db": 19.338464460339353,
+   "cosine": 0.9941644375238227,
+   "wer_vs_float": {
+    "wer": 0.03699966363942146,
+    "errors": 220,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.08546433378196501,
+    "errors": 508,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "FACT F1: stem int16 (software convs), transformer as extracted": {
+   "knobs": {
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_conv1": 16,
+     "stem_conv2": 16,
+     "stem_conv3": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    }
+   },
+   "sqnr_db": 8.32407445892297,
+   "cosine": 0.9266273093982286,
+   "wer_vs_float": {
+    "wer": 0.09670366633030608,
+    "errors": 575,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.12584118438761777,
+    "errors": 748,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "FACT F2: F1 + residual adds per-channel": {
+   "knobs": {
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_conv1": 16,
+     "stem_conv2": 16,
+     "stem_conv3": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8
+    }
+   },
+   "sqnr_db": 11.232431926705138,
+   "cosine": 0.9623506815951036,
+   "wer_vs_float": {
+    "wer": 0.06004036326942482,
+    "errors": 357,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.09690444145356662,
+    "errors": 576,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "FACT F3: F2 + o_proj/fc2 rows, per-tensor W8": {
+   "knobs": {
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_conv1": 16,
+     "stem_conv2": 16,
+     "stem_conv3": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8
+    },
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    }
+   },
+   "sqnr_db": 14.624703531292539,
+   "cosine": 0.9827019794190102,
+   "wer_vs_float": {
+    "wer": 0.04927682475613858,
+    "errors": 293,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.09219380888290714,
+    "errors": 548,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "FACT F4: F3 in 4 row groups": {
+   "knobs": {
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_conv1": 16,
+     "stem_conv2": 16,
+     "stem_conv3": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8
+    },
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "wgroups": {
+     "layers.0.self_attn.o_proj": 4,
+     "layers.1.self_attn.o_proj": 4,
+     "layers.2.self_attn.o_proj": 4,
+     "layers.3.self_attn.o_proj": 4,
+     "layers.4.self_attn.o_proj": 4,
+     "layers.5.self_attn.o_proj": 4,
+     "layers.0.mlp.fc2": 4,
+     "layers.1.mlp.fc2": 4,
+     "layers.2.mlp.fc2": 4,
+     "layers.3.mlp.fc2": 4,
+     "layers.4.mlp.fc2": 4,
+     "layers.5.mlp.fc2": 4
+    }
+   },
+   "sqnr_db": 14.678980578146593,
+   "cosine": 0.9828790768341579,
+   "wer_vs_float": {
+    "wer": 0.049613185334678775,
+    "errors": 295,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.09152086137281291,
+    "errors": 544,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "FACT F5: F1 + add_11 per-channel + layer-5 fc2 rows in 4 groups": {
+   "knobs": {
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_conv1": 16,
+     "stem_conv2": 16,
+     "stem_conv3": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "pc": {
+     "add_11": 8
+    },
+    "rows": {
+     "layers.5.mlp.fc2": 1.0
+    },
+    "wgroups": {
+     "layers.5.mlp.fc2": 4
+    }
+   },
+   "sqnr_db": 12.370640621316147,
+   "cosine": 0.9708552534826713,
+   "wer_vs_float": {
+    "wer": 0.062226707029936094,
+    "errors": 370,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.10497981157469717,
+    "errors": 624,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "FACT S1: split stem x64 + residual fixes (4 groups)": {
+   "knobs": {
+    "rows": {
+     "layers.0.self_attn.o_proj": 1.0,
+     "layers.1.self_attn.o_proj": 1.0,
+     "layers.2.self_attn.o_proj": 1.0,
+     "layers.3.self_attn.o_proj": 1.0,
+     "layers.4.self_attn.o_proj": 1.0,
+     "layers.5.self_attn.o_proj": 1.0,
+     "layers.0.mlp.fc2": 1.0,
+     "layers.1.mlp.fc2": 1.0,
+     "layers.2.mlp.fc2": 1.0,
+     "layers.3.mlp.fc2": 1.0,
+     "layers.4.mlp.fc2": 1.0,
+     "layers.5.mlp.fc2": 1.0
+    },
+    "mig": {},
+    "wgroups": {
+     "layers.0.self_attn.o_proj": 4,
+     "layers.1.self_attn.o_proj": 4,
+     "layers.2.self_attn.o_proj": 4,
+     "layers.3.self_attn.o_proj": 4,
+     "layers.4.self_attn.o_proj": 4,
+     "layers.5.self_attn.o_proj": 4,
+     "layers.0.mlp.fc2": 4,
+     "layers.1.mlp.fc2": 4,
+     "layers.2.mlp.fc2": 4,
+     "layers.3.mlp.fc2": 4,
+     "layers.4.mlp.fc2": 4,
+     "layers.5.mlp.fc2": 4
+    },
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "dual": {
+     "stem_conv1": 64,
+     "stem_conv2": 64,
+     "stem_conv3": 64
+    }
+   },
+   "sqnr_db": 12.369676162668906,
+   "cosine": 0.9708018409999327,
+   "wer_vs_float": {
+    "wer": 0.057181298351833165,
+    "errors": 340,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.09673620457604307,
+    "errors": 575,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "FACT S2: split stem x64 + residual adds per-channel only": {
+   "knobs": {
+    "rows": {},
+    "mig": {},
+    "wgroups": {},
+    "pc": {
+     "add": 8,
+     "add_1": 8,
+     "add_2": 8,
+     "add_3": 8,
+     "add_4": 8,
+     "add_5": 8,
+     "add_6": 8,
+     "add_7": 8,
+     "add_8": 8,
+     "add_9": 8,
+     "add_10": 8,
+     "add_11": 8,
+     "stem_gelu3": 8
+    },
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "dual": {
+     "stem_conv1": 64,
+     "stem_conv2": 64,
+     "stem_conv3": 64
+    }
+   },
+   "sqnr_db": 9.836753235117653,
+   "cosine": 0.9479008165609227,
+   "wer_vs_float": {
+    "wer": 0.06357214934409687,
+    "errors": 378,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.09740915208613728,
+    "errors": 579,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  },
+  "FACT S3: split stem x64, transformer as extracted": {
+   "knobs": {
+    "rows": {},
+    "mig": {},
+    "wgroups": {},
+    "pc": {},
+    "calib_nodes": {
+     "x": "p99.9"
+    },
+    "bits": {
+     "x": 16,
+     "stem_groupnorm": 16,
+     "stem_gelu2": 16,
+     "stem_tanh": 16,
+     "stem_gelu3": 16
+    },
+    "dual": {
+     "stem_conv1": 64,
+     "stem_conv2": 64,
+     "stem_conv3": 64
+    }
+   },
+   "sqnr_db": 7.3638029962766005,
+   "cosine": 0.9082745953721986,
+   "wer_vs_float": {
+    "wer": 0.1236125126135217,
+    "errors": 735,
+    "words": 5946,
+    "utterances": 765
+   },
+   "wer_vs_reference": {
+    "wer": 0.14989905787348587,
+    "errors": 891,
+    "words": 5944,
+    "utterances": 765
+   },
+   "notes": []
+  }
+ }
+}

@@ -1,0 +1,318 @@
+{
+ "what": "WER of ModelBlaster's GENERATED C (host build, bit-exact with the device by the host gates) for Moonshine Tiny's encoder, HF float decoder, greedy, 40 tokens",
+ "set": {
+  "name": "test_clean <= 4 s",
+  "utterances": 772,
+  "speakers": 40,
+  "words": 6146,
+  "subset_of_n": null
+ },
+ "float": {
+  "wer_vs_reference": {
+   "wer": 0.07517084282460136,
+   "errors": 462,
+   "words": 6146,
+   "utterances": 772
+  }
+ },
+ "decoder": {
+  "max_new_tokens": 40,
+  "greedy": true,
+  "checkpoint": "UsefulSensors/moonshine-tiny@390624ed33d594443aa4aa221f5b9f283b545b5a"
+ },
+ "variants": {
+  "R3_ref": {
+   "ir": "<repo>/out/q16/R3/ir",
+   "gen": "<repo>/out/q16/R3/gen_ref",
+   "q16_plan": {
+    "candidate": "R3",
+    "quant_fix_key": "FINAL R: split stem (1, 16, 256), stem weights 4 group(s), adds per-channel + o_proj/fc2 rows",
+    "record": "quant_fix_final_dev2.json"
+   },
+   "input_dtype": "i16",
+   "input_scale": 1.6817996445613252e-05,
+   "output_scale": 0.05858209940392201,
+   "kernel_picks": {
+    "add_pc_s8": "reference",
+    "conv2d_s8": "reference",
+    "gelu_s8": "reference",
+    "groupnorm_s16": "reference",
+    "layernorm_pc_s8": "reference",
+    "linear_s8": "reference",
+    "lut16_pc_s8": "reference",
+    "lut16_s16": "reference",
+    "matmul_b_s8": "reference",
+    "mrcombine_s16": "reference",
+    "permute4_s8": "reference",
+    "rope_s8": "reference",
+    "softmax_s8": "reference",
+    "split16_s8": "reference"
+   },
+   "wer_vs_reference": {
+    "wer": 0.08119101854864953,
+    "errors": 499,
+    "words": 6146,
+    "utterances": 772
+   },
+   "wer_vs_float": {
+    "wer": 0.03320853003418525,
+    "errors": 204,
+    "words": 6143,
+    "utterances": 772
+   },
+   "sqnr_db": 16.15257601591997,
+   "cosine": 0.9878842276488202,
+   "identical_to_float_transcript": 650,
+   "host_seconds": 125.4,
+   "minus_float": {
+    "delta_wer": 0.006020175724048162,
+    "ci95": [
+     0.0012963810720455356,
+     0.011181188314944523
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "minus_float_sim": {
+    "delta_wer": 0.006020175724048162,
+    "ci95": [
+     0.002701925467108865,
+     0.009804115505990337
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "differs_from_float": 122,
+   "examples_differing": [
+    {
+     "id": "1089-134686-0001",
+     "reference": "STUFF IT INTO YOU HIS BELLY COUNSELLED HIM",
+     "float": "Stuff it into you, his belly counseled him.",
+     "c": "Stuffed into you, his belly counseled him."
+    },
+    {
+     "id": "1284-1181-0005",
+     "reference": "NO I FORGOT ALL ABOUT THE BRAINS EXCLAIMED THE WOMAN",
+     "float": "No, I forgot all about the brains, exclaimed the woman.",
+     "c": "No, I forgot of them about the brains, exclaimed the woman."
+    },
+    {
+     "id": "1995-1837-0022",
+     "reference": "UP IN THE SICK ROOM ZORA LAY ON THE LITTLE WHITE BED",
+     "float": "Up in the sick rooms, or lay on the little white bed.",
+     "c": "Up in the sick looms, or lay on the little wide bed."
+    },
+    {
+     "id": "237-134493-0009",
+     "reference": "PLEASE WAIT FOR ME MARIE EMIL COAXED",
+     "float": "Please wait for me, Marie. Aimeel coaxed.",
+     "c": "Please wait for me, Marie. Aim you'll coaxed."
+    },
+    {
+     "id": "260-123288-0019",
+     "reference": "AT NOON THE VIOLENCE OF THE STORM REDOUBLES",
+     "float": "At noon the violets of the storm redubbles.",
+     "c": "At noon the violence of the storm redubbles."
+    },
+    {
+     "id": "3729-6852-0027",
+     "reference": "THAT IS TRUE BADAUDERIE",
+     "float": "That is true by delkberry.",
+     "c": "That is true by delkbury."
+    },
+    {
+     "id": "4970-29095-0011",
+     "reference": "DOES THEE THINK THEE COULD STAND IT SIX MONTHS",
+     "float": "Does the think be could stand at six months?",
+     "c": "As the think the could stand it six months."
+    },
+    {
+     "id": "5142-33396-0026",
+     "reference": "MY MEN LAUGHED YES A STINGY HOST",
+     "float": "My men laughed, Yes, a stingy host.",
+     "c": "My men laughed. Yes, a stingy hoe's."
+    },
+    {
+     "id": "61-70968-0039",
+     "reference": "AND MINE IS WILL STUTELEY SHALL WE BE COMRADES",
+     "float": "And mine is will, stepply, shall we become, rads?",
+     "c": "And mine is will, steutley, shall we be comrades?"
+    },
+    {
+     "id": "6829-68769-0029",
+     "reference": "IT'S A STOCK COMPANY AND RICH",
+     "float": "It's a stock company enriched.",
+     "c": "It's a stock company in rich."
+    },
+    {
+     "id": "6930-81414-0019",
+     "reference": "VOLTAIRE PICKED UP SOMETHING FROM THE GROUND AND LOOKED AT IT",
+     "float": "Mochair picked up something from the ground and looked at it.",
+     "c": "Mulchair picked up something from the ground and looked at it."
+    },
+    {
+     "id": "7729-102255-0013",
+     "reference": "IT WAS IN FACT THE BEST WEAPON OF ITS DAY",
+     "float": "It was in fact the best weapon of it's day.",
+     "c": "It was in fact the best weapon of its day."
+    }
+   ]
+  },
+  "R3_nl": {
+   "ir": "<repo>/out/q16/R3/ir",
+   "gen": "<repo>/out/q16/R3/gen_nl",
+   "q16_plan": {
+    "candidate": "R3",
+    "quant_fix_key": "FINAL R: split stem (1, 16, 256), stem weights 4 group(s), adds per-channel + o_proj/fc2 rows",
+    "record": "quant_fix_final_dev2.json"
+   },
+   "input_dtype": "i16",
+   "input_scale": 1.6817996445613252e-05,
+   "output_scale": 0.05858209940392201,
+   "kernel_picks": {
+    "add_pc_s8": "pext_int_block",
+    "conv2d_s8": "pext_patch_dot8",
+    "gelu_s8": "pext_int_lut",
+    "groupnorm_s16": "pext_int_memo",
+    "layernorm_pc_s8": "reference",
+    "linear_s8": "pext_row_dot8",
+    "lut16_pc_s8": "reference",
+    "lut16_s16": "reference",
+    "matmul_b_s8": "pext_dot8_exact",
+    "mrcombine_s16": "pext_fine_first",
+    "permute4_s8": "reference",
+    "rope_s8": "pext_int_rot",
+    "softmax_s8": "pext_int_row",
+    "split16_s8": "reference"
+   },
+   "wer_vs_reference": {
+    "wer": 0.08102831109664822,
+    "errors": 498,
+    "words": 6146,
+    "utterances": 772
+   },
+   "wer_vs_float": {
+    "wer": 0.03092951326713332,
+    "errors": 190,
+    "words": 6143,
+    "utterances": 772
+   },
+   "sqnr_db": 16.181816602662764,
+   "cosine": 0.9879656454258903,
+   "identical_to_float_transcript": 653,
+   "host_seconds": 104.7,
+   "minus_float": {
+    "delta_wer": 0.00585746827204686,
+    "ci95": [
+     0.000983534209722453,
+     0.011029596203029707
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "minus_float_sim": {
+    "delta_wer": 0.00585746827204686,
+    "ci95": [
+     0.0024394111277264994,
+     0.009733693185703716
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "differs_from_float": 119,
+   "examples_differing": [
+    {
+     "id": "1089-134686-0001",
+     "reference": "STUFF IT INTO YOU HIS BELLY COUNSELLED HIM",
+     "float": "Stuff it into you, his belly counseled him.",
+     "c": "Stuffed into you, his belly counseled him."
+    },
+    {
+     "id": "1284-1181-0000",
+     "reference": "OJO EXAMINED THIS CURIOUS CONTRIVANCE WITH WONDER",
+     "float": "O, do you examine this curious contrivance with wonder?",
+     "c": "Ojo examined this curious contrivance with wonder."
+    },
+    {
+     "id": "1995-1837-0022",
+     "reference": "UP IN THE SICK ROOM ZORA LAY ON THE LITTLE WHITE BED",
+     "float": "Up in the sick rooms, or lay on the little white bed.",
+     "c": "Up in the sick looms, or lay on the little wide bed."
+    },
+    {
+     "id": "237-134493-0009",
+     "reference": "PLEASE WAIT FOR ME MARIE EMIL COAXED",
+     "float": "Please wait for me, Marie. Aimeel coaxed.",
+     "c": "Please wait for me, Marie. Aimhill coaxed."
+    },
+    {
+     "id": "2830-3980-0020",
+     "reference": "THIS IS NO SINFUL PRIDE IT IS HOLY PRIDE",
+     "float": "This is no sinful pride, it is wholly pride.",
+     "c": "This is no sinful pride, it is holy pride."
+    },
+    {
+     "id": "3729-6852-0012",
+     "reference": "I SHALL CALL YOU ESPRIT",
+     "float": "I shall call you a spree.",
+     "c": "I shall call you as spree."
+    },
+    {
+     "id": "4446-2273-0033",
+     "reference": "FOR A LONG TIME NEITHER HILDA NOR BARTLEY SPOKE",
+     "float": "For a long time, neither Hilda nor Bartley spoke.",
+     "c": "For a long time, neither hill nor barnly spoke."
+    },
+    {
+     "id": "4992-41806-0004",
+     "reference": "BURN FIRE BURN FLICKER FLICKER FLAME",
+     "float": "Burn fire burn, slicker, slicker flame.",
+     "c": "Burn fire burn, slicker, flicker, flame."
+    },
+    {
+     "id": "5142-33396-0053",
+     "reference": "I TOOK FIVE GREAT BRACELETS OF GOLD FROM OUR TREASURE CHEST AND GAVE THEM TO HIM",
+     "float": "I took five great bracelets of gold from our treasure-chest and gave them to him.",
+     "c": "I took five great bracelets of gold from our treasure-shaft and gave them to him."
+    },
+    {
+     "id": "61-70970-0003",
+     "reference": "IF FOR A WHIM YOU BEGGAR YOURSELF I CANNOT STAY YOU",
+     "float": "If for a whim you begger yourself, I cannot stay you.",
+     "c": "If for a whim you beg your yourself, I cannot stay you."
+    },
+    {
+     "id": "6829-68771-0026",
+     "reference": "ELIZA PARSONS SHOOK HER HEAD",
+     "float": "Eliza Parsons shicker head",
+     "c": "Allies a parson's shicker head."
+    },
+    {
+     "id": "7127-75946-0021",
+     "reference": "YES SIRE AND READY DRESSED FOR THE BALLET",
+     "float": "Yes, sire, and ready dressed for the ballet.",
+     "c": "Yes, sire, and ready dressed with a ballet."
+    }
+   ]
+  }
+ },
+ "float_sim": {
+  "candidate": "R3",
+  "quant_fix_key": "FINAL R: split stem (1, 16, 256), stem weights 4 group(s), adds per-channel + o_proj/fc2 rows",
+  "record": "quant_fix_final_dev2.json",
+  "what": "fq.py float simulation (ESTIMATE), rerun here on the same utterances",
+  "wer_vs_reference": {
+   "wer": 0.07517084282460136,
+   "errors": 462,
+   "words": 6146,
+   "utterances": 772
+  },
+  "wer_vs_float": {
+   "wer": 0.028650496500081394,
+   "errors": 176,
+   "words": 6143,
+   "utterances": 772
+  },
+  "sqnr_db": 16.147267807614945
+ }
+}

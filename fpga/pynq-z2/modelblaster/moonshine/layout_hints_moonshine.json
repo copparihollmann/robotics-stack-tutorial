@@ -1,0 +1,5 @@
+{
+ "contract": "modelblaster.layout_hints/v1",
+ "reason": "Moonshine's stem convolutions run on the decoupled RoCC engine, which reads and writes NHWC; with NCHW tensors its kernel gathers and transposes on hart 0: 35 M of the encoder's 983 M cycles (Lab B25 run 8). ROCC_DECOUPLED.md 8.14, T1 lever 2.",
+ "networks": [{"network": "moonshine_enc", "layout": "nhwc"}]
+}

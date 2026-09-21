@@ -1,0 +1,264 @@
+{
+ "what": "moonshine-base as an accuracy ceiling, and what it would cost on this SoC.",
+ "repo": "UsefulSensors/moonshine-base",
+ "revision": "7a73d8d55ac0ba2ef3ae761593f6784b51f96dcf",
+ "sha256": {
+  "model.safetensors": "e020c79d0a979a7ec099f718ff1cd2f19e92aead230d69654bca5975a8e1b862"
+ },
+ "price": {
+  "config": {
+   "D": 416,
+   "FF": 1664,
+   "FF_DEC": 3328,
+   "HEADS": 8,
+   "HD": 52,
+   "LAYERS": 8,
+   "VOCAB": 32768
+  },
+  "exact_from_the_planner": {
+   "check_against_measured_tiny": {
+    "encoder_bytes_w": [
+     8519680,
+     8519680
+    ],
+    "decoder_token_bytes_w": [
+     19988480,
+     19988480
+    ],
+    "decoder_token_out_bytes": [
+     60032,
+     60032
+    ]
+   },
+   "encoder_window": {
+    "stem": {
+     "bytes_w": 4620288,
+     "bytes_a": 115089984,
+     "out_bytes": 759680,
+     "macs": 1026461696,
+     "dispatches": 3
+    },
+    "enc_attn_proj": {
+     "bytes_w": 6291456,
+     "bytes_a": 13713408,
+     "out_bytes": 2197504,
+     "macs": 913735680,
+     "dispatches": 32
+    },
+    "enc_ffn": {
+     "bytes_w": 12582912,
+     "bytes_a": 70717440,
+     "out_bytes": 2745856,
+     "macs": 1827471360,
+     "dispatches": 16
+    },
+    "TOTAL": {
+     "bytes_w": 23494656,
+     "bytes_a": 199520832,
+     "out_bytes": 5703040,
+     "macs": 3767668736,
+     "dispatches": 51
+    }
+   },
+   "decoder_token": {
+    "dec_self_attn_proj": {
+     "bytes_w": 6291456,
+     "bytes_a": 14336,
+     "out_bytes": 14336,
+     "macs": 5537792,
+     "dispatches": 32
+    },
+    "dec_cross_attn_proj": {
+     "bytes_w": 3145728,
+     "bytes_a": 7168,
+     "out_bytes": 7168,
+     "macs": 2768896,
+     "dispatches": 16
+    },
+    "dec_ffn": {
+     "bytes_w": 18350080,
+     "bytes_a": 16896,
+     "out_bytes": 30208,
+     "macs": 16613376,
+     "dispatches": 16
+    },
+    "lm_head": {
+     "bytes_w": 14155776,
+     "bytes_a": 448,
+     "out_bytes": 32768,
+     "macs": 13631488,
+     "dispatches": 1
+    },
+    "TOTAL": {
+     "bytes_w": 41943040,
+     "bytes_a": 38848,
+     "out_bytes": 84480,
+     "macs": 38551552,
+     "dispatches": 65
+    }
+   },
+   "encoder_window_tiny": {
+    "stem": {
+     "bytes_w": 1835008,
+     "bytes_a": 29450752,
+     "out_bytes": 525952,
+     "macs": 503304192,
+     "dispatches": 3
+    },
+    "enc_attn_proj": {
+     "bytes_w": 2359296,
+     "bytes_a": 3483648,
+     "out_bytes": 1141248,
+     "macs": 328458240,
+     "dispatches": 24
+    },
+    "enc_ffn": {
+     "bytes_w": 4325376,
+     "bytes_a": 15966720,
+     "out_bytes": 1425792,
+     "macs": 656916480,
+     "dispatches": 12
+    },
+    "TOTAL": {
+     "bytes_w": 8519680,
+     "bytes_a": 48901120,
+     "out_bytes": 3092992,
+     "macs": 1488678912,
+     "dispatches": 39
+    }
+   },
+   "decoder_token_tiny": {
+    "dec_self_attn_proj": {
+     "bytes_w": 2359296,
+     "bytes_a": 7680,
+     "out_bytes": 7680,
+     "macs": 1990656,
+     "dispatches": 24
+    },
+    "dec_cross_attn_proj": {
+     "bytes_w": 1179648,
+     "bytes_a": 3840,
+     "out_bytes": 3840,
+     "macs": 995328,
+     "dispatches": 12
+    },
+    "dec_ffn": {
+     "bytes_w": 6488064,
+     "bytes_a": 8832,
+     "out_bytes": 15744,
+     "macs": 5971968,
+     "dispatches": 12
+    },
+    "lm_head": {
+     "bytes_w": 9961472,
+     "bytes_a": 320,
+     "out_bytes": 32768,
+     "macs": 9437184,
+     "dispatches": 1
+    },
+    "TOTAL": {
+     "bytes_w": 19988480,
+     "bytes_a": 20672,
+     "out_bytes": 60032,
+     "macs": 18395136,
+     "dispatches": 49
+    }
+   },
+   "ratio_encoder_vs_tiny": {
+    "bytes_w": 2.7576923076923077,
+    "bytes_a": 4.080087163647786,
+    "macs": 2.530880706127716
+   },
+   "ratio_token_vs_tiny": {
+    "bytes_w": 2.098360655737705,
+    "bytes_a": 1.8792569659442724,
+    "out_bytes": 1.4072494669509594,
+    "macs": 2.0957470496548654,
+    "dispatches": 1.3265306122448979
+   }
+  },
+  "derived_time": {
+   "encoder_seconds_tiny_T1": 16.731421432954363,
+   "encoder_seconds_base_T1": 32.15619334495667,
+   "encoder_rtf_tiny_measured": 4.134,
+   "encoder_rtf_base_est": 7.945153005722719,
+   "encoder_ratio": 1.9219044522793223,
+   "token_ms_tiny": {
+    "today": 339.710337657985,
+    "T1": 273.260217068032,
+    "T2": 211.44422134300515,
+    "T3": 182.16804886504303,
+    "T4": 142.45986845903434
+   },
+   "token_ms_base_est": {
+    "today": 608.3127349998931,
+    "T1": 518.3017814119731,
+    "T2": 410.49680324182424,
+    "T3": 354.113063654638,
+    "T4": 277.63804953936193
+   },
+   "token_ratio": {
+    "today": 1.790680669872145,
+    "T1": 1.8967334029561083,
+    "T2": 1.941395232437758,
+    "T3": 1.9438813000460817,
+    "T4": 1.948886044487675
+   },
+   "decoder_rtf_base_est": {
+    "today": 1.9621073463525869,
+    "T1": 1.7145772239858068,
+    "T2": 1.4181135340178974,
+    "T3": 1.263058250153135,
+    "T4": 1.052751961336126
+   },
+   "tokens_assumed": 11
+  },
+  "label": "the byte and MAC ratios are EXACT (engine_traffic's planner on base's shapes, checked against tiny's measured totals); the times are DERIVED by scaling each measured component of tiny by its own element law.",
+  "warning": "moonshine-base has never been extracted by ModelBlaster, quantised, or run. This is a price, and it assumes its int8 graph transcribes at all, which section 8.12 showed is not automatic -- tiny's did not."
+ },
+ "wer": {
+  "dev": {
+   "set": "dev_clean <= 4 s",
+   "utterances": 765,
+   "words": 5944,
+   "base_wer": 0.05871467025572005,
+   "tiny_wer": 0.07301480484522208,
+   "delta_base_minus_tiny": {
+    "delta_wer": -0.01430013458950202,
+    "ci95": [
+     -0.020571425560420693,
+     -0.008088159850920986
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "base_tokens_per_utterance": 10.83921568627451,
+   "base_distinct_rows_emitted": 2176
+  },
+  "test": {
+   "set": "test_clean <= 4 s",
+   "utterances": 772,
+   "words": 6146,
+   "base_wer": 0.05287992190042304,
+   "tiny_wer": 0.07517084282460136,
+   "delta_base_minus_tiny": {
+    "delta_wer": -0.022290920924178326,
+    "ci95": [
+     -0.028752759538363253,
+     -0.016019389704738842
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "base_tokens_per_utterance": 11.009067357512953,
+   "base_distinct_rows_emitted": 2163
+  }
+ },
+ "wer_elapsed_s": 25.258715867996216,
+ "machine": {
+  "host": "<training-host>",
+  "gpu": "index 4, NVIDIA TITAN RTX",
+  "why": "the local TITAN RTX was occupied by another user; see MOONSHINE_MODEL.md section 3.2",
+  "checkpoint_sha256_verified": "867cd221... for tiny and e020c79d... for base, both re-checked on b5"
+ }
+}

@@ -1,0 +1,508 @@
+{
+ "what": "What the FIXED 4 s window costs, and what a variable-length one would cost instead.",
+ "anchors": {
+  "measured_encoder_rtf_today_as_extracted": 7.11143815377418,
+  "measured_encoder_rtf_best_0x5A5A0012": 4.134,
+  "amdahl_T1_rtf": 4.221482799563688,
+  "note": "the cost model below is normalised so that T = 165 reproduces these"
+ },
+ "length_model": {
+  "today": [
+   {
+    "seconds_requested": 0.5,
+    "T": 19,
+    "window_s": 0.488,
+    "model_seconds": 3.0286202488849203,
+    "rtf": 5.872489689985737,
+    "rtf_vs_4s": 0.8257808846821078,
+    "quadratic_share": 0.07139937829691913
+   },
+   {
+    "seconds_requested": 1.0,
+    "T": 40,
+    "window_s": 0.992,
+    "model_seconds": 5.33297618039148,
+    "rtf": 5.086923834847616,
+    "rtf_vs_4s": 0.7153157666354569,
+    "quadratic_share": 0.17971419782077794
+   },
+   {
+    "seconds_requested": 1.5,
+    "T": 61,
+    "window_s": 1.496,
+    "model_seconds": 8.178551224538356,
+    "rtf": 5.172994872576207,
+    "rtf_vs_4s": 0.727418949686119,
+    "quadratic_share": 0.2725306436082187
+   },
+   {
+    "seconds_requested": 2.0,
+    "T": 82,
+    "window_s": 2.0,
+    "model_seconds": 11.536585249323014,
+    "rtf": 5.458138445073544,
+    "rtf_vs_4s": 0.7675154205168476,
+    "quadratic_share": 0.349126227048316
+   },
+   {
+    "seconds_requested": 2.5,
+    "T": 102,
+    "window_s": 2.48,
+    "model_seconds": 15.232696430868657,
+    "rtf": 5.811956695257229,
+    "rtf_vs_4s": 0.8172688237712803,
+    "quadratic_share": 0.4091246118368069
+   },
+   {
+    "seconds_requested": 3.0,
+    "T": 123,
+    "window_s": 2.984,
+    "model_seconds": 19.6293995267299,
+    "rtf": 6.224514157258124,
+    "rtf_vs_4s": 0.8752820488152108,
+    "quadratic_share": 0.46167383114158195
+   },
+   {
+    "seconds_requested": 3.5,
+    "T": 144,
+    "window_s": 3.488,
+    "model_seconds": 24.554181261862958,
+    "rtf": 6.661104463922041,
+    "rtf_vs_4s": 0.9366747372170934,
+    "quadratic_share": 0.5058614407630292
+   },
+   {
+    "seconds_requested": 4.0,
+    "T": 165,
+    "window_s": 3.992,
+    "model_seconds": 30.00203454171938,
+    "rtf": 7.11143815377418,
+    "rtf_vs_4s": 1.0,
+    "quadratic_share": 0.5435621798893417
+   },
+   {
+    "seconds_requested": 5.0,
+    "T": 207,
+    "window_s": 5.0,
+    "model_seconds": 42.492031128517944,
+    "rtf": 8.041457110558271,
+    "rtf_vs_4s": 1.1307779012731078,
+    "quadratic_share": 0.604039375536695
+   },
+   {
+    "seconds_requested": 6.0,
+    "T": 248,
+    "window_s": 5.984,
+    "model_seconds": 56.71959102684765,
+    "rtf": 8.968891479097632,
+    "rtf_vs_4s": 1.2611923615390883,
+    "quadratic_share": 0.6495346455558262
+   },
+   {
+    "seconds_requested": 8.0,
+    "T": 332,
+    "window_s": 8.0,
+    "model_seconds": 92.16137404200057,
+    "rtf": 10.900745929974489,
+    "rtf_vs_4s": 1.5328469001996803,
+    "quadratic_share": 0.7164061020033397
+   }
+  ],
+  "T1": [
+   {
+    "seconds_requested": 0.5,
+    "T": 19,
+    "window_s": 0.488,
+    "model_seconds": 1.9982282561779519,
+    "rtf": 3.906089106123468,
+    "rtf_vs_4s": 0.9448691596815355,
+    "quadratic_share": 0.04948844851945073
+   },
+   {
+    "seconds_requested": 1.0,
+    "T": 40,
+    "window_s": 0.992,
+    "model_seconds": 3.478234506754945,
+    "rtf": 3.3447530584211536,
+    "rtf_vs_4s": 0.8090839522063747,
+    "quadratic_share": 0.12600937458060898
+   },
+   {
+    "seconds_requested": 1.5,
+    "T": 61,
+    "window_s": 1.496,
+    "model_seconds": 5.20784295222095,
+    "rtf": 3.3208033463702216,
+    "rtf_vs_4s": 0.8032906014441754,
+    "quadratic_share": 0.19572374795156547
+   },
+   {
+    "seconds_requested": 2.0,
+    "T": 82,
+    "window_s": 2.0,
+    "model_seconds": 7.169222310734396,
+    "rtf": 3.4194709957207774,
+    "rtf_vs_4s": 0.8271579573586786,
+    "quadratic_share": 0.2569196902934556
+   },
+   {
+    "seconds_requested": 2.5,
+    "T": 102,
+    "window_s": 2.48,
+    "model_seconds": 9.266040885000294,
+    "rtf": 3.564178151803234,
+    "rtf_vs_4s": 0.8621621073544349,
+    "quadratic_share": 0.30757275596164774
+   },
+   {
+    "seconds_requested": 3.0,
+    "T": 123,
+    "window_s": 2.984,
+    "model_seconds": 11.703580788873252,
+    "rtf": 3.7414229935818804,
+    "rtf_vs_4s": 0.9050370086071311,
+    "quadratic_share": 0.35410592878611796
+   },
+   {
+    "seconds_requested": 3.5,
+    "T": 144,
+    "window_s": 3.488,
+    "model_seconds": 14.38257579414675,
+    "rtf": 3.9334810974330607,
+    "rtf_vs_4s": 0.951495185639347,
+    "quadratic_share": 0.39493902121826663
+   },
+   {
+    "seconds_requested": 4.0,
+    "T": 165,
+    "window_s": 3.992,
+    "model_seconds": 17.29992150220075,
+    "rtf": 4.134,
+    "rtf_vs_4s": 1.0,
+    "quadratic_share": 0.43108755811497146
+   },
+   {
+    "seconds_requested": 5.0,
+    "T": 207,
+    "window_s": 5.0,
+    "model_seconds": 23.86521177025795,
+    "rtf": 4.553152122675444,
+    "rtf_vs_4s": 1.1013914181604847,
+    "quadratic_share": 0.49183239566362214
+   },
+   {
+    "seconds_requested": 6.0,
+    "T": 248,
+    "window_s": 5.984,
+    "model_seconds": 31.204218017250096,
+    "rtf": 4.974375790669662,
+    "rtf_vs_4s": 1.2032839358175282,
+    "quadratic_share": 0.5399229534535953
+   },
+   {
+    "seconds_requested": 8.0,
+    "T": 332,
+    "window_s": 8.0,
+    "model_seconds": 49.11840728092139,
+    "rtf": 5.856945208744186,
+    "rtf_vs_4s": 1.4167743610895465,
+    "quadratic_share": 0.6147147360520456
+   }
+  ]
+ },
+ "sets": {
+  "dev": {
+   "name": "dev_clean <= 4 s",
+   "utterances": 765,
+   "speakers": 40,
+   "words": 5944,
+   "audio_s": {
+    "mean": 2.970588153594771,
+    "p10": 2.187,
+    "p50": 2.955,
+    "p90": 3.795,
+    "max": 4.0
+   },
+   "frames_own_length": {
+    "mean": 121.96339869281046,
+    "p50": 121.0
+   },
+   "tokens_per_utterance_4s": {
+    "mean": 10.886274509803922,
+    "p50": 11.0,
+    "p90": 16.0,
+    "max": 23,
+    "hit_the_40_token_cap": 0
+   },
+   "wer_4s_window": 0.07301480484522208,
+   "wer_own_length_window": 0.06695827725437416,
+   "delta_own_minus_4s": {
+    "delta_wer": -0.006056527590847914,
+    "ci95": [
+     -0.010369661425818901,
+     -0.0018596033987716195
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "tokens_per_utterance_own_length_mean": 10.972549019607843
+  },
+  "test": {
+   "name": "test_clean <= 4 s",
+   "utterances": 772,
+   "speakers": 40,
+   "words": 6146,
+   "audio_s": {
+    "mean": 2.97068021373057,
+    "p10": 2.145,
+    "p50": 2.98,
+    "p90": 3.78,
+    "max": 4.0
+   },
+   "frames_own_length": {
+    "mean": 121.95984455958549,
+    "p50": 122.0
+   },
+   "tokens_per_utterance_4s": {
+    "mean": 11.058290155440414,
+    "p50": 11.0,
+    "p90": 16.0,
+    "max": 23,
+    "hit_the_40_token_cap": 0
+   },
+   "wer_4s_window": 0.07517084282460136,
+   "wer_own_length_window": 0.07077774162056623,
+   "delta_own_minus_4s": {
+    "delta_wer": -0.004393101204035145,
+    "ci95": [
+     -0.009206781174507078,
+     0.000643972216992074
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "tokens_per_utterance_own_length_mean": 11.16580310880829
+  }
+ },
+ "decoding_policy": {
+  "dev": {
+   "greedy_40": {
+    "wer": 0.07301480484522208,
+    "tokens_per_utterance": 10.886274509803922,
+    "decoder_passes_per_token": 1
+   },
+   "beam_2": {
+    "wer": 0.06527590847913863,
+    "delta_vs_greedy": {
+     "delta_wer": -0.007738896366083445,
+     "ci95": [
+      -0.011575481986167306,
+      -0.00449500151762708
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    },
+    "tokens_per_utterance": 10.945098039215686,
+    "decoder_passes_per_token": 2,
+    "note": "every pass is a whole decoder token: 19.99 MB of weights, 343.4 ms"
+   },
+   "beam_5": {
+    "wer": 0.06460296096904442,
+    "delta_vs_greedy": {
+     "delta_wer": -0.008411843876177659,
+     "ci95": [
+      -0.012411994356023534,
+      -0.0048532790318977954
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    },
+    "tokens_per_utterance": 10.947712418300654,
+    "decoder_passes_per_token": 5,
+    "note": "every pass is a whole decoder token: 19.99 MB of weights, 343.4 ms"
+   },
+   "cap_8": {
+    "wer": 0.3198183041722746,
+    "delta_vs_greedy40": {
+     "delta_wer": 0.24680349932705248,
+     "ci95": [
+      0.23149853561060474,
+      0.26179134285812367
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "cap_12": {
+    "wer": 0.1335800807537012,
+    "delta_vs_greedy40": {
+     "delta_wer": 0.06056527590847914,
+     "ci95": [
+      0.050771303033466636,
+      0.07098371777844802
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "cap_16": {
+    "wer": 0.08176312247644683,
+    "delta_vs_greedy40": {
+     "delta_wer": 0.008748317631224764,
+     "ci95": [
+      0.0052586756908401125,
+      0.012633770263424514
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "cap_20": {
+    "wer": 0.07335127860026917,
+    "delta_vs_greedy40": {
+     "delta_wer": 0.00033647375504710633,
+     "ci95": [
+      0.0,
+      0.0010185417609524401
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "cap_24": {
+    "wer": 0.07301480484522208,
+    "delta_vs_greedy40": {
+     "delta_wer": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "cap_32": {
+    "wer": 0.07301480484522208,
+    "delta_vs_greedy40": {
+     "delta_wer": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   }
+  },
+  "test": {
+   "greedy_40": {
+    "wer": 0.07517084282460136,
+    "tokens_per_utterance": 11.058290155440414,
+    "decoder_passes_per_token": 1
+   },
+   "beam_2": {
+    "wer": 0.06752359258054019,
+    "delta_vs_greedy": {
+     "delta_wer": -0.007647250244061178,
+     "ci95": [
+      -0.011020389839952972,
+      -0.004501589626671615
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    },
+    "tokens_per_utterance": 11.066062176165802,
+    "decoder_passes_per_token": 2,
+    "note": "every pass is a whole decoder token: 19.99 MB of weights, 343.4 ms"
+   },
+   "beam_5": {
+    "wer": 0.06589651806052717,
+    "delta_vs_greedy": {
+     "delta_wer": -0.009274324764074195,
+     "ci95": [
+      -0.013267886830761083,
+      -0.00559275381826567
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    },
+    "tokens_per_utterance": 11.067357512953368,
+    "decoder_passes_per_token": 5,
+    "note": "every pass is a whole decoder token: 19.99 MB of weights, 343.4 ms"
+   },
+   "cap_8": {
+    "wer": 0.3202082655385617,
+    "delta_vs_greedy40": {
+     "delta_wer": 0.2450374227139603,
+     "ci95": [
+      0.22954749191304408,
+      0.26047257645032945
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "cap_12": {
+    "wer": 0.14139277578913115,
+    "delta_vs_greedy40": {
+     "delta_wer": 0.06622193296452977,
+     "ci95": [
+      0.056201599162779635,
+      0.07618003443218015
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "cap_16": {
+    "wer": 0.08590953465668727,
+    "delta_vs_greedy40": {
+     "delta_wer": 0.010738691832085909,
+     "ci95": [
+      0.0071270706139586896,
+      0.014670063154708951
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "cap_20": {
+    "wer": 0.07614708753660918,
+    "delta_vs_greedy40": {
+     "delta_wer": 0.0009762447120078099,
+     "ci95": [
+      0.00016141919799512458,
+      0.002088169343474819
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "cap_24": {
+    "wer": 0.07517084282460136,
+    "delta_vs_greedy40": {
+     "delta_wer": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "cap_32": {
+    "wer": 0.07517084282460136,
+    "delta_vs_greedy40": {
+     "delta_wer": 0.0,
+     "ci95": [
+      0.0,
+      0.0
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   }
+  }
+ },
+ "elapsed_s": 187.35266518592834
+}

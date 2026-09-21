@@ -1,0 +1,254 @@
+{
+ "what": "Which rungs a shape ladder should have, and what each one serves.",
+ "utterances": 1537,
+ "rtf_4s_measured": 3.759,
+ "shares": {
+  "linear": 0.522,
+  "quadratic": 0.478
+ },
+ "audio_s": {
+  "mean": 2.9706343932986314,
+  "p10": 2.16,
+  "p50": 2.97,
+  "p90": 3.795,
+  "max": 4.0
+ },
+ "ladders": {
+  "1: no ladder (today)": {
+   "rungs": [
+    {
+     "window_s": 4.0,
+     "frames": 165,
+     "utterances": 1537,
+     "fraction": 1.0,
+     "mean_audio_s": 2.9706343932986314,
+     "mean_rtf": 5.289353716994097
+    }
+   ],
+   "mean_rtf": 5.289353716994097,
+   "mean_padding_s": 1.0293656067013675,
+   "speedup_vs_no_ladder": 1.0,
+   "image_mb_one_blob": 7.46,
+   "image_mb_separate": 7.65,
+   "build_minutes": 3
+  },
+  "2: two rungs": {
+   "rungs": [
+    {
+     "window_s": 2.5,
+     "frames": 102,
+     "utterances": 371,
+     "fraction": 0.2413793103448276,
+     "mean_audio_s": 2.1805791778975765,
+     "mean_rtf": 3.5802345614105855
+    },
+    {
+     "window_s": 4.0,
+     "frames": 165,
+     "utterances": 1166,
+     "fraction": 0.7586206896551724,
+     "mean_audio_s": 3.22201559819897,
+     "mean_rtf": 4.751599022272636
+    }
+   ],
+   "mean_rtf": 4.468855876547313,
+   "mean_padding_s": 0.667296641184125,
+   "speedup_vs_no_ladder": 1.1836035582961582,
+   "image_mb_one_blob": 7.5200000000000005,
+   "image_mb_separate": 15.3,
+   "build_minutes": 6
+  },
+  "3: three rungs": {
+   "rungs": [
+    {
+     "window_s": 2.0,
+     "frames": 82,
+     "utterances": 76,
+     "fraction": 0.0494469746258946,
+     "mean_audio_s": 1.8384202302631578,
+     "mean_rtf": 3.1378568281277364
+    },
+    {
+     "window_s": 3.0,
+     "frames": 123,
+     "utterances": 719,
+     "fraction": 0.4677944046844502,
+     "mean_audio_s": 2.5559734005563244,
+     "mean_rtf": 3.932870211472374
+    },
+    {
+     "window_s": 4.0,
+     "frames": 165,
+     "utterances": 742,
+     "fraction": 0.4827586206896552,
+     "mean_audio_s": 3.488410040431268,
+     "mean_rtf": 4.340940637025165
+    }
+   ],
+   "mean_rtf": 4.09055872066299,
+   "mean_padding_s": 0.46267725276512656,
+   "speedup_vs_no_ladder": 1.2930638766473468,
+   "image_mb_one_blob": 7.58,
+   "image_mb_separate": 22.950000000000003,
+   "build_minutes": 9
+  },
+  "4: four rungs": {
+   "rungs": [
+    {
+     "window_s": 1.5,
+     "frames": 61,
+     "utterances": 4,
+     "fraction": 0.002602472348731295,
+     "mean_audio_s": 1.4087500000000002,
+     "mean_rtf": 2.815125736649094
+    },
+    {
+     "window_s": 2.5,
+     "frames": 102,
+     "utterances": 367,
+     "fraction": 0.23877683799609628,
+     "mean_audio_s": 2.1889914850136263,
+     "mean_rtf": 3.559404215790156
+    },
+    {
+     "window_s": 3.25,
+     "frames": 134,
+     "utterances": 615,
+     "fraction": 0.40013012361743655,
+     "mean_audio_s": 2.8694552845528407,
+     "mean_rtf": 3.8966633657012
+    },
+    {
+     "window_s": 4.0,
+     "frames": 165,
+     "utterances": 551,
+     "fraction": 0.3584905660377358,
+     "mean_audio_s": 3.6155266560798553,
+     "mean_rtf": 4.175170371885327
+    }
+   ],
+   "mean_rtf": 3.9131611548188916,
+   "mean_padding_s": 0.36459657612231616,
+   "speedup_vs_no_ladder": 1.3516830786486989,
+   "image_mb_one_blob": 7.640000000000001,
+   "image_mb_separate": 30.6,
+   "build_minutes": 12
+  },
+  "5: half-second rungs, none below 2 s": {
+   "rungs": [
+    {
+     "window_s": 2.0,
+     "frames": 82,
+     "utterances": 76,
+     "fraction": 0.0494469746258946,
+     "mean_audio_s": 1.8384202302631578,
+     "mean_rtf": 3.1378568281277364
+    },
+    {
+     "window_s": 2.5,
+     "frames": 102,
+     "utterances": 295,
+     "fraction": 0.19193233571893298,
+     "mean_audio_s": 2.2687286016949155,
+     "mean_rtf": 3.4127645816051864
+    },
+    {
+     "window_s": 3.0,
+     "frames": 123,
+     "utterances": 424,
+     "fraction": 0.27586206896551724,
+     "mean_audio_s": 2.755825324292447,
+     "mean_rtf": 3.612417133859458
+    },
+    {
+     "window_s": 3.5,
+     "frames": 144,
+     "utterances": 390,
+     "fraction": 0.25374105400130126,
+     "mean_audio_s": 3.2454108974358977,
+     "mean_rtf": 3.8188573558422547
+    },
+    {
+     "window_s": 4.0,
+     "frames": 165,
+     "utterances": 352,
+     "fraction": 0.22901756668835394,
+     "mean_audio_s": 3.757642045454544,
+     "mean_rtf": 4.007654037237729
+    }
+   ],
+   "mean_rtf": 3.693530335168385,
+   "mean_padding_s": 0.23984055790500983,
+   "speedup_vs_no_ladder": 1.4320590971274532,
+   "image_mb_one_blob": 7.7,
+   "image_mb_separate": 38.25,
+   "build_minutes": 15
+  },
+  "7: half-second rungs": {
+   "rungs": [
+    {
+     "window_s": 1.0,
+     "frames": 40,
+     "utterances": 0,
+     "fraction": 0.0,
+     "mean_audio_s": null,
+     "mean_rtf": null
+    },
+    {
+     "window_s": 1.5,
+     "frames": 61,
+     "utterances": 4,
+     "fraction": 0.002602472348731295,
+     "mean_audio_s": 1.4087500000000002,
+     "mean_rtf": 2.815125736649094
+    },
+    {
+     "window_s": 2.0,
+     "frames": 82,
+     "utterances": 72,
+     "fraction": 0.0468445022771633,
+     "mean_audio_s": 1.8622907986111106,
+     "mean_rtf": 3.085886763027422
+    },
+    {
+     "window_s": 2.5,
+     "frames": 102,
+     "utterances": 295,
+     "fraction": 0.19193233571893298,
+     "mean_audio_s": 2.2687286016949155,
+     "mean_rtf": 3.4127645816051864
+    },
+    {
+     "window_s": 3.0,
+     "frames": 123,
+     "utterances": 424,
+     "fraction": 0.27586206896551724,
+     "mean_audio_s": 2.755825324292447,
+     "mean_rtf": 3.612417133859458
+    },
+    {
+     "window_s": 3.5,
+     "frames": 144,
+     "utterances": 390,
+     "fraction": 0.25374105400130126,
+     "mean_audio_s": 3.2454108974358977,
+     "mean_rtf": 3.8188573558422547
+    },
+    {
+     "window_s": 4.0,
+     "frames": 165,
+     "utterances": 352,
+     "fraction": 0.22901756668835394,
+     "mean_audio_s": 3.757642045454544,
+     "mean_rtf": 4.007654037237729
+    }
+   ],
+   "mean_rtf": 3.6902559245938,
+   "mean_padding_s": 0.23853932173064418,
+   "speedup_vs_no_ladder": 1.4333297812065204,
+   "image_mb_one_blob": 7.82,
+   "image_mb_separate": 53.550000000000004,
+   "build_minutes": 21
+  }
+ }
+}

@@ -1,0 +1,117 @@
+{
+ "what": "fake-quantised ACTIVATIONS inside the float encoder (weights float); cosine of the encoder output against float over the 16 whole-transcript eval utterances and, with --decode, the WER of HF's float decoder (greedy, 26 tokens) on that output against its transcript of the float output. ESTIMATES for kernel sets with these activation grids, not measurements of an integer pipeline; one speaker, a small-sample check.",
+ "calibration_windows": 16,
+ "eval_utterances": 16,
+ "policies": {
+  "per_tensor_int8_maxabs": {
+   "mean_cosine": 0.6780813075602055,
+   "min_cosine": 0.6025872230529785,
+   "wer_vs_float_transcripts": 1.0379746835443038
+  },
+  "per_tensor_int8_gelu": {
+   "mean_cosine": 0.7403969839215279,
+   "min_cosine": 0.6596852540969849,
+   "wer_vs_float_transcripts": 1.9873417721518987
+  },
+  "per_tensor_int8_p99.99": {
+   "mean_cosine": 0.7623239383101463,
+   "min_cosine": 0.7122002840042114,
+   "wer_vs_float_transcripts": 1.3037974683544304
+  },
+  "per_tensor_int8_p99.9": {
+   "mean_cosine": 0.7731804884970188,
+   "min_cosine": 0.7230287790298462,
+   "wer_vs_float_transcripts": 0.9746835443037974
+  },
+  "per_tensor_int8_p99": {
+   "mean_cosine": 0.2955176895484328,
+   "min_cosine": 0.18131642043590546,
+   "wer_vs_float_transcripts": 1.5316455696202531
+  },
+  "per_channel_int8": {
+   "mean_cosine": 0.970532950013876,
+   "min_cosine": 0.9500904679298401,
+   "wer_vs_float_transcripts": 0.0759493670886076
+  },
+  "per_channel_int10": {
+   "mean_cosine": 0.9797976985573769,
+   "min_cosine": 0.9634831547737122,
+   "wer_vs_float_transcripts": 0.012658227848101266
+  },
+  "per_tensor_int12": {
+   "mean_cosine": 0.929966825991869,
+   "min_cosine": 0.8306437134742737,
+   "wer_vs_float_transcripts": 0.11392405063291139
+  },
+  "per_tensor_int16": {
+   "mean_cosine": 0.9991653449833393,
+   "min_cosine": 0.9974822402000427,
+   "wer_vs_float_transcripts": 0.0
+  }
+ },
+ "activation_ranges_over_calibration": {
+  "stem_conv1": {
+   "max_abs": 5.053069591522217,
+   "p99": 0.4436221420764923,
+   "p99.9": 1.7938916683197021,
+   "per_channel_max_median": 0.5533919334411621,
+   "per_channel_max_top": 5.053069591522217
+  },
+  "stem_tanh": {
+   "max_abs": 0.9999183416366577,
+   "p99": 0.41664233803749084,
+   "p99.9": 0.9461697936058044,
+   "per_channel_max_median": 0.5030580759048462,
+   "per_channel_max_top": 0.9999183416366577
+  },
+  "stem_groupnorm": {
+   "max_abs": 8.620223999023438,
+   "p99": 0.6323696970939636,
+   "p99.9": 1.994137167930603,
+   "per_channel_max_median": 1.9605169296264648,
+   "per_channel_max_top": 8.620223999023438
+  },
+  "stem_conv2": {
+   "max_abs": 233.4666290283203,
+   "p99": 6.282411098480225,
+   "p99.9": 22.184555053710938,
+   "per_channel_max_median": 14.774535179138184,
+   "per_channel_max_top": 233.4666290283203
+  },
+  "stem_gelu2": {
+   "max_abs": 233.4666290283203,
+   "p99": 4.501446723937988,
+   "p99.9": 16.135831832885742,
+   "per_channel_max_median": 13.761835098266602,
+   "per_channel_max_top": 233.4666290283203
+  },
+  "stem_conv3": {
+   "max_abs": 2132.58447265625,
+   "p99": 108.06277465820312,
+   "p99.9": 434.77777099609375,
+   "per_channel_max_median": 29.061975479125977,
+   "per_channel_max_top": 2132.58447265625
+  },
+  "stem_gelu3": {
+   "max_abs": 36.31187057495117,
+   "p99": 5.557617664337158,
+   "p99.9": 22.198278427124023,
+   "per_channel_max_median": 6.5365495681762695,
+   "per_channel_max_top": 36.31187057495117
+  },
+  "add_11": {
+   "max_abs": 3274.958740234375,
+   "p99": 246.89862060546875,
+   "p99.9": 631.0825805664062,
+   "per_channel_max_median": 64.50361633300781,
+   "per_channel_max_top": 3274.958740234375
+  },
+  "layer_norm": {
+   "max_abs": 7.374526500701904,
+   "p99": 2.331423759460449,
+   "p99.9": 5.2962327003479,
+   "per_channel_max_median": 1.1523666381835938,
+   "per_channel_max_top": 7.374526500701904
+  }
+ }
+}

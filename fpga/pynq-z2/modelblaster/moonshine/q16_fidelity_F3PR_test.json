@@ -1,0 +1,318 @@
+{
+ "what": "WER of ModelBlaster's GENERATED C (host build, bit-exact with the device by the host gates) for Moonshine Tiny's encoder, HF float decoder, greedy, 40 tokens",
+ "set": {
+  "name": "test_clean <= 4 s",
+  "utterances": 772,
+  "speakers": 40,
+  "words": 6146,
+  "subset_of_n": null
+ },
+ "float": {
+  "wer_vs_reference": {
+   "wer": 0.07517084282460136,
+   "errors": 462,
+   "words": 6146,
+   "utterances": 772
+  }
+ },
+ "decoder": {
+  "max_new_tokens": 40,
+  "greedy": true,
+  "checkpoint": "UsefulSensors/moonshine-tiny@390624ed33d594443aa4aa221f5b9f283b545b5a"
+ },
+ "variants": {
+  "F3PR_ref": {
+   "ir": "<repo>/out/q16/F3PR/ir",
+   "gen": "<repo>/out/q16/F3PR/gen_ref",
+   "q16_plan": {
+    "candidate": "F3PR",
+    "quant_fix_key": "CD F3PR: stem int16 + adds per-channel + rows + per-row",
+    "record": "quant_fix_codesign_dev.json"
+   },
+   "input_dtype": "i16",
+   "input_scale": 2.997460049363689e-05,
+   "output_scale": 0.05858209940392201,
+   "kernel_picks": {
+    "add_pc_s8": "reference",
+    "add_s16_pc_s8": "reference",
+    "conv2d_s16_pc": "reference",
+    "gelu_s8": "reference",
+    "groupnorm_s16": "reference",
+    "layernorm_pc_s8": "reference",
+    "layernorm_s16_s8": "reference",
+    "linear_s8_pc": "reference",
+    "lut16_s16": "reference",
+    "matmul_b_s8": "reference",
+    "permute4_s16": "reference",
+    "permute4_s8": "reference",
+    "rope_s8": "reference",
+    "softmax_s8": "reference"
+   },
+   "wer_vs_reference": {
+    "wer": 0.07614708753660918,
+    "errors": 468,
+    "words": 6146,
+    "utterances": 772
+   },
+   "wer_vs_float": {
+    "wer": 0.026534266644961745,
+    "errors": 163,
+    "words": 6143,
+    "utterances": 772
+   },
+   "sqnr_db": 16.356802960613372,
+   "cosine": 0.9883904241832845,
+   "identical_to_float_transcript": 669,
+   "host_seconds": 35.7,
+   "minus_float": {
+    "delta_wer": 0.0009762447120078099,
+    "ci95": [
+     -0.0035417038821843262,
+     0.005499193741877278
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "minus_float_sim": {
+    "delta_wer": -0.001464367068011715,
+    "ci95": [
+     -0.004933509232320904,
+     0.001788065494144014
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "differs_from_float": 103,
+   "examples_differing": [
+    {
+     "id": "1089-134686-0001",
+     "reference": "STUFF IT INTO YOU HIS BELLY COUNSELLED HIM",
+     "float": "Stuff it into you, his belly counseled him.",
+     "c": "Stuff it into you, his belly counselled him."
+    },
+    {
+     "id": "1284-1181-0005",
+     "reference": "NO I FORGOT ALL ABOUT THE BRAINS EXCLAIMED THE WOMAN",
+     "float": "No, I forgot all about the brains, exclaimed the woman.",
+     "c": "No, I forgot of them about the brains, exclaimed the woman."
+    },
+    {
+     "id": "1995-1836-0007",
+     "reference": "BUT YOU BELIEVE IN SOME EDUCATION ASKED MARY TAYLOR",
+     "float": "Do believe in some education? Ask Mary Taylor.",
+     "c": "Do you believe in some education? Ask Mary Taylor."
+    },
+    {
+     "id": "2094-142345-0032",
+     "reference": "I OFTEN HEARD HER TALK OF YOU IN THE SAME SORT OF WAY",
+     "float": "I often heard her talk of you in the same sort of way.",
+     "c": "I often heard or talk of you in the same sort of way."
+    },
+    {
+     "id": "237-134500-0042",
+     "reference": "THEN ALL OUR GOOD TIMES ARE OVER",
+     "float": "Then all our glute times are over.",
+     "c": "Then all our clip times are over."
+    },
+    {
+     "id": "3575-170457-0004",
+     "reference": "WE USED TO DISPUTE ABOUT POLITICS AND RELIGION",
+     "float": "We used to dispute about politics and religion.",
+     "c": "We used to dispute about politics in a religion."
+    },
+    {
+     "id": "4446-2275-0037",
+     "reference": "OH BARTLEY WHAT AM I TO DO",
+     "float": "Oh, Bart, what am I to do?",
+     "c": "Oh, Bart, leave. What am I to do?"
+    },
+    {
+     "id": "4992-23283-0006",
+     "reference": "PERHAPS I AM MISTAKEN ANSWERED SHE",
+     "float": "Perhaps I am mistaken, answered she.",
+     "c": "Perhaps I am the stake in answer chief."
+    },
+    {
+     "id": "5142-33396-0020",
+     "reference": "A HOUSE SMELLS OF SMOKE A SHIP SMELLS OF FROLIC",
+     "float": "A house smells a smoke, a ship smells a frolic.",
+     "c": "A house smells a smoke, a ship smells of frolic."
+    },
+    {
+     "id": "5683-32866-0008",
+     "reference": "BRACTON'S A VERY GOOD FELLOW I CAN ASSURE YOU",
+     "float": "\"Bractons are very good fellow, I can assure you.\"",
+     "c": "\"Braxtons\" a very good fellow I can assure you."
+    },
+    {
+     "id": "6829-68769-0014",
+     "reference": "THEY FOLLOWED THE JAILER ALONG A SUCCESSION OF PASSAGES",
+     "float": "They followed the jailer along the succession of passages.",
+     "c": "They follow the jailer along the succession of passages."
+    },
+    {
+     "id": "7176-88083-0016",
+     "reference": "STRAIGHTWAY THE HAWK GLIDED FROM HIS PERCH AND DARTED AFTER HIM",
+     "float": "Straightway, the hook glided from his perch and darted after him.",
+     "c": "Straightway, the hulk glided from his perch and darted after him."
+    }
+   ]
+  },
+  "F3PR_nl": {
+   "ir": "<repo>/out/q16/F3PR/ir",
+   "gen": "<repo>/out/q16/F3PR/gen_nl",
+   "q16_plan": {
+    "candidate": "F3PR",
+    "quant_fix_key": "CD F3PR: stem int16 + adds per-channel + rows + per-row",
+    "record": "quant_fix_codesign_dev.json"
+   },
+   "input_dtype": "i16",
+   "input_scale": 2.997460049363689e-05,
+   "output_scale": 0.05858209940392201,
+   "kernel_picks": {
+    "add_pc_s8": "pext_int_block",
+    "add_s16_pc_s8": "pext_int_block",
+    "conv2d_s16_pc": "pext_split_dot8",
+    "gelu_s8": "pext_int_lut",
+    "groupnorm_s16": "pext_int_memo",
+    "layernorm_pc_s8": "reference",
+    "layernorm_s16_s8": "reference",
+    "linear_s8_pc": "pext_row_dot8_pc",
+    "lut16_s16": "reference",
+    "matmul_b_s8": "pext_dot8_exact",
+    "permute4_s16": "reference",
+    "permute4_s8": "reference",
+    "rope_s8": "pext_int_rot",
+    "softmax_s8": "pext_int_row"
+   },
+   "wer_vs_reference": {
+    "wer": 0.07663520989261308,
+    "errors": 471,
+    "words": 6146,
+    "utterances": 772
+   },
+   "wer_vs_float": {
+    "wer": 0.023604102230180692,
+    "errors": 145,
+    "words": 6143,
+    "utterances": 772
+   },
+   "sqnr_db": 16.40917996171929,
+   "cosine": 0.988528330850139,
+   "identical_to_float_transcript": 683,
+   "host_seconds": 47.7,
+   "minus_float": {
+    "delta_wer": 0.001464367068011715,
+    "ci95": [
+     -0.0027273881164828276,
+     0.005395555208692695
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "minus_float_sim": {
+    "delta_wer": -0.0009762447120078099,
+    "ci95": [
+     -0.004749660601660351,
+     0.0025996819683294222
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "differs_from_float": 89,
+   "examples_differing": [
+    {
+     "id": "1089-134686-0003",
+     "reference": "HELLO BERTIE ANY GOOD IN YOUR MIND",
+     "float": "How Bertie, any good in your mind?",
+     "c": "Hello Bertie, any good in your mind?"
+    },
+    {
+     "id": "1580-141083-0036",
+     "reference": "HOLMES HELD IT OUT ON HIS OPEN PALM IN THE GLARE OF THE ELECTRIC LIGHT",
+     "float": "Holmes held it out on his open palm in the glare of the electric light.",
+     "c": "Holmes had it out on his open palm in the glare of the electric light."
+    },
+    {
+     "id": "1995-1837-0000",
+     "reference": "HE KNEW THE SILVER FLEECE HIS AND ZORA'S MUST BE RUINED",
+     "float": "He knew the silver fleece, his and Zorah's must be ruined.",
+     "c": "He knew the silver fleece is and Zorah's must be ruined."
+    },
+    {
+     "id": "237-134493-0007",
+     "reference": "ALEXANDRA LETS YOU SLEEP LATE",
+     "float": "Add a Xandra that's you sleep-laid.",
+     "c": "Add a Xander that's you sleep late."
+    },
+    {
+     "id": "260-123286-0004",
+     "reference": "ONE MIGHT BE WITH LESS REASON THAN NOW",
+     "float": "One might be with less reason than now.",
+     "c": "One might be, would less reason than now."
+    },
+    {
+     "id": "2830-3980-0028",
+     "reference": "THIS SHOULD GO FAR IN SHUTTING THE MOUTHS OF THE FALSE APOSTLES",
+     "float": "This should go far in shedding the mouths of the false opossums.",
+     "c": "This should go far and shedding the mouths of the fossil pauses."
+    },
+    {
+     "id": "4446-2273-0006",
+     "reference": "THEY ARE ALL SKETCHES MADE ABOUT THE VILLA D'ESTE YOU SEE",
+     "float": "They are all sketches made about the Villa Deste, you see.",
+     "c": "They are all sketches made about the villa desti you see."
+    },
+    {
+     "id": "4970-29095-0011",
+     "reference": "DOES THEE THINK THEE COULD STAND IT SIX MONTHS",
+     "float": "Does the think be could stand at six months?",
+     "c": "Does the think be could stand it six months?"
+    },
+    {
+     "id": "5105-28241-0003",
+     "reference": "STEAM UP AND CANVAS SPREAD THE SCHOONER STARTED EASTWARDS",
+     "float": "Steam up and canvas spread the schooner started eastwards.",
+     "c": "Steam up and canvass spread the schooner started eastwards."
+    },
+    {
+     "id": "5142-33396-0049",
+     "reference": "HERE FRIEND TAKE IT AND HE THRUST IT INTO THE FARMER'S HAND",
+     "float": "Here, friend, take it, and he thrust into the farmer's hand.",
+     "c": "Here, friend, take it, and he thrusts into the farmer's hand."
+    },
+    {
+     "id": "61-70968-0038",
+     "reference": "ROBIN FITZOOTH",
+     "float": "Robin Fitzruffe",
+     "c": "Robin Fitzruff."
+    },
+    {
+     "id": "6829-68769-0046",
+     "reference": "YOU'RE FOOLISH WHY SHOULD YOU DO ALL THIS",
+     "float": "Your foolish, why should you do all this?",
+     "c": "You're foolish. Why should you do all this?"
+    }
+   ]
+  }
+ },
+ "float_sim": {
+  "candidate": "F3PR",
+  "quant_fix_key": "CD F3PR: stem int16 + adds per-channel + rows + per-row",
+  "record": "quant_fix_codesign_dev.json",
+  "what": "fq.py float simulation (ESTIMATE), rerun here on the same utterances",
+  "wer_vs_reference": {
+   "wer": 0.07761145460462089,
+   "errors": 477,
+   "words": 6146,
+   "utterances": 772
+  },
+  "wer_vs_float": {
+   "wer": 0.025883118997232623,
+   "errors": 159,
+   "words": 6143,
+   "utterances": 772
+  },
+  "sqnr_db": 16.363646224966203
+ }
+}

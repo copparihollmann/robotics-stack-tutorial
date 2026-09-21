@@ -1,0 +1,531 @@
+{
+ "what": "host gates, patches/0103 lowering of a quant_fix.py candidate",
+ "label": "R",
+ "q16_plan": {
+  "candidate": "R",
+  "quant_fix_key": "FINAL R: split stem (1, 64), stem weights 2 group(s), adds per-channel + o_proj/fc2 rows",
+  "record": "quant_fix_final_dev2.json"
+ },
+ "ir": "<repo>/out/q16/R/ir",
+ "ops": 184,
+ "dispatches": 159,
+ "a_reference_vs_golden": {
+  "gen": "<repo>/out/q16/R/gen_ref",
+  "kernel_picks": {
+   "add_pc_s8": "reference",
+   "conv2d_s8": "reference",
+   "gelu_s8": "reference",
+   "groupnorm_s16": "reference",
+   "layernorm_pc_s8": "reference",
+   "linear_s8": "reference",
+   "lut16_pc_s8": "reference",
+   "lut16_s16": "reference",
+   "matmul_b_s8": "reference",
+   "mrcombine_s16": "reference",
+   "permute4_s8": "reference",
+   "rope_s8": "reference",
+   "softmax_s8": "reference",
+   "split16_s8": "reference"
+  },
+  "dispatches": 159,
+  "every_dispatch_bit_exact": true,
+  "first_differing_dispatch": null,
+  "per_kind": {
+   "split16_s8": {
+    "dispatches": 6,
+    "elements": 1084736,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "conv2d_s8": {
+    "dispatches": 24,
+    "elements": 2103552,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "mrcombine_s16": {
+    "dispatches": 3,
+    "elements": 525888,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "lut16_s16": {
+    "dispatches": 2,
+    "elements": 478368,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "groupnorm_s16": {
+    "dispatches": 1,
+    "elements": 287712,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "lut16_pc_s8": {
+    "dispatches": 1,
+    "elements": 47520,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "permute4_s8": {
+    "dispatches": 25,
+    "elements": 1188000,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "layernorm_pc_s8": {
+    "dispatches": 13,
+    "elements": 617760,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "linear_s8": {
+    "dispatches": 36,
+    "elements": 2566080,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "rope_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "matmul_b_s8": {
+    "dispatches": 12,
+    "elements": 1591920,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "softmax_s8": {
+    "dispatches": 6,
+    "elements": 1306800,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "add_pc_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "gelu_s8": {
+    "dispatches": 6,
+    "elements": 1140480,
+    "n_differ": 0,
+    "max_abs_err": 0
+   }
+  },
+  "output_vs_golden_max_abs_err": 0,
+  "output_vs_golden_n_differ": 0,
+  "output_elements": 47520
+ },
+ "b1_curated_new_kinds_vs_golden": {
+  "gen": "<repo>/out/q16/R/gen_cur",
+  "kernel_picks": {
+   "add_pc_s8": "pext_int_block",
+   "conv2d_s8": "reference",
+   "gelu_s8": "reference",
+   "groupnorm_s16": "pext_int_memo",
+   "layernorm_pc_s8": "reference",
+   "linear_s8": "reference",
+   "lut16_pc_s8": "reference",
+   "lut16_s16": "reference",
+   "matmul_b_s8": "reference",
+   "mrcombine_s16": "pext_fine_first",
+   "permute4_s8": "reference",
+   "rope_s8": "reference",
+   "softmax_s8": "reference",
+   "split16_s8": "reference"
+  },
+  "dispatches": 159,
+  "every_dispatch_bit_exact": true,
+  "first_differing_dispatch": null,
+  "per_kind": {
+   "split16_s8": {
+    "dispatches": 6,
+    "elements": 1084736,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "conv2d_s8": {
+    "dispatches": 24,
+    "elements": 2103552,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "mrcombine_s16": {
+    "dispatches": 3,
+    "elements": 525888,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "lut16_s16": {
+    "dispatches": 2,
+    "elements": 478368,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "groupnorm_s16": {
+    "dispatches": 1,
+    "elements": 287712,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "lut16_pc_s8": {
+    "dispatches": 1,
+    "elements": 47520,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "permute4_s8": {
+    "dispatches": 25,
+    "elements": 1188000,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "layernorm_pc_s8": {
+    "dispatches": 13,
+    "elements": 617760,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "linear_s8": {
+    "dispatches": 36,
+    "elements": 2566080,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "rope_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "matmul_b_s8": {
+    "dispatches": 12,
+    "elements": 1591920,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "softmax_s8": {
+    "dispatches": 6,
+    "elements": 1306800,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "add_pc_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "gelu_s8": {
+    "dispatches": 6,
+    "elements": 1140480,
+    "n_differ": 0,
+    "max_abs_err": 0
+   }
+  },
+  "output_vs_golden_max_abs_err": 0,
+  "output_vs_golden_n_differ": 0,
+  "output_elements": 47520,
+  "curated_new_kinds_picked": {
+   "add_pc_s8": "pext_int_block",
+   "groupnorm_s16": "pext_int_memo",
+   "layernorm_pc_s8": "reference",
+   "lut16_pc_s8": "reference",
+   "lut16_s16": "reference",
+   "mrcombine_s16": "pext_fine_first",
+   "split16_s8": "reference"
+  }
+ },
+ "b2_stress": {
+  "full": {
+   "returncode": 0,
+   "cases": 373306,
+   "mismatches": 0,
+   "per_kernel": [
+    "add_pc_s8 + add_s16_pc_s8   200000 cases",
+    "mrcombine_s16               100000 cases",
+    "groupnorm_s16               50000 cases",
+    "conv2d_s16_pc               23306 cases"
+   ],
+   "stderr_tail": ""
+  },
+  "san": {
+   "returncode": 0,
+   "cases": 37303,
+   "mismatches": 0,
+   "per_kernel": [
+    "add_pc_s8 + add_s16_pc_s8   20000 cases",
+    "mrcombine_s16               10000 cases",
+    "groupnorm_s16               5000 cases",
+    "conv2d_s16_pc               2303 cases"
+   ],
+   "stderr_tail": ""
+  }
+ },
+ "b3_objects": [
+  {
+   "op": "split16_s8",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "mrcombine_s16",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "lut16_s16",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "lut16_pc_s8",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "groupnorm_s16",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": [
+    "__udivti3"
+   ]
+  },
+  {
+   "op": "layernorm_pc_s8",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": [
+    "__udivti3"
+   ]
+  },
+  {
+   "op": "layernorm_s16_s8",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": [
+    "__udivti3"
+   ]
+  },
+  {
+   "op": "add_pc_s8",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "add_s16_pc_s8",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "conv2d_s16_pc",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "permute4_s16",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "add_pc_s8",
+   "kernel": "pext_nl/pext_nl_add_pc_s8_pext_int_block.c",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "add_s16_pc_s8",
+   "kernel": "pext_nl/pext_nl_add_s16_pc_s8_pext_int_block.c",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "mrcombine_s16",
+   "kernel": "pext_nl/pext_nl_mrcombine_s16_pext_fine_first.c",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "groupnorm_s16",
+   "kernel": "pext_nl/pext_nl_groupnorm_s16_pext_int_memo.c",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": [
+    "__udivti3"
+   ]
+  },
+  {
+   "op": "conv2d_s16_pc",
+   "kernel": "pext_nl/pext_nl_conv2d_s16_pc_pext_split_dot8.c",
+   "custom0_encodings": 2,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": [
+    "memcpy",
+    "memset"
+   ]
+  }
+ ],
+ "c_deploy_pext_nl": {
+  "gen": "<repo>/out/q16/R/gen_nl",
+  "kernel_picks": {
+   "add_pc_s8": "pext_int_block",
+   "conv2d_s8": "pext_patch_dot8",
+   "gelu_s8": "pext_int_lut",
+   "groupnorm_s16": "pext_int_memo",
+   "layernorm_pc_s8": "reference",
+   "linear_s8": "pext_row_dot8",
+   "lut16_pc_s8": "reference",
+   "lut16_s16": "reference",
+   "matmul_b_s8": "pext_dot8_exact",
+   "mrcombine_s16": "pext_fine_first",
+   "permute4_s8": "reference",
+   "rope_s8": "pext_int_rot",
+   "softmax_s8": "pext_int_row",
+   "split16_s8": "reference"
+  },
+  "dispatches": 159,
+  "every_dispatch_bit_exact": false,
+  "first_differing_dispatch": {
+   "dispatch": 48,
+   "name": "scaled_dot_product_attention.softmax",
+   "op": "softmax_s8",
+   "tensor": "scaled_dot_product_attention__probs",
+   "elements": 217800,
+   "max_abs_err": 1,
+   "n_differ": 205
+  },
+  "per_kind": {
+   "split16_s8": {
+    "dispatches": 6,
+    "elements": 1084736,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "conv2d_s8": {
+    "dispatches": 24,
+    "elements": 2103552,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "mrcombine_s16": {
+    "dispatches": 3,
+    "elements": 525888,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "lut16_s16": {
+    "dispatches": 2,
+    "elements": 478368,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "groupnorm_s16": {
+    "dispatches": 1,
+    "elements": 287712,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "lut16_pc_s8": {
+    "dispatches": 1,
+    "elements": 47520,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "permute4_s8": {
+    "dispatches": 25,
+    "elements": 1188000,
+    "n_differ": 571727,
+    "max_abs_err": 23
+   },
+   "layernorm_pc_s8": {
+    "dispatches": 13,
+    "elements": 617760,
+    "n_differ": 234415,
+    "max_abs_err": 11
+   },
+   "linear_s8": {
+    "dispatches": 36,
+    "elements": 2566080,
+    "n_differ": 1555059,
+    "max_abs_err": 42
+   },
+   "rope_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 271018,
+    "max_abs_err": 15
+   },
+   "matmul_b_s8": {
+    "dispatches": 12,
+    "elements": 1591920,
+    "n_differ": 809043,
+    "max_abs_err": 23
+   },
+   "softmax_s8": {
+    "dispatches": 6,
+    "elements": 1306800,
+    "n_differ": 88831,
+    "max_abs_err": 46
+   },
+   "add_pc_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 416557,
+    "max_abs_err": 34
+   },
+   "gelu_s8": {
+    "dispatches": 6,
+    "elements": 1140480,
+    "n_differ": 191755,
+    "max_abs_err": 19
+   }
+  },
+  "output_vs_golden_max_abs_err": 11,
+  "output_vs_golden_n_differ": 21712,
+  "output_elements": 47520,
+  "host_c_golden": "<repo>/out/q16/R/gates/host_c_golden_R_ew.bin"
+ },
+ "pass": true
+}

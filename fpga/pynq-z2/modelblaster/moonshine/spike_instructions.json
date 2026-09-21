@@ -1,0 +1,412 @@
+{
+ "what": "INSTRUCTION COUNTS from spike (patched TACIT spike with the MBP instructions, 2 harts), NOT Rocket cycles: spike's mcycle/rdcycle counts retired instructions and models no pipeline, cache or memory latency. Same generated C and host-C goldens as scripts/50's images, built for board spike_riscv64 (CONFIG_SMP=y, 2 CPUs, MB_ITERS=1, warm-up on). Every run reproduced its image's host-C golden exactly (max_abs_err 0). Recorded because the PYNQ board produced no console output for these images (out/rocket_moonshine_enc_session1_no_output/); it shows the images run end to end on an RV64 + MBP instruction-set model, and where the instructions go.",
+ "spike_git": "0ee3058d33397bef24b7131e4368d7cd94d4fade",
+ "images": {
+  "enc_nl": {
+   "max_abs_err_vs_host_c_golden": 0,
+   "instructions_per_inference": 6946169539,
+   "per_kind": {
+    "conv2d_s8": {
+     "dispatches": 3,
+     "instructions": 3872571717,
+     "share_pct": 55.751
+    },
+    "tanh_s8": {
+     "dispatches": 1,
+     "instructions": 378979450,
+     "share_pct": 5.456
+    },
+    "groupnorm_s8": {
+     "dispatches": 1,
+     "instructions": 397826148,
+     "share_pct": 5.727
+    },
+    "gelu_s8": {
+     "dispatches": 8,
+     "instructions": 30769524,
+     "share_pct": 0.443
+    },
+    "permute4_s8": {
+     "dispatches": 25,
+     "instructions": 47920875,
+     "share_pct": 0.69
+    },
+    "layernorm_s8": {
+     "dispatches": 13,
+     "instructions": 154220866,
+     "share_pct": 2.22
+    },
+    "linear_s8": {
+     "dispatches": 36,
+     "instructions": 839510748,
+     "share_pct": 12.086
+    },
+    "rope_s8": {
+     "dispatches": 12,
+     "instructions": 309187720,
+     "share_pct": 4.451
+    },
+    "matmul_b_s8": {
+     "dispatches": 12,
+     "instructions": 191019531,
+     "share_pct": 2.75
+    },
+    "softmax_s8": {
+     "dispatches": 6,
+     "instructions": 420418122,
+     "share_pct": 6.053
+    },
+    "add_s8": {
+     "dispatches": 12,
+     "instructions": 303744838,
+     "share_pct": 4.373
+    }
+   },
+   "conv2d_s8": [
+    {
+     "name": "stem.conv1",
+     "op": "conv2d_s8",
+     "instructions": 35550563
+    },
+    {
+     "name": "stem.conv2",
+     "op": "conv2d_s8",
+     "instructions": 523152374
+    },
+    {
+     "name": "stem.conv3",
+     "op": "conv2d_s8",
+     "instructions": 3313868780
+    }
+   ]
+  },
+  "enc_ew": {
+   "max_abs_err_vs_host_c_golden": 0,
+   "instructions_per_inference": 5642495723,
+   "per_kind": {
+    "conv2d_s8": {
+     "dispatches": 3,
+     "instructions": 3872571724,
+     "share_pct": 68.632
+    },
+    "tanh_s8": {
+     "dispatches": 1,
+     "instructions": 6761367,
+     "share_pct": 0.12
+    },
+    "groupnorm_s8": {
+     "dispatches": 1,
+     "instructions": 34262178,
+     "share_pct": 0.607
+    },
+    "gelu_s8": {
+     "dispatches": 8,
+     "instructions": 30775759,
+     "share_pct": 0.545
+    },
+    "permute4_s8": {
+     "dispatches": 25,
+     "instructions": 47920875,
+     "share_pct": 0.849
+    },
+    "layernorm_s8": {
+     "dispatches": 13,
+     "instructions": 154216636,
+     "share_pct": 2.733
+    },
+    "linear_s8": {
+     "dispatches": 36,
+     "instructions": 839510748,
+     "share_pct": 14.878
+    },
+    "rope_s8": {
+     "dispatches": 12,
+     "instructions": 29964020,
+     "share_pct": 0.531
+    },
+    "matmul_b_s8": {
+     "dispatches": 12,
+     "instructions": 191088232,
+     "share_pct": 3.387
+    },
+    "softmax_s8": {
+     "dispatches": 6,
+     "instructions": 420420475,
+     "share_pct": 7.451
+    },
+    "add_s8": {
+     "dispatches": 12,
+     "instructions": 15003709,
+     "share_pct": 0.266
+    }
+   },
+   "conv2d_s8": [
+    {
+     "name": "stem.conv1",
+     "op": "conv2d_s8",
+     "instructions": 35550563
+    },
+    {
+     "name": "stem.conv2",
+     "op": "conv2d_s8",
+     "instructions": 523152374
+    },
+    {
+     "name": "stem.conv3",
+     "op": "conv2d_s8",
+     "instructions": 3313868787
+    }
+   ]
+  },
+  "enc_ew_bigconv": {
+   "max_abs_err_vs_host_c_golden": 0,
+   "instructions_per_inference": 2064360387,
+   "per_kind": {
+    "conv2d_s8": {
+     "dispatches": 3,
+     "instructions": 294436388,
+     "share_pct": 14.263
+    },
+    "tanh_s8": {
+     "dispatches": 1,
+     "instructions": 6761367,
+     "share_pct": 0.328
+    },
+    "groupnorm_s8": {
+     "dispatches": 1,
+     "instructions": 34262178,
+     "share_pct": 1.66
+    },
+    "gelu_s8": {
+     "dispatches": 8,
+     "instructions": 30775759,
+     "share_pct": 1.491
+    },
+    "permute4_s8": {
+     "dispatches": 25,
+     "instructions": 47920875,
+     "share_pct": 2.321
+    },
+    "layernorm_s8": {
+     "dispatches": 13,
+     "instructions": 154216636,
+     "share_pct": 7.47
+    },
+    "linear_s8": {
+     "dispatches": 36,
+     "instructions": 839510748,
+     "share_pct": 40.667
+    },
+    "rope_s8": {
+     "dispatches": 12,
+     "instructions": 29964020,
+     "share_pct": 1.451
+    },
+    "matmul_b_s8": {
+     "dispatches": 12,
+     "instructions": 191088232,
+     "share_pct": 9.257
+    },
+    "softmax_s8": {
+     "dispatches": 6,
+     "instructions": 420420475,
+     "share_pct": 20.366
+    },
+    "add_s8": {
+     "dispatches": 12,
+     "instructions": 15003709,
+     "share_pct": 0.727
+    }
+   },
+   "conv2d_s8": [
+    {
+     "name": "stem.conv1",
+     "op": "conv2d_s8",
+     "instructions": 30459265
+    },
+    {
+     "name": "stem.conv2",
+     "op": "conv2d_s8",
+     "instructions": 215981365
+    },
+    {
+     "name": "stem.conv3",
+     "op": "conv2d_s8",
+     "instructions": 47995758
+    }
+   ]
+  },
+  "stem_w": {
+   "max_abs_err_vs_host_c_golden": 0,
+   "instructions_per_inference": 3918903010,
+   "per_kind": {
+    "conv2d_s8": {
+     "dispatches": 3,
+     "instructions": 3872571724,
+     "share_pct": 98.818
+    },
+    "tanh_s8": {
+     "dispatches": 1,
+     "instructions": 6761367,
+     "share_pct": 0.173
+    },
+    "groupnorm_s8": {
+     "dispatches": 1,
+     "instructions": 34262178,
+     "share_pct": 0.874
+    },
+    "gelu_s8": {
+     "dispatches": 2,
+     "instructions": 5307741,
+     "share_pct": 0.135
+    }
+   },
+   "conv2d_s8": [
+    {
+     "name": "stem.conv1",
+     "op": "conv2d_s8",
+     "instructions": 35550563
+    },
+    {
+     "name": "stem.conv2",
+     "op": "conv2d_s8",
+     "instructions": 523152374
+    },
+    {
+     "name": "stem.conv3",
+     "op": "conv2d_s8",
+     "instructions": 3313868787
+    }
+   ]
+  },
+  "stem_h": {
+   "max_abs_err_vs_host_c_golden": 0,
+   "instructions_per_inference": 22085424021,
+   "per_kind": {
+    "conv2d_s8": {
+     "dispatches": 3,
+     "instructions": 22039092735,
+     "share_pct": 99.79
+    },
+    "tanh_s8": {
+     "dispatches": 1,
+     "instructions": 6761367,
+     "share_pct": 0.031
+    },
+    "groupnorm_s8": {
+     "dispatches": 1,
+     "instructions": 34262178,
+     "share_pct": 0.155
+    },
+    "gelu_s8": {
+     "dispatches": 2,
+     "instructions": 5307741,
+     "share_pct": 0.024
+    }
+   },
+   "conv2d_s8": [
+    {
+     "name": "stem.conv1",
+     "op": "conv2d_s8",
+     "instructions": 47138713
+    },
+    {
+     "name": "stem.conv2",
+     "op": "conv2d_s8",
+     "instructions": 17965717235
+    },
+    {
+     "name": "stem.conv3",
+     "op": "conv2d_s8",
+     "instructions": 4026236787
+    }
+   ]
+  },
+  "stem_w_bigconv": {
+   "max_abs_err_vs_host_c_golden": 0,
+   "instructions_per_inference": 340767674,
+   "per_kind": {
+    "conv2d_s8": {
+     "dispatches": 3,
+     "instructions": 294436388,
+     "share_pct": 86.404
+    },
+    "tanh_s8": {
+     "dispatches": 1,
+     "instructions": 6761367,
+     "share_pct": 1.984
+    },
+    "groupnorm_s8": {
+     "dispatches": 1,
+     "instructions": 34262178,
+     "share_pct": 10.054
+    },
+    "gelu_s8": {
+     "dispatches": 2,
+     "instructions": 5307741,
+     "share_pct": 1.558
+    }
+   },
+   "conv2d_s8": [
+    {
+     "name": "stem.conv1",
+     "op": "conv2d_s8",
+     "instructions": 30459265
+    },
+    {
+     "name": "stem.conv2",
+     "op": "conv2d_s8",
+     "instructions": 215981365
+    },
+    {
+     "name": "stem.conv3",
+     "op": "conv2d_s8",
+     "instructions": 47995758
+    }
+   ]
+  },
+  "stem_h_bigconv": {
+   "max_abs_err_vs_host_c_golden": 0,
+   "instructions_per_inference": 367834716,
+   "per_kind": {
+    "conv2d_s8": {
+     "dispatches": 3,
+     "instructions": 321503430,
+     "share_pct": 87.404
+    },
+    "tanh_s8": {
+     "dispatches": 1,
+     "instructions": 6761367,
+     "share_pct": 1.838
+    },
+    "groupnorm_s8": {
+     "dispatches": 1,
+     "instructions": 34262178,
+     "share_pct": 9.315
+    },
+    "gelu_s8": {
+     "dispatches": 2,
+     "instructions": 5307741,
+     "share_pct": 1.443
+    }
+   },
+   "conv2d_s8": [
+    {
+     "name": "stem.conv1",
+     "op": "conv2d_s8",
+     "instructions": 32776895
+    },
+    {
+     "name": "stem.conv2",
+     "op": "conv2d_s8",
+     "instructions": 233139932
+    },
+    {
+     "name": "stem.conv3",
+     "op": "conv2d_s8",
+     "instructions": 55586603
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,36 @@
+{
+ "what": "Knobs for the QAT-unsplit deployment (MOONSHINE_MODEL.md s2.6/s3.3): the unsplit per-tensor W8A8 quantisation the QAT pilot's weights are deployed under.  Written to quant_fix.py's record schema so q16_plan.py can read it; NOT the output of a quant_fix search.",
+ "candidates": {
+  "QATU: unsplit stem, plain per-tensor W8A8, p99.9 activation calibration": {
+   "knobs": {
+    "calib": "p99.9"
+   },
+   "wer_vs_reference": {
+    "wer": 0.12331763122476447,
+    "errors": 733,
+    "words": 5944,
+    "utterances": 765
+   },
+   "wer_vs_float": {
+    "wer": 0.07875335120643431
+   },
+   "sqnr_db": 13.683811089394538,
+   "measured_on": "the QAT checkpoint (archive/model_pilots/qat), dev-clean 765, float sim",
+   "calibration_policy_sweep_dev765_float_sim": {
+    "p99.99": 0.17429340511440108,
+    "p99.9": 0.12331763122476447,
+    "max": 0.38139300134589504
+   },
+   "stock_checkpoint_control_dev765_float_sim": {
+    "p99.99": 0.9670255720053835,
+    "p99.9": 0.26194481830417227,
+    "max": 1.202220726783311
+   },
+   "why_p99_9": "measured: on the QAT checkpoint the unsplit graph scores 12.33 % at p99.9, 17.43 % at p99.99 and 38.14 % at max.  The QAT harness TRAINED at p99.99 ranges computed over train-clean-100 windows; p99.9 over the 64 pinned dev-clean calibration windows is what the deployment measures best, and the gap between those two is the calibration-set mismatch this candidate exists to pin down.",
+   "float_baselines_dev765": {
+    "qat_checkpoint_float": 0.10615746971736205,
+    "stock_checkpoint_float": 0.07301480484522208
+   }
+  }
+ }
+}

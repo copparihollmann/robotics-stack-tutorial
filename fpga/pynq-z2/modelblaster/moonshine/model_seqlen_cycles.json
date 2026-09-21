@@ -1,0 +1,301 @@
+{
+ "what": "What a shorter encoder sequence is worth in cycles -- with the parts that do NOT shrink priced.",
+ "clock_hz": 34482759.0,
+ "window_s": 4.0,
+ "identity": {
+  "rows_total": 732249750,
+  "cycles_h0": 96715634,
+  "image_cycles": 180241986,
+  "cycles_stage": 34179494,
+  "cpu_kernel_rows": 421007296,
+  "engine_rows": 311242454,
+  "h0_plus_image_plus_stage": 311137114,
+  "residual_vs_engine_rows": 105340,
+  "wall_median": 732293543,
+  "steady_cycles": 552051557
+ },
+ "image_cycles_per_byte": 21.155957266000602,
+ "base_model_vs_measured": {
+  "model_steady": 552007763.9999999,
+  "measured_steady": 552051557,
+  "model_cold": 732249749.9999999,
+  "measured_cold": 732293543,
+  "steady_pct_error": -0.007932773568849695
+ },
+ "fixed_floor": {
+  "under_a_conv3_or_post_stem_knob": {
+   "steady_cycles_that_do_not_scale": 81618381.5076923,
+   "pct_of_encoder_steady": 14.784557795874907,
+   "what": "conv1 + tanh + groupnorm at T1=999, conv2 + gelu2 at T2=331, and their NCHW staging.  A conv3-stride or post-stem knob does not touch them."
+  },
+  "image_build_never_scales": {
+   "cycles": 180241986,
+   "bytes": 8519680,
+   "pct_of_encoder_cold": 24.61335180720008
+  }
+ },
+ "variants": [
+  {
+   "T1": 999,
+   "T2": 331,
+   "T3": 110,
+   "T": 110,
+   "image_cycles": 180241986.0,
+   "steady_cycles": 348479687.90716046,
+   "cold_cycles": 528721673.90716046,
+   "name": "c3s3",
+   "steady_speedup": 1.584045736826595,
+   "cold_speedup": 1.3849436974822738,
+   "rtf_steady": 2.5264777095356585,
+   "rtf_cold": 3.83323209366136,
+   "steady_speedup_if_the_quadratic_ops_were_already_free": 1.3230115311211155
+  },
+  {
+   "T1": 999,
+   "T2": 331,
+   "T3": 83,
+   "T": 83,
+   "image_cycles": 180241986.0,
+   "steady_cycles": 268518207.30556434,
+   "cold_cycles": 448760193.30556434,
+   "name": "c3s4",
+   "steady_speedup": 2.0557554347584124,
+   "cold_speedup": 1.631717253275638,
+   "rtf_steady": 1.9467569815510146,
+   "rtf_cold": 3.2535113656767165,
+   "steady_speedup_if_the_quadratic_ops_were_already_free": 1.572335697467147
+  },
+  {
+   "T1": 999,
+   "T2": 331,
+   "T3": 66,
+   "T": 66,
+   "image_cycles": 180241986.0,
+   "steady_cycles": 227931771.15744066,
+   "cold_cycles": 408173757.15744066,
+   "name": "c3s5",
+   "steady_speedup": 2.4218114096025176,
+   "cold_speedup": 1.793965773545693,
+   "rtf_steady": 1.6525053227138862,
+   "rtf_cold": 2.959259706839588,
+   "steady_speedup_if_the_quadratic_ops_were_already_free": 1.7840183232284268
+  },
+  {
+   "T1": 999,
+   "T2": 331,
+   "T3": 55,
+   "T": 55,
+   "image_cycles": 180241986.0,
+   "steady_cycles": 193185938.94753933,
+   "cold_cycles": 373427924.9475393,
+   "name": "c3s6",
+   "steady_speedup": 2.857391003751575,
+   "cold_speedup": 1.960886428359286,
+   "rtf_steady": 1.4005980419630817,
+   "rtf_cold": 2.7073524260887836,
+   "steady_speedup_if_the_quadratic_ops_were_already_free": 1.9542600678443842
+  },
+  {
+   "T1": 999,
+   "T2": 331,
+   "T3": 165,
+   "T": 82,
+   "image_cycles": 180241986.0,
+   "steady_cycles": 270351265.528862,
+   "cold_cycles": 450593251.528862,
+   "name": "dec2",
+   "steady_speedup": 2.0418168301160367,
+   "cold_speedup": 1.625079264981173,
+   "rtf_steady": 1.9600466535237364,
+   "rtf_cold": 3.2668010376494383,
+   "steady_speedup_if_the_quadratic_ops_were_already_free": 1.529059803743113
+  },
+  {
+   "T1": 999,
+   "T2": 331,
+   "T3": 165,
+   "T": 55,
+   "image_cycles": 180241986.0,
+   "steady_cycles": 198863612.4014347,
+   "cold_cycles": 379105598.40143466,
+   "name": "dec3",
+   "steady_speedup": 2.7758108048731063,
+   "cold_speedup": 1.9315192207333776,
+   "rtf_steady": 1.4417611740510285,
+   "rtf_cold": 2.74851555817673,
+   "steady_speedup_if_the_quadratic_ops_were_already_free": 1.846922099884427
+  },
+  {
+   "T1": 999,
+   "T2": 166,
+   "T3": 82,
+   "T": 82,
+   "image_cycles": 180241986.0,
+   "steady_cycles": 247642506.69106498,
+   "cold_cycles": 427884492.69106495,
+   "name": "c2s6",
+   "steady_speedup": 2.2290509467691333,
+   "cold_speedup": 1.7113257491401737,
+   "rtf_steady": 1.7954081537607314,
+   "rtf_cold": 3.102162537886433,
+   "steady_speedup_if_the_quadratic_ops_were_already_free": 1.768861003952369
+  },
+  {
+   "T1": 500,
+   "T2": 165,
+   "T3": 82,
+   "T": 82,
+   "image_cycles": 180241986.0,
+   "steady_cycles": 224491834.6933604,
+   "cold_cycles": 404733820.6933604,
+   "name": "c1s128",
+   "steady_speedup": 2.45892134452909,
+   "cold_speedup": 1.809213148398528,
+   "rtf_steady": 1.6275657836236392,
+   "rtf_cold": 2.934320167749341,
+   "steady_speedup_if_the_quadratic_ops_were_already_free": 2.0094556304996183
+  }
+ ],
+ "decoder_cross_attention": {
+  "note": "b28 rows are name-joined (4aac1ef) and the decoder reuses op names across its 24 steps, so these are per-dispatch values x count: safe here only because every step does identical work and none of them builds an image.  Quoted as a SHARE, which is what the join preserves.",
+  "dispatches": 288,
+  "cycles_at_T165": 112195886,
+  "pct_of_b28_dispatch_total": 14.337328296498889,
+  "law": "O(T): M=1 queries against T keys",
+  "kx_vx_input_bytes_at_T165": 570240,
+  "saving_at": {
+   "c3s3": {
+    "T": 110,
+    "cycles": 74797257.33333333,
+    "saving": 37398628.66666667
+   },
+   "c3s4": {
+    "T": 83,
+    "cycles": 56437930.53333333,
+    "saving": 55757955.46666666
+   },
+   "c3s5": {
+    "T": 66,
+    "cycles": 44878354.4,
+    "saving": 67317531.6
+   },
+   "c3s6": {
+    "T": 55,
+    "cycles": 37398628.666666664,
+    "saving": 74797257.33333334
+   },
+   "dec2": {
+    "T": 82,
+    "cycles": 55757955.46666667,
+    "saving": 56437930.53333334
+   },
+   "dec3": {
+    "T": 55,
+    "cycles": 37398628.666666664,
+    "saving": 74797257.33333334
+   },
+   "c2s6": {
+    "T": 82,
+    "cycles": 55757955.46666667,
+    "saving": 56437930.53333334
+   },
+   "c1s128": {
+    "T": 82,
+    "cycles": 55757955.46666667,
+    "saving": 56437930.53333334
+   }
+  }
+ },
+ "composition_onto_the_projected_ladder": {
+  "note": "composition of PREDICTIONS, not a measurement; inputs are the coordinator's projected post-ladder halves",
+  "inputs": {
+   "encoder_rtf_projected": 1.43,
+   "decoder_rtf_projected": 1.247,
+   "rtf_e2e_projected": 2.676,
+   "goal": 1.0,
+   "decoder_cross_attention_share": 0.14337328296498889
+  },
+  "rows": [
+   {
+    "name": "c3s3",
+    "T": 110,
+    "encoder_rtf": 1.0808673744424757,
+    "decoder_rtf": 1.1874045053808864,
+    "rtf_e2e": 2.268271879823362,
+    "encoder_factor_used": 1.3230115311211155,
+    "meets_goal": false,
+    "decoder_share_of_e2e": 0.5234842066081398
+   },
+   {
+    "name": "c3s4",
+    "T": 83,
+    "encoder_rtf": 0.9094749946233278,
+    "decoder_rtf": 1.1581485352951397,
+    "rtf_e2e": 2.0676235299184675,
+    "encoder_factor_used": 1.572335697467147,
+    "meets_goal": false,
+    "decoder_share_of_e2e": 0.5601351109313449
+   },
+   {
+    "name": "c3s5",
+    "T": 66,
+    "encoder_rtf": 0.8015612739964565,
+    "decoder_rtf": 1.1397281096855956,
+    "rtf_e2e": 1.9412893836820522,
+    "encoder_factor_used": 1.7840183232284268,
+    "meets_goal": false,
+    "decoder_share_of_e2e": 0.5870985125998414
+   },
+   {
+    "name": "c3s6",
+    "T": 55,
+    "encoder_rtf": 0.731734748884952,
+    "decoder_rtf": 1.1278090107617726,
+    "rtf_e2e": 1.8595437596467246,
+    "encoder_factor_used": 1.9542600678443842,
+    "meets_goal": false,
+    "decoder_share_of_e2e": 0.6064976986484218
+   },
+   {
+    "name": "dec2",
+    "T": 82,
+    "encoder_rtf": 0.9352152195089974,
+    "decoder_rtf": 1.1570649808475195,
+    "rtf_e2e": 2.092280200356517,
+    "encoder_factor_used": 1.529059803743113,
+    "meets_goal": false,
+    "decoder_share_of_e2e": 0.5530162645760162
+   },
+   {
+    "name": "dec3",
+    "T": 55,
+    "encoder_rtf": 0.7742611342890334,
+    "decoder_rtf": 1.1278090107617726,
+    "rtf_e2e": 1.9020701450508062,
+    "encoder_factor_used": 1.846922099884427,
+    "meets_goal": false,
+    "decoder_share_of_e2e": 0.5929376546371521
+   },
+   {
+    "name": "c2s6",
+    "T": 82,
+    "encoder_rtf": 0.8084298295936125,
+    "decoder_rtf": 1.1570649808475195,
+    "rtf_e2e": 1.965494810441132,
+    "encoder_factor_used": 1.768861003952369,
+    "meets_goal": false,
+    "decoder_share_of_e2e": 0.5886889014923575
+   },
+   {
+    "name": "c1s128",
+    "T": 82,
+    "encoder_rtf": 0.7116355187421848,
+    "decoder_rtf": 1.1570649808475195,
+    "rtf_e2e": 1.8687004995897043,
+    "encoder_factor_used": 2.0094556304996183,
+    "meets_goal": false,
+    "decoder_share_of_e2e": 0.6191816083431064
+   }
+  ]
+ }
+}

@@ -1,0 +1,506 @@
+{
+ "what": "host gates, patches/0103 lowering of a quant_fix.py candidate",
+ "label": "F3PR",
+ "q16_plan": {
+  "candidate": "F3PR",
+  "quant_fix_key": "CD F3PR: stem int16 + adds per-channel + rows + per-row",
+  "record": "quant_fix_codesign_dev.json"
+ },
+ "ir": "<repo>/out/q16/F3PR/ir",
+ "ops": 154,
+ "dispatches": 129,
+ "a_reference_vs_golden": {
+  "gen": "<repo>/out/q16/F3PR/gen_ref",
+  "kernel_picks": {
+   "add_pc_s8": "reference",
+   "add_s16_pc_s8": "reference",
+   "conv2d_s16_pc": "reference",
+   "gelu_s8": "reference",
+   "groupnorm_s16": "reference",
+   "layernorm_pc_s8": "reference",
+   "layernorm_s16_s8": "reference",
+   "linear_s8_pc": "reference",
+   "lut16_s16": "reference",
+   "matmul_b_s8": "reference",
+   "permute4_s16": "reference",
+   "permute4_s8": "reference",
+   "rope_s8": "reference",
+   "softmax_s8": "reference"
+  },
+  "dispatches": 129,
+  "every_dispatch_bit_exact": true,
+  "first_differing_dispatch": null,
+  "per_kind": {
+   "conv2d_s16_pc": {
+    "dispatches": 3,
+    "elements": 525888,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "lut16_s16": {
+    "dispatches": 3,
+    "elements": 525888,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "groupnorm_s16": {
+    "dispatches": 1,
+    "elements": 287712,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "permute4_s16": {
+    "dispatches": 1,
+    "elements": 47520,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "layernorm_s16_s8": {
+    "dispatches": 1,
+    "elements": 47520,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "linear_s8_pc": {
+    "dispatches": 36,
+    "elements": 2566080,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "rope_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "permute4_s8": {
+    "dispatches": 24,
+    "elements": 1140480,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "matmul_b_s8": {
+    "dispatches": 12,
+    "elements": 1591920,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "softmax_s8": {
+    "dispatches": 6,
+    "elements": 1306800,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "add_s16_pc_s8": {
+    "dispatches": 1,
+    "elements": 47520,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "layernorm_pc_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "gelu_s8": {
+    "dispatches": 6,
+    "elements": 1140480,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "add_pc_s8": {
+    "dispatches": 11,
+    "elements": 522720,
+    "n_differ": 0,
+    "max_abs_err": 0
+   }
+  },
+  "output_vs_golden_max_abs_err": 0,
+  "output_vs_golden_n_differ": 0,
+  "output_elements": 47520
+ },
+ "b1_curated_new_kinds_vs_golden": {
+  "gen": "<repo>/out/q16/F3PR/gen_cur",
+  "kernel_picks": {
+   "add_pc_s8": "pext_int_block",
+   "add_s16_pc_s8": "pext_int_block",
+   "conv2d_s16_pc": "pext_split_dot8",
+   "gelu_s8": "reference",
+   "groupnorm_s16": "pext_int_memo",
+   "layernorm_pc_s8": "reference",
+   "layernorm_s16_s8": "reference",
+   "linear_s8_pc": "reference",
+   "lut16_s16": "reference",
+   "matmul_b_s8": "reference",
+   "permute4_s16": "reference",
+   "permute4_s8": "reference",
+   "rope_s8": "reference",
+   "softmax_s8": "reference"
+  },
+  "dispatches": 129,
+  "every_dispatch_bit_exact": true,
+  "first_differing_dispatch": null,
+  "per_kind": {
+   "conv2d_s16_pc": {
+    "dispatches": 3,
+    "elements": 525888,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "lut16_s16": {
+    "dispatches": 3,
+    "elements": 525888,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "groupnorm_s16": {
+    "dispatches": 1,
+    "elements": 287712,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "permute4_s16": {
+    "dispatches": 1,
+    "elements": 47520,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "layernorm_s16_s8": {
+    "dispatches": 1,
+    "elements": 47520,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "linear_s8_pc": {
+    "dispatches": 36,
+    "elements": 2566080,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "rope_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "permute4_s8": {
+    "dispatches": 24,
+    "elements": 1140480,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "matmul_b_s8": {
+    "dispatches": 12,
+    "elements": 1591920,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "softmax_s8": {
+    "dispatches": 6,
+    "elements": 1306800,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "add_s16_pc_s8": {
+    "dispatches": 1,
+    "elements": 47520,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "layernorm_pc_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "gelu_s8": {
+    "dispatches": 6,
+    "elements": 1140480,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "add_pc_s8": {
+    "dispatches": 11,
+    "elements": 522720,
+    "n_differ": 0,
+    "max_abs_err": 0
+   }
+  },
+  "output_vs_golden_max_abs_err": 0,
+  "output_vs_golden_n_differ": 0,
+  "output_elements": 47520,
+  "curated_new_kinds_picked": {
+   "add_pc_s8": "pext_int_block",
+   "add_s16_pc_s8": "pext_int_block",
+   "conv2d_s16_pc": "pext_split_dot8",
+   "groupnorm_s16": "pext_int_memo",
+   "layernorm_pc_s8": "reference",
+   "layernorm_s16_s8": "reference",
+   "lut16_s16": "reference",
+   "permute4_s16": "reference"
+  }
+ },
+ "b3_objects": [
+  {
+   "op": "split16_s8",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "mrcombine_s16",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "lut16_s16",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "lut16_pc_s8",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "groupnorm_s16",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": [
+    "__udivti3"
+   ]
+  },
+  {
+   "op": "layernorm_pc_s8",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": [
+    "__udivti3"
+   ]
+  },
+  {
+   "op": "layernorm_s16_s8",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": [
+    "__udivti3"
+   ]
+  },
+  {
+   "op": "add_pc_s8",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "add_s16_pc_s8",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "conv2d_s16_pc",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "permute4_s16",
+   "kernel": "KernelSpec.reference_impl",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "add_pc_s8",
+   "kernel": "pext_nl/pext_nl_add_pc_s8_pext_int_block.c",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "add_s16_pc_s8",
+   "kernel": "pext_nl/pext_nl_add_s16_pc_s8_pext_int_block.c",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "mrcombine_s16",
+   "kernel": "pext_nl/pext_nl_mrcombine_s16_pext_fine_first.c",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": []
+  },
+  {
+   "op": "groupnorm_s16",
+   "kernel": "pext_nl/pext_nl_groupnorm_s16_pext_int_memo.c",
+   "custom0_encodings": 0,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": [
+    "__udivti3"
+   ]
+  },
+  {
+   "op": "conv2d_s16_pc",
+   "kernel": "pext_nl/pext_nl_conv2d_s16_pc_pext_split_dot8.c",
+   "custom0_encodings": 2,
+   "softfloat_symbols": [],
+   "libm_symbols": [],
+   "other_calls": [
+    "memcpy",
+    "memset"
+   ]
+  }
+ ],
+ "c_deploy_pext_nl": {
+  "gen": "<repo>/out/q16/F3PR/gen_nl",
+  "kernel_picks": {
+   "add_pc_s8": "pext_int_block",
+   "add_s16_pc_s8": "pext_int_block",
+   "conv2d_s16_pc": "pext_split_dot8",
+   "gelu_s8": "pext_int_lut",
+   "groupnorm_s16": "pext_int_memo",
+   "layernorm_pc_s8": "reference",
+   "layernorm_s16_s8": "reference",
+   "linear_s8_pc": "pext_row_dot8_pc",
+   "lut16_s16": "reference",
+   "matmul_b_s8": "pext_dot8_exact",
+   "permute4_s16": "reference",
+   "permute4_s8": "reference",
+   "rope_s8": "pext_int_rot",
+   "softmax_s8": "pext_int_row"
+  },
+  "dispatches": 129,
+  "every_dispatch_bit_exact": false,
+  "first_differing_dispatch": {
+   "dispatch": 18,
+   "name": "scaled_dot_product_attention.softmax",
+   "op": "softmax_s8",
+   "tensor": "scaled_dot_product_attention__probs",
+   "elements": 217800,
+   "max_abs_err": 1,
+   "n_differ": 180
+  },
+  "per_kind": {
+   "conv2d_s16_pc": {
+    "dispatches": 3,
+    "elements": 525888,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "lut16_s16": {
+    "dispatches": 3,
+    "elements": 525888,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "groupnorm_s16": {
+    "dispatches": 1,
+    "elements": 287712,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "permute4_s16": {
+    "dispatches": 1,
+    "elements": 47520,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "layernorm_s16_s8": {
+    "dispatches": 1,
+    "elements": 47520,
+    "n_differ": 0,
+    "max_abs_err": 0
+   },
+   "linear_s8_pc": {
+    "dispatches": 36,
+    "elements": 2566080,
+    "n_differ": 1540008,
+    "max_abs_err": 45
+   },
+   "rope_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 267074,
+    "max_abs_err": 17
+   },
+   "permute4_s8": {
+    "dispatches": 24,
+    "elements": 1140480,
+    "n_differ": 564004,
+    "max_abs_err": 22
+   },
+   "matmul_b_s8": {
+    "dispatches": 12,
+    "elements": 1591920,
+    "n_differ": 793037,
+    "max_abs_err": 22
+   },
+   "softmax_s8": {
+    "dispatches": 6,
+    "elements": 1306800,
+    "n_differ": 86798,
+    "max_abs_err": 30
+   },
+   "add_s16_pc_s8": {
+    "dispatches": 1,
+    "elements": 47520,
+    "n_differ": 2422,
+    "max_abs_err": 5
+   },
+   "layernorm_pc_s8": {
+    "dispatches": 12,
+    "elements": 570240,
+    "n_differ": 231159,
+    "max_abs_err": 11
+   },
+   "gelu_s8": {
+    "dispatches": 6,
+    "elements": 1140480,
+    "n_differ": 188760,
+    "max_abs_err": 15
+   },
+   "add_pc_s8": {
+    "dispatches": 11,
+    "elements": 522720,
+    "n_differ": 411512,
+    "max_abs_err": 26
+   }
+  },
+  "output_vs_golden_max_abs_err": 11,
+  "output_vs_golden_n_differ": 21537,
+  "output_elements": 47520,
+  "host_c_golden": "<repo>/out/q16/F3PR/gates/host_c_golden_F3PR_ew.bin"
+ },
+ "pass": true
+}

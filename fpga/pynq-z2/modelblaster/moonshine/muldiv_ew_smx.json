@@ -1,0 +1,543 @@
+{
+ "what": "M-extension instruction counts per function, one Moonshine encoder inference, spike -g (exact PC histogram) on the board's own compile flags; instruction counts, not cycles",
+ "gen": "<repo>/out/rocket_moonshine_enc_smx/enc_ew_smx/gen",
+ "label": "ew_smx",
+ "cflags": [
+  "-DMB_PEXT_HW=1",
+  "-DMB_ICOUNT_WARMUP=0",
+  "-DMB_PEXT_CONV_MAXROWS=2048",
+  "-DMB_PEXT_CONV_WBYTES=2097152"
+ ],
+ "inference_instret": 1403043726,
+ "output_mismatches": 0,
+ "histogram_total": 1477710533,
+ "m_ext_total": 14284564,
+ "per_mnemonic": {
+  "mul": 9384726,
+  "divu": 9473,
+  "div": 4292,
+  "mulw": 81,
+  "divw": 11889,
+  "mulhu": 1417904,
+  "mulh": 3455817,
+  "remu": 382
+ },
+ "per_function": {
+  "kernel_softmax_s8_moonshine_enc": {
+   "divu": 7926,
+   "mul": 2613606,
+   "mulh": 1306800,
+   "mulhu": 1306800
+  },
+  "kernel_layernorm_s8_moonshine_enc": {
+   "mul": 3090958,
+   "divu": 26,
+   "div": 4290,
+   "mulh": 1853280
+  },
+  "kernel_matmul_b_s8_moonshine_enc": {
+   "mulhu": 24,
+   "mul": 1592004,
+   "divu": 12
+  },
+  "kernel_rope_s8_moonshine_enc": {
+   "divu": 12,
+   "mul": 1140492,
+   "mulhu": 63360
+  },
+  "kernel_groupnorm_s8_moonshine_enc": {
+   "mul": 863716,
+   "divu": 2,
+   "div": 2,
+   "mulh": 287712
+  },
+  "int_rsqrt_q31": {
+   "mul": 38628,
+   "mulhu": 38628
+  },
+  "kernel_linear_s8_moonshine_enc": {
+   "mul": 11952,
+   "divw": 11880
+  },
+  "int_erf_q31.part.0": {
+   "mul": 9189,
+   "mulh": 5105,
+   "divu": 1021
+  },
+  "nl_gelu_one": {
+   "mulh": 2920,
+   "mul": 8760,
+   "mulhu": 1460
+  },
+  "kernel_add_s8_moonshine_enc": {
+   "divu": 24,
+   "mulhu": 6144,
+   "mul": 6144
+  },
+  "mb_pext_conv_pixel.constprop.0": {
+   "mul": 4485
+  },
+  "__mulsf3": {
+   "mul": 1775
+  },
+  "int_exp2_q31": {
+   "mul": 1448
+  },
+  "htif_putu": {
+   "mulhu": 1227
+  },
+  "kernel_conv2d_s8_moonshine_enc": {
+   "mul": 1179,
+   "mulw": 6,
+   "divw": 9
+  },
+  "__divsf3": {
+   "remu": 382,
+   "divu": 382
+  },
+  "pint_rope_exact": {
+   "mulhu": 240,
+   "mul": 240,
+   "divu": 60
+  },
+  "kernel_permute4_s8_moonshine_enc": {
+   "mulw": 75
+  },
+  "pmmb_exact": {
+   "mul": 21,
+   "mulhu": 21
+  },
+  "int_gelu_s8": {
+   "divu": 8
+  },
+  "dispatch_moonshine_enc_29": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_111": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_52": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_47": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_2": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_42": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_30": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_108": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_7": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_84": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_14": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_22": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_56": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_0": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_82": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_23": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_57": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_40": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_123": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_4": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_8": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_5": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_39": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_65": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_85": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_63": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_36": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_43": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_34": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_35": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_3": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_128": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_37": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_21": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_10": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_28": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_38": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_70": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_25": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_1": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_27": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_66": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_33": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_32": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_12": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_15": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_13": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_81": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_16": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_24": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_6": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_114": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_100": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_95": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_31": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_19": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_26": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_51": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_18": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_20": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_17": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_48": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_41": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_96": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_67": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_53": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_115": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_90": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_89": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_92": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_91": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_86": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_87": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_88": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_98": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_97": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_99": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_94": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_93": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_75": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_77": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_76": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_72": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_71": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_74": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_73": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_80": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_83": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_78": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_79": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_119": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_120": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_121": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_116": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_118": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_117": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_122": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_127": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_125": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_126": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_124": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_104": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_103": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_101": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_102": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_113": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_112": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_107": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_109": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_110": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_49": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_59": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_45": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_58": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_61": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_9": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_60": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_55": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_54": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_105": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_106": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_46": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_64": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_68": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_69": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_50": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_11": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_44": {
+   "mul": 1
+  },
+  "dispatch_moonshine_enc_62": {
+   "mul": 1
+  }
+ },
+ "instructions_per_function_top": {
+  "mb_pext_lin_dot4.constprop.0": 595330560,
+  "mb_pext_conv_pixel.constprop.0": 260309901,
+  "kernel_matmul_b_s8_moonshine_enc": 165365699,
+  "kernel_softmax_s8_moonshine_enc": 82425768,
+  "kernel_linear_s8_moonshine_enc": 76499172,
+  "kernel_layernorm_s8_moonshine_enc": 72912332,
+  "htif_puts": 61582382,
+  "__eqsf2": 28512000,
+  "kernel_rope_s8_moonshine_enc": 23988060,
+  "int_gelu_s8": 20712492,
+  "kernel_add_s8_moonshine_enc": 19677469,
+  "kernel_groupnorm_s8_moonshine_enc": 16691527,
+  "kernel_permute4_s8_moonshine_enc": 14890400,
+  "memcpy": 9480240,
+  "_start": 6641061,
+  "htif_putu": 6144298,
+  "kernel_conv2d_s8_moonshine_enc": 5411035,
+  "kernel_tanh_s8_moonshine_enc": 4032215,
+  "mb_pext_conv_gather.constprop.0": 3715294,
+  "__clzdi2": 1572567,
+  "memset": 404352,
+  "int_rsqrt_q31": 349736,
+  "main": 294445,
+  "nl_gelu_one": 190942,
+  "__mulsf3": 148334,
+  "__subsf3": 124915,
+  "int_erf_q31.part.0": 81680,
+  "int_exp2_q31": 54075,
+  "__addsf3": 47423,
+  "__divsf3": 29678,
+  "pint_rope_exact": 24404,
+  "expm1f": 22283,
+  "__floatsisf": 7442,
+  "fx32_add": 6920,
+  "tanhf": 5324,
+  "__fixsfsi": 5180,
+  "htif_exit": 4990,
+  "pmmb_exact": 2454,
+  "roundf": 2394,
+  "__ashlti3": 288
+ }
+}

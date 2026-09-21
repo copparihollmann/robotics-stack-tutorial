@@ -1,0 +1,56 @@
+{
+ "what": "Is the trainer's fake quantisation the same function as ModelBlaster's int8 arithmetic?",
+ "ir": "<repo>/out/qatu_long/ir",
+ "gen": "<repo>/out/qatu_long/gen_nl",
+ "checkpoint": "<repo>/out/moonshine_qat_long",
+ "utterances": 24,
+ "window_samples": 64000,
+ "frames": 165,
+ "hidden": 288,
+ "ranges_source": "the IR's own quant grids (identical for both paths)",
+ "fake_quant": {
+  "weight_tensors": 36,
+  "activation_points": 46,
+  "trainer_hook_points_matched_to_ir": 46
+ },
+ "ir_quantised_tensors": 155,
+ "vs_float": {
+  "fake_quant": {
+   "sqnr_db": 15.78712617268318,
+   "cosine": 0.9867232549059658,
+   "max_abs_diff": 2.6400742530822754,
+   "rms_ref": 0.5270080694449547,
+   "rms_diff": 0.08559747552154492
+  },
+  "generated_C": {
+   "sqnr_db": 14.439021249787839,
+   "cosine": 0.9818673796048751,
+   "max_abs_diff": 2.247673273086548,
+   "rms_ref": 0.5270080694449547,
+   "rms_diff": 0.09996919675682527
+  }
+ },
+ "fake_quant_vs_generated_C": {
+  "sqnr_db": 18.669995305852023,
+  "cosine": 0.9933970627785531,
+  "max_abs_diff": 1.7097361087799072,
+  "rms_ref": 0.5138547215388328,
+  "rms_diff": 0.05988810705260927
+ },
+ "wer": {
+  "float": {
+   "wer": 0.0908479138627187,
+   "errors": 540,
+   "words": 5944,
+   "utterances": 765
+  },
+  "fake_quant": {
+   "wer": 0.09892328398384927,
+   "errors": 588,
+   "words": 5944,
+   "utterances": 765
+  },
+  "note": "generated C on the same set is model_qatu_long_c_dev.json; all three share checkpoint, window, ranges, decoder and scoring"
+ },
+ "elapsed_s": 49.7
+}

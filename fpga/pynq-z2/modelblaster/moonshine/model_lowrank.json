@@ -1,0 +1,324 @@
+{
+ "what": "Is lm_head low rank?  The SVD of the 32768 x 288 tied projection, what truncating it does to",
+ "V": 32768,
+ "D": 288,
+ "singular_value_energy": {
+  "16": 0.33438125252723694,
+  "32": 0.41038382053375244,
+  "48": 0.473922997713089,
+  "64": 0.5310098528862,
+  "96": 0.6306874752044678,
+  "128": 0.7162446975708008,
+  "160": 0.7909501194953918,
+  "192": 0.8563997745513916,
+  "224": 0.9137556552886963,
+  "256": 0.9628005623817444,
+  "288": 1.0
+ },
+ "spectral_flatness": 0.04883800074458122,
+ "note": "a 32768 x 288 matrix has rank at most 288; the question is only whether its spectrum decays, and the energy column says it barely does",
+ "ranks": [
+  {
+   "rank": 16,
+   "energy": 0.33438125252723694,
+   "fetched_bytes": 827392,
+   "fetched_bytes_vs_full": 0.08305921052631579,
+   "dev_top1_agreement": 0.06763444095849991,
+   "test_top1_agreement": 0.0643463283777237
+  },
+  {
+   "rank": 32,
+   "energy": 0.41038382053375244,
+   "fetched_bytes": 1359872,
+   "fetched_bytes_vs_full": 0.13651315789473684,
+   "dev_top1_agreement": 0.11514351516962051,
+   "test_top1_agreement": 0.11870232969522476
+  },
+  {
+   "rank": 48,
+   "energy": 0.473922997713089,
+   "fetched_bytes": 1884160,
+   "fetched_bytes_vs_full": 0.18914473684210525,
+   "dev_top1_agreement": 0.18211810290813446,
+   "test_top1_agreement": 0.17671070992946625
+  },
+  {
+   "rank": 64,
+   "energy": 0.5310098528862,
+   "fetched_bytes": 2424832,
+   "fetched_bytes_vs_full": 0.24342105263157895,
+   "dev_top1_agreement": 0.2771362364292145,
+   "test_top1_agreement": 0.2660865783691406
+  },
+  {
+   "rank": 96,
+   "energy": 0.6306874752044678,
+   "fetched_bytes": 3506176,
+   "fetched_bytes_vs_full": 0.3519736842105263,
+   "dev_top1_agreement": 0.4634333848953247,
+   "test_top1_agreement": 0.45160597562789917
+  },
+  {
+   "rank": 128,
+   "energy": 0.7162446975708008,
+   "fetched_bytes": 4554752,
+   "fetched_bytes_vs_full": 0.45723684210526316,
+   "dev_top1_agreement": 0.5934234857559204,
+   "test_top1_agreement": 0.5743903517723083
+  },
+  {
+   "rank": 160,
+   "energy": 0.7909501194953918,
+   "fetched_bytes": 5668864,
+   "fetched_bytes_vs_full": 0.569078947368421,
+   "dev_top1_agreement": 0.6718354821205139,
+   "test_top1_agreement": 0.6600064039230347
+  },
+  {
+   "rank": 192,
+   "energy": 0.8563997745513916,
+   "fetched_bytes": 6782976,
+   "fetched_bytes_vs_full": 0.680921052631579,
+   "dev_top1_agreement": 0.7474980354309082,
+   "test_top1_agreement": 0.7287570834159851
+  },
+  {
+   "rank": 224,
+   "energy": 0.9137556552886963,
+   "fetched_bytes": 7798784,
+   "fetched_bytes_vs_full": 0.7828947368421053,
+   "dev_top1_agreement": 0.80567467212677,
+   "test_top1_agreement": 0.7961112856864929
+  },
+  {
+   "rank": 256,
+   "energy": 0.9628005623817444,
+   "fetched_bytes": 8781824,
+   "fetched_bytes_vs_full": 0.881578947368421,
+   "dev_top1_agreement": 0.8836467266082764,
+   "test_top1_agreement": 0.8846277594566345
+  },
+  {
+   "rank": 288,
+   "energy": 1.0,
+   "fetched_bytes": 10059776,
+   "fetched_bytes_vs_full": 1.0098684210526316,
+   "dev_top1_agreement": 0.9998899698257446,
+   "test_top1_agreement": 0.99989253282547
+  }
+ ],
+ "sets": {
+  "dev": {
+   "name": "dev_clean <= 4 s",
+   "utterances": 765,
+   "words": 5944,
+   "float_wer": 0.07301480484522208,
+   "lm_head_steps_captured": 9093
+  },
+  "test": {
+   "name": "test_clean <= 4 s",
+   "utterances": 772,
+   "words": 6146,
+   "float_wer": 0.07517084282460136,
+   "lm_head_steps_captured": 9309
+  }
+ },
+ "wer": [
+  {
+   "rank": 64,
+   "dev": {
+    "wer": 2.2328398384925974,
+    "delta_vs_float": {
+     "delta_wer": 2.1598250336473757,
+     "ci95": [
+      2.0186867413880556,
+      2.3144824061135427
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "test": {
+    "wer": 2.197364139277579,
+    "delta_vs_float": {
+     "delta_wer": 2.1221932964529775,
+     "ci95": [
+      1.988463385651518,
+      2.275741497242931
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   }
+  },
+  {
+   "rank": 128,
+   "dev": {
+    "wer": 1.4727456258411844,
+    "delta_vs_float": {
+     "delta_wer": 1.3997308209959622,
+     "ci95": [
+      1.304813065109008,
+      1.5027870635970493
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "test": {
+    "wer": 1.3454279205987634,
+    "delta_vs_float": {
+     "delta_wer": 1.270257077774162,
+     "ci95": [
+      1.1906847740264301,
+      1.3496227942315095
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   }
+  },
+  {
+   "rank": 192,
+   "dev": {
+    "wer": 3.2422611036339166,
+    "delta_vs_float": {
+     "delta_wer": 3.1692462987886945,
+     "ci95": [
+      2.9952783384563157,
+      3.3579983340123003
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   },
+   "test": {
+    "wer": 3.065408395704523,
+    "delta_vs_float": {
+     "delta_wer": 2.990237552879922,
+     "ci95": [
+      2.8268598097164856,
+      3.1692094984752015
+     ],
+     "resamples": 2000,
+     "unit": "utterance"
+    }
+   }
+  }
+ ],
+ "rank_with_pruning": [
+  {
+   "V": 32768,
+   "rank": 32,
+   "factorised_bytes": 1359872,
+   "plain_bytes": 9961472,
+   "factorisation_helps": true
+  },
+  {
+   "V": 32768,
+   "rank": 64,
+   "factorised_bytes": 2424832,
+   "plain_bytes": 9961472,
+   "factorisation_helps": true
+  },
+  {
+   "V": 32768,
+   "rank": 128,
+   "factorised_bytes": 4554752,
+   "plain_bytes": 9961472,
+   "factorisation_helps": true
+  },
+  {
+   "V": 32768,
+   "rank": 288,
+   "factorised_bytes": 10059776,
+   "plain_bytes": 9961472,
+   "factorisation_helps": false
+  },
+  {
+   "V": 11000,
+   "rank": 32,
+   "factorised_bytes": 475136,
+   "plain_bytes": 3342336,
+   "factorisation_helps": true
+  },
+  {
+   "V": 11000,
+   "rank": 64,
+   "factorised_bytes": 851968,
+   "plain_bytes": 3342336,
+   "factorisation_helps": true
+  },
+  {
+   "V": 11000,
+   "rank": 128,
+   "factorised_bytes": 1572864,
+   "plain_bytes": 3342336,
+   "factorisation_helps": true
+  },
+  {
+   "V": 11000,
+   "rank": 288,
+   "factorised_bytes": 3440640,
+   "plain_bytes": 3342336,
+   "factorisation_helps": false
+  },
+  {
+   "V": 4096,
+   "rank": 32,
+   "factorised_bytes": 212992,
+   "plain_bytes": 1245184,
+   "factorisation_helps": true
+  },
+  {
+   "V": 4096,
+   "rank": 64,
+   "factorised_bytes": 360448,
+   "plain_bytes": 1245184,
+   "factorisation_helps": true
+  },
+  {
+   "V": 4096,
+   "rank": 128,
+   "factorised_bytes": 655360,
+   "plain_bytes": 1245184,
+   "factorisation_helps": true
+  },
+  {
+   "V": 4096,
+   "rank": 288,
+   "factorised_bytes": 1343488,
+   "plain_bytes": 1245184,
+   "factorisation_helps": false
+  },
+  {
+   "V": 2048,
+   "rank": 32,
+   "factorised_bytes": 114688,
+   "plain_bytes": 622592,
+   "factorisation_helps": true
+  },
+  {
+   "V": 2048,
+   "rank": 64,
+   "factorised_bytes": 196608,
+   "plain_bytes": 622592,
+   "factorisation_helps": true
+  },
+  {
+   "V": 2048,
+   "rank": 128,
+   "factorised_bytes": 360448,
+   "plain_bytes": 622592,
+   "factorisation_helps": true
+  },
+  {
+   "V": 2048,
+   "rank": 288,
+   "factorised_bytes": 720896,
+   "plain_bytes": 622592,
+   "factorisation_helps": false
+  }
+ ],
+ "elapsed_s": 41.84615755081177
+}

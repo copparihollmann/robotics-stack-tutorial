@@ -1,0 +1,732 @@
+{
+ "what": "greedy float restore from a fixed base; FLOAT SIMULATION (estimates), dev-clean",
+ "base": {
+  "tanh_clip": 3.5,
+  "rows": {
+   "stem.conv1": 1.0,
+   "stem.conv2": 1.0,
+   "stem.conv3": 1.0
+  },
+  "mig": {
+   "stem.conv2": 1.0,
+   "stem.conv3": 1.0
+  },
+  "wgroups": {
+   "stem.conv1": 4,
+   "stem.conv2": 4,
+   "stem.conv3": 4
+  }
+ },
+ "tune_utterances": 256,
+ "float_wer_vs_reference": 0.07225288509784245,
+ "loo_rank": [
+  [
+   "add_11",
+   1.4239469532402689
+  ],
+  [
+   "layers_5_mlp_fc2",
+   0.7642834158512057
+  ],
+  [
+   "add",
+   0.2799636163052108
+  ],
+  [
+   "layers_0_self_attn_o_proj",
+   0.1664709436584051
+  ],
+  [
+   "scaled_dot_product_attention_2__probs",
+   0.07430199204628707
+  ],
+  [
+   "scaled_dot_product_attention_5__probs",
+   0.06850072403080176
+  ],
+  [
+   "x",
+   0.06790735397827863
+  ],
+  [
+   "add_1",
+   0.05725532668786659
+  ],
+  [
+   "layers_2_mlp_fc2",
+   0.05283357485683737
+  ],
+  [
+   "scaled_dot_product_attention_1__probs",
+   0.03970784346578515
+  ],
+  [
+   "layers_1_mlp_act",
+   0.03289851902702434
+  ],
+  [
+   "add_5",
+   0.02974272586878346
+  ],
+  [
+   "add_4",
+   0.025015776891723185
+  ],
+  [
+   "layers_0_mlp_fc2",
+   0.024925081728032872
+  ],
+  [
+   "layers_0_mlp_fc1",
+   0.024486533426447465
+  ],
+  [
+   "add_9",
+   0.022936675439720666
+  ],
+  [
+   "layers_3_mlp_act",
+   0.02166614879255402
+  ],
+  [
+   "layers_2_self_attn_rope_k",
+   0.021449737987130568
+  ],
+  [
+   "scaled_dot_product_attention_3__probs",
+   0.020081190189231712
+  ],
+  [
+   "add_7",
+   0.019510369797703042
+  ],
+  [
+   "layers_1_input_layernorm",
+   0.017063169357146357
+  ],
+  [
+   "layer_norm",
+   0.016414233068152484
+  ],
+  [
+   "layers_2_self_attn_o_proj",
+   0.014635915853351555
+  ],
+  [
+   "add_6",
+   0.01413170048724055
+  ],
+  [
+   "add_8",
+   0.013979217928340226
+  ],
+  [
+   "scaled_dot_product_attention_1__scores",
+   0.013761750900053826
+  ],
+  [
+   "layers_3_post_attention_layernorm",
+   0.013639078386944448
+  ],
+  [
+   "layers_1_self_attn_q_proj",
+   0.013368008829291789
+  ],
+  [
+   "layers_1_self_attn_v_proj",
+   0.012872236278408167
+  ],
+  [
+   "layers_1_self_attn_k_proj",
+   0.012625232825170585
+  ],
+  [
+   "layers_5_self_attn_o_proj",
+   0.012479314953584897
+  ],
+  [
+   "layers_3_self_attn_k_proj",
+   0.01235634437450095
+  ],
+  [
+   "layers_0_self_attn_rope_q",
+   0.012159235496405074
+  ],
+  [
+   "layers_1_mlp_fc1",
+   0.011460078452547151
+  ],
+  [
+   "scaled_dot_product_attention_4__probs",
+   0.011385622080421598
+  ],
+  [
+   "layers_0_mlp_act",
+   0.010864017590992425
+  ],
+  [
+   "layers_3_mlp_fc1",
+   0.010454156504214218
+  ],
+  [
+   "layers_0_self_attn_q_proj",
+   0.0100984689731618
+  ],
+  [
+   "layers_4_mlp_fc1",
+   0.009355124089901246
+  ],
+  [
+   "layers_2_self_attn_k_proj",
+   0.009302855362354201
+  ],
+  [
+   "add_3",
+   0.00860357615446894
+  ],
+  [
+   "scaled_dot_product_attention_3__scores",
+   0.008196941155394377
+  ],
+  [
+   "layers_4_input_layernorm",
+   0.007254611020020896
+  ],
+  [
+   "add_10",
+   0.0071360026287790035
+  ],
+  [
+   "layers_4_self_attn_o_proj",
+   0.006838843772408509
+  ],
+  [
+   "layers_4_self_attn_v_proj",
+   0.006634064154831698
+  ],
+  [
+   "scaled_dot_product_attention_4__scores",
+   0.006354198639765052
+  ],
+  [
+   "layers_2_post_attention_layernorm",
+   0.0062685061776610596
+  ],
+  [
+   "layers_4_self_attn_q_proj",
+   0.006214758442075308
+  ],
+  [
+   "layers_5_post_attention_layernorm",
+   0.0060539418020120195
+  ],
+  [
+   "layers_3_self_attn_q_proj",
+   0.0059270830301514366
+  ],
+  [
+   "layers_1_self_attn_rope_q",
+   0.005623949109834214
+  ],
+  [
+   "layers_3_mlp_fc2",
+   0.004624681847006151
+  ],
+  [
+   "scaled_dot_product_attention_2__scores",
+   0.004611855276633214
+  ],
+  [
+   "layers_4_mlp_fc2",
+   0.004312711468664965
+  ],
+  [
+   "layers_4_self_attn_k_proj",
+   0.00431080977518139
+  ],
+  [
+   "layers_4_post_attention_layernorm",
+   0.004153921565500873
+  ],
+  [
+   "scaled_dot_product_attention_5__scores",
+   0.004125045244803616
+  ],
+  [
+   "layers_5_self_attn_q_proj",
+   0.004069904628851262
+  ],
+  [
+   "scaled_dot_product_attention",
+   0.0036019682835375377
+  ],
+  [
+   "layers_2_self_attn_q_proj",
+   0.003446192894789313
+  ],
+  [
+   "layers_1_self_attn_o_proj",
+   0.0030074215620086164
+  ],
+  [
+   "scaled_dot_product_attention_4",
+   0.0023120178488449383
+  ],
+  [
+   "layers_5_self_attn_rope_k",
+   0.0023043929225083915
+  ],
+  [
+   "scaled_dot_product_attention_5",
+   0.002293680115830199
+  ],
+  [
+   "layers_2_input_layernorm",
+   0.0022845288266450936
+  ],
+  [
+   "layers_3_self_attn_v_proj",
+   0.0021829018310066672
+  ],
+  [
+   "scaled_dot_product_attention_3",
+   0.002142343527141044
+  ],
+  [
+   "layers_2_self_attn_v_proj",
+   0.0019411082305120786
+  ],
+  [
+   "scaled_dot_product_attention_1",
+   0.0016699351679934082
+  ],
+  [
+   "layers_1_self_attn_rope_k",
+   0.0012577108505178458
+  ],
+  [
+   "layers_3_self_attn_rope_q",
+   0.0011298934044621234
+  ],
+  [
+   "scaled_dot_product_attention__scores",
+   0.0009914994254414111
+  ],
+  [
+   "layers_2_mlp_fc1",
+   0.0004257051216489671
+  ],
+  [
+   "layers_5_self_attn_k_proj",
+   0.00035809274998843676
+  ],
+  [
+   "layers_5_self_attn_rope_q",
+   0.00023409809020069616
+  ],
+  [
+   "layers_4_self_attn_rope_q",
+   3.037585104603835e-05
+  ],
+  [
+   "layers_5_input_layernorm",
+   -7.465119594396441e-05
+  ],
+  [
+   "layers_3_self_attn_o_proj",
+   -0.00012448201362058597
+  ],
+  [
+   "layers_5_self_attn_v_proj",
+   -0.0005887309859451406
+  ],
+  [
+   "layers_5_mlp_fc1",
+   -0.000775681120233962
+  ],
+  [
+   "layers_3_input_layernorm",
+   -0.0009086186027831289
+  ],
+  [
+   "layers_2_mlp_act",
+   -0.0011038986016869146
+  ],
+  [
+   "layers_4_self_attn_rope_k",
+   -0.0012660186770228066
+  ],
+  [
+   "layers_2_self_attn_rope_q",
+   -0.003142990866710882
+  ],
+  [
+   "layers_3_self_attn_rope_k",
+   -0.003459853682351799
+  ],
+  [
+   "scaled_dot_product_attention_2",
+   -0.0038489001304631287
+  ],
+  [
+   "layers_1_mlp_fc2",
+   -0.004431004669246619
+  ],
+  [
+   "layers_5_mlp_act",
+   -0.005751533458052016
+  ],
+  [
+   "layers_4_mlp_act",
+   -0.006796095322546769
+  ],
+  [
+   "layers_0_self_attn_rope_k",
+   -0.0073351127573575425
+  ],
+  [
+   "add_2",
+   -0.016331487775938847
+  ],
+  [
+   "stem_conv1",
+   -0.01724340981551098
+  ],
+  [
+   "layers_1_post_attention_layernorm",
+   -0.01771538888069646
+  ],
+  [
+   "stem_tanh",
+   -0.018756964262474973
+  ],
+  [
+   "layers_0_post_attention_layernorm",
+   -0.029225839845413937
+  ],
+  [
+   "layers_0_self_attn_k_proj",
+   -0.029552294874883422
+  ],
+  [
+   "layers_0_self_attn_v_proj",
+   -0.03572014039547877
+  ],
+  [
+   "scaled_dot_product_attention__probs",
+   -0.06956985527138215
+  ],
+  [
+   "stem_conv3",
+   -0.42197650462358904
+  ],
+  [
+   "stem_groupnorm",
+   -0.49511204818884114
+  ],
+  [
+   "layers_0_input_layernorm",
+   -0.4989286295765192
+  ],
+  [
+   "stem_conv2",
+   -0.5350781303744983
+  ],
+  [
+   "stem_gelu3",
+   -0.547203722815313
+  ],
+  [
+   "stem_gelu2",
+   -1.2643246981104026
+  ]
+ ],
+ "steps": [
+  {
+   "restored": [],
+   "sqnr_db": 7.545820515391864,
+   "wer_vs_float": 0.12663316582914572,
+   "wer_vs_reference": 0.14601103863522327
+  },
+  {
+   "restored": [
+    "add_11"
+   ],
+   "added": "add_11",
+   "loo_gain_db": 1.4239469532402689,
+   "sqnr_db": 9.086608521276121,
+   "wer_vs_float": 0.10703517587939698,
+   "wer_vs_reference": 0.1354741595584546
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2"
+   ],
+   "added": "layers_5_mlp_fc2",
+   "loo_gain_db": 0.7642834158512057,
+   "sqnr_db": 10.400478367054076,
+   "wer_vs_float": 0.10050251256281408,
+   "wer_vs_reference": 0.12594079277471149
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add"
+   ],
+   "added": "add",
+   "loo_gain_db": 0.2799636163052108,
+   "sqnr_db": 10.910562681175568,
+   "wer_vs_float": 0.09547738693467336,
+   "wer_vs_reference": 0.12393376818866031
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add",
+    "layers_0_self_attn_o_proj"
+   ],
+   "added": "layers_0_self_attn_o_proj",
+   "loo_gain_db": 0.1664709436584051,
+   "sqnr_db": 10.894104047032954,
+   "wer_vs_float": 0.08442211055276382,
+   "wer_vs_reference": 0.11690918213748118
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add",
+    "layers_0_self_attn_o_proj",
+    "scaled_dot_product_attention_2__probs"
+   ],
+   "added": "scaled_dot_product_attention_2__probs",
+   "loo_gain_db": 0.07430199204628707,
+   "sqnr_db": 10.957848472035456,
+   "wer_vs_float": 0.09396984924623115,
+   "wer_vs_reference": 0.12293025589563472
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add",
+    "layers_0_self_attn_o_proj",
+    "scaled_dot_product_attention_2__probs",
+    "scaled_dot_product_attention_5__probs"
+   ],
+   "added": "scaled_dot_product_attention_5__probs",
+   "loo_gain_db": 0.06850072403080176,
+   "sqnr_db": 11.041972607593625,
+   "wer_vs_float": 0.08844221105527639,
+   "wer_vs_reference": 0.11791269443050677
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add",
+    "layers_0_self_attn_o_proj",
+    "scaled_dot_product_attention_2__probs",
+    "scaled_dot_product_attention_5__probs",
+    "x"
+   ],
+   "added": "x",
+   "loo_gain_db": 0.06790735397827863,
+   "sqnr_db": 11.218046032171499,
+   "wer_vs_float": 0.07386934673366834,
+   "wer_vs_reference": 0.1053687907676869
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add",
+    "layers_0_self_attn_o_proj",
+    "scaled_dot_product_attention_2__probs",
+    "scaled_dot_product_attention_5__probs",
+    "x",
+    "add_1"
+   ],
+   "added": "add_1",
+   "loo_gain_db": 0.05725532668786659,
+   "sqnr_db": 11.238269243599566,
+   "wer_vs_float": 0.07537688442211055,
+   "wer_vs_reference": 0.11389864525840442
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add",
+    "layers_0_self_attn_o_proj",
+    "scaled_dot_product_attention_2__probs",
+    "scaled_dot_product_attention_5__probs",
+    "x",
+    "add_1",
+    "layers_2_mlp_fc2"
+   ],
+   "added": "layers_2_mlp_fc2",
+   "loo_gain_db": 0.05283357485683737,
+   "sqnr_db": 11.24530555152909,
+   "wer_vs_float": 0.07085427135678392,
+   "wer_vs_reference": 0.10787757150025087
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add",
+    "layers_0_self_attn_o_proj",
+    "scaled_dot_product_attention_2__probs",
+    "scaled_dot_product_attention_5__probs",
+    "x",
+    "add_1",
+    "layers_2_mlp_fc2",
+    "scaled_dot_product_attention_1__probs"
+   ],
+   "added": "scaled_dot_product_attention_1__probs",
+   "loo_gain_db": 0.03970784346578515,
+   "sqnr_db": 11.252590930896849,
+   "wer_vs_float": 0.0763819095477387,
+   "wer_vs_reference": 0.10938283993978926
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add",
+    "layers_0_self_attn_o_proj",
+    "scaled_dot_product_attention_2__probs",
+    "scaled_dot_product_attention_5__probs",
+    "x",
+    "add_1",
+    "layers_2_mlp_fc2",
+    "scaled_dot_product_attention_1__probs",
+    "layers_1_mlp_act"
+   ],
+   "added": "layers_1_mlp_act",
+   "loo_gain_db": 0.03289851902702434,
+   "sqnr_db": 11.277467855823742,
+   "wer_vs_float": 0.07185929648241206,
+   "wer_vs_reference": 0.10486703462117411
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add",
+    "layers_0_self_attn_o_proj",
+    "scaled_dot_product_attention_2__probs",
+    "scaled_dot_product_attention_5__probs",
+    "x",
+    "add_1",
+    "layers_2_mlp_fc2",
+    "scaled_dot_product_attention_1__probs",
+    "layers_1_mlp_act",
+    "add_5"
+   ],
+   "added": "add_5",
+   "loo_gain_db": 0.02974272586878346,
+   "sqnr_db": 11.318629621582739,
+   "wer_vs_float": 0.07236180904522613,
+   "wer_vs_reference": 0.10336176618163573
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add",
+    "layers_0_self_attn_o_proj",
+    "scaled_dot_product_attention_2__probs",
+    "scaled_dot_product_attention_5__probs",
+    "x",
+    "add_1",
+    "layers_2_mlp_fc2",
+    "scaled_dot_product_attention_1__probs",
+    "layers_1_mlp_act",
+    "add_5",
+    "add_4"
+   ],
+   "added": "add_4",
+   "loo_gain_db": 0.025015776891723185,
+   "sqnr_db": 11.357017676297662,
+   "wer_vs_float": 0.07537688442211055,
+   "wer_vs_reference": 0.10888108379327646
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add",
+    "layers_0_self_attn_o_proj",
+    "scaled_dot_product_attention_2__probs",
+    "scaled_dot_product_attention_5__probs",
+    "x",
+    "add_1",
+    "layers_2_mlp_fc2",
+    "scaled_dot_product_attention_1__probs",
+    "layers_1_mlp_act",
+    "add_5",
+    "add_4",
+    "layers_0_mlp_fc2"
+   ],
+   "added": "layers_0_mlp_fc2",
+   "loo_gain_db": 0.024925081728032872,
+   "sqnr_db": 11.409617639512543,
+   "wer_vs_float": 0.07336683417085427,
+   "wer_vs_reference": 0.10637230306071249
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add",
+    "layers_0_self_attn_o_proj",
+    "scaled_dot_product_attention_2__probs",
+    "scaled_dot_product_attention_5__probs",
+    "x",
+    "add_1",
+    "layers_2_mlp_fc2",
+    "scaled_dot_product_attention_1__probs",
+    "layers_1_mlp_act",
+    "add_5",
+    "add_4",
+    "layers_0_mlp_fc2",
+    "layers_0_mlp_fc1"
+   ],
+   "added": "layers_0_mlp_fc1",
+   "loo_gain_db": 0.024486533426447465,
+   "sqnr_db": 11.39714916082714,
+   "wer_vs_float": 0.06633165829145729,
+   "wer_vs_reference": 0.10336176618163573
+  },
+  {
+   "restored": [
+    "add_11",
+    "layers_5_mlp_fc2",
+    "add",
+    "layers_0_self_attn_o_proj",
+    "scaled_dot_product_attention_2__probs",
+    "scaled_dot_product_attention_5__probs",
+    "x",
+    "add_1",
+    "layers_2_mlp_fc2",
+    "scaled_dot_product_attention_1__probs",
+    "layers_1_mlp_act",
+    "add_5",
+    "add_4",
+    "layers_0_mlp_fc2",
+    "layers_0_mlp_fc1",
+    "add_9"
+   ],
+   "added": "add_9",
+   "loo_gain_db": 0.022936675439720666,
+   "sqnr_db": 11.439236692456745,
+   "wer_vs_float": 0.06582914572864322,
+   "wer_vs_reference": 0.10235825388861014
+  }
+ ]
+}

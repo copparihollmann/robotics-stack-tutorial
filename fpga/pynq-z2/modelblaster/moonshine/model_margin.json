@@ -1,0 +1,312 @@
+{
+ "what": "Can candidate R's 8.46 % carry a programme-level goal whose bound is 8.5 %?",
+ "bound": 0.085,
+ "bound_source": "TODO.md standing goal, commit 45b970e: RTF_e2e < 1.0 for a model that transcribes, WER <= 8.5 % on dev-clean, the full 765-utterance set",
+ "source_record": "q16_results.json per_utterance (ROCC_DECOUPLED.md s8.13); nothing re-run here, only re-analysed",
+ "method": {
+  "1_exact": "the bound is on a FIXED set, so clearing it has no sampling error; what is reported is fragility in word errors",
+  "2_bootstrap": "resample utterances with replacement, recompute sum(edits)/sum(words); the same resampling q16_fidelity.py uses for its paired intervals",
+  "3_build": "R_ref against R_nl is the SAME candidate built with reference kernels and with the curated ones -- a build choice, not a model"
+ },
+ "sets": {
+  "dev": {
+   "utterances": 765,
+   "reference_words": 5944,
+   "candidates": {
+    "F3PR_nl": {
+     "wer": 0.07890309555854644,
+     "ci95": [
+      0.0690344085456739,
+      0.08907161255632501
+     ],
+     "se": 0.005082557885883148,
+     "p_above_bound": 0.117,
+     "resamples": 20000,
+     "errors": 469,
+     "reference_words": 5944,
+     "errors_at_the_bound": 505.24,
+     "first_error_count_over_the_bound": 506,
+     "extra_word_errors_to_cross": 37,
+     "utterances_that_would_have_to_change": null,
+     "margin_to_bound_points": 0.6096904441453568,
+     "margin_in_bootstrap_se": 1.1995740291296588
+    },
+    "F3PR_ref": {
+     "wer": 0.07940780619111709,
+     "ci95": [
+      0.0695884159458662,
+      0.08960701665637576
+     ],
+     "se": 0.005100268104548546,
+     "p_above_bound": 0.13685,
+     "resamples": 20000,
+     "errors": 472,
+     "reference_words": 5944,
+     "errors_at_the_bound": 505.24,
+     "first_error_count_over_the_bound": 506,
+     "extra_word_errors_to_cross": 34,
+     "utterances_that_would_have_to_change": null,
+     "margin_to_bound_points": 0.5592193808882915,
+     "margin_in_bootstrap_se": 1.0964509500776356
+    },
+    "R3_nl": {
+     "wer": 0.08176312247644683,
+     "ci95": [
+      0.07197809521704833,
+      0.09206295481468946
+     ],
+     "se": 0.0051241339043449,
+     "p_above_bound": 0.2612,
+     "resamples": 20000,
+     "errors": 486,
+     "reference_words": 5944,
+     "errors_at_the_bound": 505.24,
+     "first_error_count_over_the_bound": 506,
+     "extra_word_errors_to_cross": 20,
+     "utterances_that_would_have_to_change": null,
+     "margin_to_bound_points": 0.3236877523553172,
+     "margin_in_bootstrap_se": 0.6316926106885168
+    },
+    "R3_ref": {
+     "wer": 0.08327725437415881,
+     "ci95": [
+      0.07310124857132667,
+      0.0938727964304001
+     ],
+     "se": 0.00532080808487697,
+     "p_above_bound": 0.36725,
+     "resamples": 20000,
+     "errors": 495,
+     "reference_words": 5944,
+     "errors_at_the_bound": 505.24,
+     "first_error_count_over_the_bound": 506,
+     "extra_word_errors_to_cross": 11,
+     "utterances_that_would_have_to_change": null,
+     "margin_to_bound_points": 0.1722745625841196,
+     "margin_in_bootstrap_se": 0.3237751857161806
+    },
+    "R_nl": {
+     "wer": 0.08462314939434724,
+     "ci95": [
+      0.07443915703602991,
+      0.09516634284998386
+     ],
+     "se": 0.005273897793644971,
+     "p_above_bound": 0.4655,
+     "resamples": 20000,
+     "errors": 503,
+     "reference_words": 5944,
+     "errors_at_the_bound": 505.24,
+     "first_error_count_over_the_bound": 506,
+     "extra_word_errors_to_cross": 3,
+     "utterances_that_would_have_to_change": null,
+     "margin_to_bound_points": 0.03768506056527621,
+     "margin_in_bootstrap_se": 0.07145580373341057
+    },
+    "R_ref": {
+     "wer": 0.0847913862718708,
+     "ci95": [
+      0.07432541484540327,
+      0.09556262973179895
+     ],
+     "se": 0.005432910957664705,
+     "p_above_bound": 0.4797,
+     "resamples": 20000,
+     "errors": 504,
+     "reference_words": 5944,
+     "errors_at_the_bound": 505.24,
+     "first_error_count_over_the_bound": 506,
+     "extra_word_errors_to_cross": 2,
+     "utterances_that_would_have_to_change": null,
+     "margin_to_bound_points": 0.02086137281292061,
+     "margin_in_bootstrap_se": 0.03839814967607661
+    }
+   },
+   "build_effect_nl_minus_ref": {
+    "R": {
+     "delta_wer_points": -0.016823687752355317,
+     "ci95_points": [
+      -0.42808501182161096,
+      0.36925142665323935
+     ],
+     "what_changed": "which kernels the build selects; the model and its weights are identical"
+    },
+    "R3": {
+     "delta_wer_points": -0.15141318977119786,
+     "ci95_points": [
+      -0.5121465477083575,
+      0.18920418810577483
+     ],
+     "what_changed": "which kernels the build selects; the model and its weights are identical"
+    },
+    "F3PR": {
+     "delta_wer_points": -0.05047106325706595,
+     "ci95_points": [
+      -0.35187962461994193,
+      0.2536397329575005
+     ],
+     "what_changed": "which kernels the build selects; the model and its weights are identical"
+    }
+   }
+  },
+  "test": {
+   "utterances": 772,
+   "reference_words": 6146,
+   "candidates": {
+    "F3PR_nl": {
+     "wer": 0.07663520989261308,
+     "ci95": [
+      0.06767985018485774,
+      0.08565381088146182
+     ],
+     "se": 0.004578471861588637,
+     "p_above_bound": 0.034,
+     "resamples": 20000,
+     "errors": 471,
+     "reference_words": 6146,
+     "errors_at_the_bound": 522.4100000000001,
+     "first_error_count_over_the_bound": 523,
+     "extra_word_errors_to_cross": 52,
+     "utterances_that_would_have_to_change": null,
+     "margin_to_bound_points": 0.836479010738693,
+     "margin_in_bootstrap_se": 1.8269829673004732
+    },
+    "F3PR_ref": {
+     "wer": 0.07614708753660918,
+     "ci95": [
+      0.06726238830219333,
+      0.08507248095360626
+     ],
+     "se": 0.0045536557978743866,
+     "p_above_bound": 0.0261,
+     "resamples": 20000,
+     "errors": 468,
+     "reference_words": 6146,
+     "errors_at_the_bound": 522.4100000000001,
+     "first_error_count_over_the_bound": 523,
+     "extra_word_errors_to_cross": 55,
+     "utterances_that_would_have_to_change": null,
+     "margin_to_bound_points": 0.885291246339083,
+     "margin_in_bootstrap_se": 1.9441329903598128
+    },
+    "R3_nl": {
+     "wer": 0.08102831109664822,
+     "ci95": [
+      0.07171348216813361,
+      0.09054821778277286
+     ],
+     "se": 0.0047878946542322005,
+     "p_above_bound": 0.19415,
+     "resamples": 20000,
+     "errors": 498,
+     "reference_words": 6146,
+     "errors_at_the_bound": 522.4100000000001,
+     "first_error_count_over_the_bound": 523,
+     "extra_word_errors_to_cross": 25,
+     "utterances_that_would_have_to_change": null,
+     "margin_to_bound_points": 0.3971688903351783,
+     "margin_in_bootstrap_se": 0.8295272118907332
+    },
+    "R3_ref": {
+     "wer": 0.08119101854864953,
+     "ci95": [
+      0.07173948089634048,
+      0.09060631756959206
+     ],
+     "se": 0.004782302422461615,
+     "p_above_bound": 0.20205,
+     "resamples": 20000,
+     "errors": 499,
+     "reference_words": 6146,
+     "errors_at_the_bound": 522.4100000000001,
+     "first_error_count_over_the_bound": 523,
+     "extra_word_errors_to_cross": 24,
+     "utterances_that_would_have_to_change": null,
+     "margin_to_bound_points": 0.3808981451350474,
+     "margin_in_bootstrap_se": 0.7964743997494539
+    },
+    "R_nl": {
+     "wer": 0.08314350797266515,
+     "ci95": [
+      0.07346613215463188,
+      0.09297758205346691
+     ],
+     "se": 0.00492775763662821,
+     "p_above_bound": 0.33725,
+     "resamples": 20000,
+     "errors": 511,
+     "reference_words": 6146,
+     "errors_at_the_bound": 522.4100000000001,
+     "first_error_count_over_the_bound": 523,
+     "extra_word_errors_to_cross": 12,
+     "utterances_that_would_have_to_change": null,
+     "margin_to_bound_points": 0.18564920273348579,
+     "margin_in_bootstrap_se": 0.3767417483229049
+    },
+    "R_ref": {
+     "wer": 0.08184184835665473,
+     "ci95": [
+      0.0726329230109208,
+      0.09123561879608882
+     ],
+     "se": 0.004761841391470505,
+     "p_above_bound": 0.24425,
+     "resamples": 20000,
+     "errors": 503,
+     "reference_words": 6146,
+     "errors_at_the_bound": 522.4100000000001,
+     "first_error_count_over_the_bound": 523,
+     "extra_word_errors_to_cross": 20,
+     "utterances_that_would_have_to_change": null,
+     "margin_to_bound_points": 0.3158151643345278,
+     "margin_in_bootstrap_se": 0.6632206711047149
+    }
+   },
+   "build_effect_nl_minus_ref": {
+    "R": {
+     "delta_wer_points": 0.13016596160104132,
+     "ci95_points": [
+      -0.21131339401820548,
+      0.47714438863705977
+     ],
+     "what_changed": "which kernels the build selects; the model and its weights are identical"
+    },
+    "R3": {
+     "delta_wer_points": -0.016270745200130166,
+     "ci95_points": [
+      -0.29211532138747326,
+      0.25953065519751284
+     ],
+     "what_changed": "which kernels the build selects; the model and its weights are identical"
+    },
+    "F3PR": {
+     "delta_wer_points": 0.0488122356003905,
+     "ci95_points": [
+      -0.35170035132503613,
+      0.45037799581791865
+     ],
+     "what_changed": "which kernels the build selects; the model and its weights are identical"
+    }
+   }
+  }
+ },
+ "r_with_beam2_dev": {
+  "greedy_full_vocabulary": 0.08462314939434724,
+  "beam2_full_vocabulary": 0.07217362045760431,
+  "beam2_pruned_16384": 0.07604306864064603,
+  "beam_delta": {
+   "delta_wer": -0.012449528936742935,
+   "ci95": [
+    -0.01773843487950124,
+    -0.007958813163317226
+   ],
+   "resamples": 2000,
+   "unit": "utterance"
+  },
+  "margin_to_bound_points_beam2": 1.2826379542395696,
+  "margin_to_bound_points_beam2_pruned": 0.8956931359353979,
+  "worst_case_margin_at_the_beam_intervals_pessimistic_end": 0.8335663768969992,
+  "source": "model_compose_dev.json, MOONSHINE_MODEL.md s4.3",
+  "note": "beam 2 costs decoder RTF, not encoder RTF, so it buys accuracy margin out of a budget the stem argument does not compete for"
+ }
+}

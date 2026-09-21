@@ -1,0 +1,244 @@
+{
+ "what": "How much the IR ladder is worth is a property of the AUDIO, not of the model.",
+ "cost_fit": [
+  0.8653539976423373,
+  0.054430970921723325,
+  0.0002738186995233996
+ ],
+ "cost_fit_max_error": 0.0007096263891842197,
+ "frames_per_s": 41.25,
+ "distributions": {
+  "LibriSpeech <= 4 s (MEASURED)": {
+   "n": 1537,
+   "mean_audio_s": 2.9706343932986337,
+   "ladders": {
+    "1: no ladder (today)": {
+     "mean_encoder_s": 17.301178294251237,
+     "wall_over_audio": 5.824068533401638,
+     "mean_padding_s": 1.0293656067013663,
+     "quadratic_share": 0.43087898221368964,
+     "occupancy": {
+      "4.0": 1.0
+     },
+     "vs_no_ladder": 1.0
+    },
+    "3: three rungs": {
+     "mean_encoder_s": 14.2385035918741,
+     "wall_over_audio": 4.793085148409484,
+     "mean_padding_s": 0.46267725276512683,
+     "quadratic_share": 0.397470990710101,
+     "occupancy": {
+      "2.0": 0.0494469746258946,
+      "3.0": 0.4677944046844502,
+      "4.0": 0.4827586206896552
+     },
+     "vs_no_ladder": 0.8229788370313027
+    },
+    "5: five rungs": {
+     "mean_encoder_s": 13.027698848045128,
+     "wall_over_audio": 4.385493845164497,
+     "mean_padding_s": 0.23984055790500974,
+     "quadratic_share": 0.38057484936811714,
+     "occupancy": {
+      "2.0": 0.0494469746258946,
+      "2.5": 0.19193233571893298,
+      "3.0": 0.27586206896551724,
+      "3.5": 0.25374105400130126,
+      "4.0": 0.22901756668835394
+     },
+     "vs_no_ladder": 0.7529948900864121
+    },
+    "7: seven rungs": {
+     "mean_encoder_s": 13.022813441999425,
+     "wall_over_audio": 4.383849278584131,
+     "mean_padding_s": 0.2385393217306441,
+     "quadratic_share": 0.3805600260396674,
+     "occupancy": {
+      "1.0": 0.0,
+      "1.5": 0.002602472348731295,
+      "2.0": 0.0468445022771633,
+      "2.5": 0.19193233571893298,
+      "3.0": 0.27586206896551724,
+      "3.5": 0.25374105400130126,
+      "4.0": 0.22901756668835394
+     },
+     "vs_no_ladder": 0.7527125159057283
+    }
+   }
+  },
+  "short commands, mean 1.6 s (ASSUMED)": {
+   "n": 20000,
+   "mean_audio_s": 1.6108070059739106,
+   "ladders": {
+    "1: no ladder (today)": {
+     "mean_encoder_s": 17.301178294251237,
+     "wall_over_audio": 10.740689747491361,
+     "mean_padding_s": 2.3891929940260894,
+     "quadratic_share": 0.4308789822136896,
+     "occupancy": {
+      "4.0": 1.0
+     },
+     "vs_no_ladder": 1.0
+    },
+    "3: three rungs": {
+     "mean_encoder_s": 8.51098931119068,
+     "wall_over_audio": 5.28368034136085,
+     "mean_padding_s": 0.6711429940260893,
+     "quadratic_share": 0.29839380709907243,
+     "occupancy": {
+      "2.0": 0.7529,
+      "3.0": 0.21225,
+      "4.0": 0.03485
+     },
+     "vs_no_ladder": 0.4919311948839159
+    },
+    "5: five rungs": {
+     "mean_encoder_s": 8.076165625582274,
+     "wall_over_audio": 5.01373882509242,
+     "mean_padding_s": 0.5846929940260893,
+     "quadratic_share": 0.2850902688478451,
+     "occupancy": {
+      "2.0": 0.7529,
+      "2.5": 0.1485,
+      "3.0": 0.06375,
+      "3.5": 0.0244,
+      "4.0": 0.01045
+     },
+     "vs_no_ladder": 0.46679858956576314
+    },
+    "7: seven rungs": {
+     "mean_encoder_s": 6.860965679321028,
+     "wall_over_audio": 4.259334391939038,
+     "mean_padding_s": 0.2545179940260893,
+     "quadratic_share": 0.2646090610431708,
+     "occupancy": {
+      "1.0": 0.1721,
+      "1.5": 0.31615,
+      "2.0": 0.26465,
+      "2.5": 0.1485,
+      "3.0": 0.06375,
+      "3.5": 0.0244,
+      "4.0": 0.01045
+     },
+     "vs_no_ladder": 0.3965606019793901
+    }
+   }
+  },
+  "mixed demo, mean 2.4 s (ASSUMED)": {
+   "n": 20000,
+   "mean_audio_s": 2.3986534482809962,
+   "ladders": {
+    "1: no ladder (today)": {
+     "mean_encoder_s": 17.301178294251237,
+     "wall_over_audio": 7.212871165966134,
+     "mean_padding_s": 1.6013465517190035,
+     "quadratic_share": 0.4308789822136896,
+     "occupancy": {
+      "4.0": 1.0
+     },
+     "vs_no_ladder": 1.0
+    },
+    "3: three rungs": {
+     "mean_encoder_s": 11.578914297826431,
+     "wall_over_audio": 4.827256019882531,
+     "mean_padding_s": 0.5142465517190037,
+     "quadratic_share": 0.36046594938142446,
+     "occupancy": {
+      "2.0": 0.2812,
+      "3.0": 0.5247,
+      "4.0": 0.1941
+     },
+     "vs_no_ladder": 0.6692558218230619
+    },
+    "5: five rungs": {
+     "mean_encoder_s": 10.50718031425709,
+     "wall_over_audio": 4.3804495066959745,
+     "mean_padding_s": 0.30864655171900357,
+     "quadratic_share": 0.3399668193434482,
+     "occupancy": {
+      "2.0": 0.2812,
+      "2.5": 0.2734,
+      "3.0": 0.2513,
+      "3.5": 0.1378,
+      "4.0": 0.0563
+     },
+     "vs_no_ladder": 0.6073100996680886
+    },
+    "7: seven rungs": {
+     "mean_encoder_s": 10.284593423594892,
+     "wall_over_audio": 4.287652904159783,
+     "mean_padding_s": 0.2484965517190036,
+     "quadratic_share": 0.33853651781502364,
+     "occupancy": {
+      "1.0": 0.02285,
+      "1.5": 0.0746,
+      "2.0": 0.18375,
+      "2.5": 0.2734,
+      "3.0": 0.2513,
+      "3.5": 0.1378,
+      "4.0": 0.0563
+     },
+     "vs_no_ladder": 0.5944446816672719
+    }
+   }
+  },
+  "long sentences, mean 3.5 s (ASSUMED)": {
+   "n": 20000,
+   "mean_audio_s": 3.4906441539717967,
+   "ladders": {
+    "1: no ladder (today)": {
+     "mean_encoder_s": 17.301178294251237,
+     "wall_over_audio": 4.956442860142376,
+     "mean_padding_s": 0.5093558460282033,
+     "quadratic_share": 0.4308789822136896,
+     "occupancy": {
+      "4.0": 1.0
+     },
+     "vs_no_ladder": 1.0
+    },
+    "3: three rungs": {
+     "mean_encoder_s": 16.89183626276259,
+     "wall_over_audio": 4.83917452414689,
+     "mean_padding_s": 0.4346058460282033,
+     "quadratic_share": 0.4269630174587504,
+     "occupancy": {
+      "2.0": 0.0,
+      "3.0": 0.07475,
+      "4.0": 0.92525
+     },
+     "vs_no_ladder": 0.9763402223521007
+    },
+    "5: five rungs": {
+     "mean_encoder_s": 15.651136972937994,
+     "wall_over_audio": 4.4837388982000626,
+     "mean_padding_s": 0.22200584602820317,
+     "quadratic_share": 0.4125907995095467,
+     "occupancy": {
+      "2.0": 0.0,
+      "2.5": 0.00175,
+      "3.0": 0.073,
+      "3.5": 0.42345,
+      "4.0": 0.5018
+     },
+     "vs_no_ladder": 0.904628384653922
+    },
+    "7: seven rungs": {
+     "mean_encoder_s": 15.651136972937994,
+     "wall_over_audio": 4.4837388982000626,
+     "mean_padding_s": 0.22200584602820317,
+     "quadratic_share": 0.4125907995095467,
+     "occupancy": {
+      "1.0": 0.0,
+      "1.5": 0.0,
+      "2.0": 0.0,
+      "2.5": 0.00175,
+      "3.0": 0.073,
+      "3.5": 0.42345,
+      "4.0": 0.5018
+     },
+     "vs_no_ladder": 0.904628384653922
+    }
+   }
+  }
+ }
+}

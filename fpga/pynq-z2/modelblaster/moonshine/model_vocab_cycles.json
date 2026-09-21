@@ -1,0 +1,220 @@
+{
+ "what": "What a static lm_head prune is worth in cycles, priced on the board records, both halves.",
+ "clock_hz": 34482759.0,
+ "window_s": 4.0,
+ "n_steps": 24,
+ "records": {
+  "b28_fallback": {
+   "median_cycles": 901743784,
+   "image_cycles": 122451216,
+   "image_bytes": 10027008,
+   "steady_cycles": 779292568,
+   "calls_fallback": 24,
+   "steady_cycles_as_printed": 660092670,
+   "note": "the printed steady subtracts the image build from a dispatch total that never contained it; steady_cycles here is median - image, the same definition b30 uses"
+  },
+  "b30_engine_split": {
+   "median_cycles": 943902149,
+   "image_cycles": 416606636,
+   "image_bytes": 19988480,
+   "steady_cycles": 527295513,
+   "calls_fallback": 0
+  }
+ },
+ "lm_head": {
+  "shape": {
+   "M": 1,
+   "K": 288,
+   "N": 32768
+  },
+  "raw_weight_bytes": 9437184,
+  "image_bytes": 9961472,
+  "stage_guard_bytes": 8388608,
+  "passes_stage_guard": false,
+  "fallback_cycles_24_steps": 306181848,
+  "engine_cycles_24_steps_from_cycles_h0": 53431835,
+  "engine_cycles_24_steps_from_medians": 54184793,
+  "engine_speedup_vs_fallback": 5.730326274588922,
+  "image_build_cycles": 294155420,
+  "image_build_bytes": 9961472,
+  "image_build_cycles_per_byte": 29.529312535336143
+ },
+ "b30_per_shape_not_used": {
+  "figure": 267018404,
+  "what": "b30 linear_by_shape[\"M=1;K=288;N=32768\"], 24 dispatches",
+  "why_not_used": "it is not consistent with b30's own median and counters.  If lm_head's dispatches cost 267.0 M and its image build 294.2 M, b30's median would be b28's 901.7 M - 306.2 M (the fallback it replaced) + 267.0 M + 294.2 M = 1,156.7 M; the measured median is 943.9 M.  The two routes used above -- the cycles_h0 delta and the median delta -- give 53.4 M and 54.2 M independently and are consistent with the median by construction.  b30's per_op TOTAL is sound (942,710,032, within 0.13 % of its median); it is the per-shape attribution that is not.",
+  "implied_lm_head_engine_cycles_if_it_were_used": -27137016
+ },
+ "engine_fit": {
+  "form": "cycles = A*calls + B*weight_bytes",
+  "A_cycles_per_call": 5674.196811988484,
+  "B_cycles_per_weight_byte": 0.2223544938648983,
+  "points": [
+   {
+    "calls": 1296,
+    "weight_bytes": 240648192,
+    "cycles": 60862966,
+    "what": "b28 non-lm_head engine calls"
+   },
+   {
+    "calls": 48,
+    "weight_bytes": 239075328,
+    "cycles": 53431835,
+    "what": "the 48 calls b30 adds for lm_head"
+   }
+  ],
+  "per_call_share_of_lm_head": 0.00509736277961345
+ },
+ "image_rate": {
+  "large_image_measured": 29.529312535336143,
+  "small_images_measured": 12.212139054840685,
+  "used_for_prediction": "large_image_measured",
+  "why": "V=11000's image is 3.34 MB and its staging 3.17 MB, both far over any cache here, so it is in the same regime as lm_head's 4.98 MB chunks and not the 54 sub-700 kB layer images; taking the small-image rate would be pricing a hoped-for effect"
+ },
+ "predictions": [
+  {
+   "V": 16384,
+   "raw_weight_bytes": 4718592,
+   "image_bytes": 4980736,
+   "image_bytes_vs_full": 0.5,
+   "passes_stage_guard": true,
+   "chunks_needed": 1,
+   "engine_dispatch_cycles_24_steps": 26715917.499999996,
+   "image_build_cycles": 147077710.0,
+   "image_build_cycles_optimistic": 60825440.62745097,
+   "image_build_is_a_measured_half_of_b30": true,
+   "vs_b30_engine_split": {
+    "steady_saving": 26715917.500000004,
+    "steady_saving_pct_of_decoder_steady": 5.066592990333298,
+    "steady_cycles": 500579595.5,
+    "cold_saving": 147077710.0,
+    "cold_saving_pct_of_image_cycles": 35.303736736445074,
+    "cold_total_saving": 173793627.5,
+    "cold_total_saving_pct": 18.412250431267957,
+    "cold_total_cycles": 770108521.5,
+    "rtf_steady_before": 3.8228924271981835,
+    "rtf_steady_after": 3.6292020274537777
+   },
+   "vs_dec_cse_on": {
+    "note": "dec_cse_on (L295/MOONSHINE-MODEL) at wall median 863,504,701 less its image build 416,668,282 = 446,836,419 steady.  Taken this way and not from L295's per-op total, which 4aac1ef showed is name-joined and low. image_bytes is 19,988,480 on both CSE arms -- CSE removes permutes, not weight images -- so the lm_head saving is additive and its SHARE of decoder steady rises because the denominator fell",
+    "steady_saving": 26715917.500000004,
+    "steady_saving_pct_of_decoder_steady": 5.978903322112606,
+    "steady_cycles": 420120501.5,
+    "cold_saving": 147077710.0,
+    "cold_total_cycles": 689711073.5,
+    "cold_total_saving_pct": 20.12654097872711,
+    "image_bytes_after": 15007744,
+    "rtf_steady_before": 3.239564002114796,
+    "rtf_steady_after": 3.0458736023703903
+   },
+   "vs_b28_deployed_fallback": {
+    "steady_saving": 279465930.5,
+    "steady_saving_pct_of_decoder_steady": 35.86149053329609,
+    "steady_cycles": 499826637.5,
+    "cold_extra_image": 147077710.0,
+    "cold_total_saving": 132388220.5,
+    "cold_total_cycles": 769355563.5,
+    "rtf_steady_before": 5.649871055851419,
+    "rtf_steady_after": 3.623743082013826
+   },
+   "per_utterance_with_early_exit": {
+    "note": "the board image walks all 24 steps, so this term is invisible in b28/b30 and appears only once the driver's early exit is in the loop",
+    "basis": "dec_cse_on per-iteration cycles / 24, with lm_head swapped",
+    "sets": {
+     "dev": {
+      "mean_steps_baseline": 12.137254901960784,
+      "mean_steps_pruned": 12.298039215686275,
+      "mean_steps_pct_more": 1.3247172859450826,
+      "cycles_per_utterance_baseline": 225973646.5367647,
+      "cycles_per_utterance_pruned": 215277433.44836602,
+      "saving": 10696213.088398695,
+      "saving_pct": 4.733389601985503,
+      "saving_pct_if_steps_were_unchanged": 5.9789033221126076
+     },
+     "test": {
+      "mean_steps_baseline": 12.25259067357513,
+      "mean_steps_pruned": 12.374352331606218,
+      "mean_steps_pct_more": 0.9937625541812066,
+      "cycles_per_utterance_baseline": 228120989.16887954,
+      "cycles_per_utterance_pruned": 216613296.13717076,
+      "saving": 11507693.031708777,
+      "saving_pct": 5.044556870297258,
+      "saving_pct_if_steps_were_unchanged": 5.978903322112607
+     }
+    }
+   }
+  },
+  {
+   "V": 11000,
+   "raw_weight_bytes": 3168000,
+   "image_bytes": 3342336,
+   "image_bytes_vs_full": 0.3355263157894737,
+   "passes_stage_guard": true,
+   "chunks_needed": 1,
+   "engine_dispatch_cycles_24_steps": 17972583.034042012,
+   "image_build_cycles": 98696884.34210525,
+   "image_build_cycles_optimistic": 40817072.0,
+   "image_build_is_a_measured_half_of_b30": false,
+   "vs_b30_engine_split": {
+    "steady_saving": 35459251.965957984,
+    "steady_saving_pct_of_decoder_steady": 6.724739940269127,
+    "steady_cycles": 491836261.034042,
+    "cold_saving": 195458535.65789473,
+    "cold_saving_pct_of_image_cycles": 46.91680803132832,
+    "cold_total_saving": 230917787.62385273,
+    "cold_total_saving_pct": 24.464165895638057,
+    "cold_total_cycles": 712984361.3761473,
+    "rtf_steady_before": 3.8228924271981835,
+    "rtf_steady_after": 3.5658128532728632
+   },
+   "vs_dec_cse_on": {
+    "note": "dec_cse_on (L295/MOONSHINE-MODEL) at wall median 863,504,701 less its image build 416,668,282 = 446,836,419 steady.  Taken this way and not from L295's per-op total, which 4aac1ef showed is name-joined and low. image_bytes is 19,988,480 on both CSE arms -- CSE removes permutes, not weight images -- so the lm_head saving is additive and its SHARE of decoder steady rises because the denominator fell",
+    "steady_saving": 35459251.965957984,
+    "steady_saving_pct_of_decoder_steady": 7.935622625683513,
+    "steady_cycles": 411377167.034042,
+    "cold_saving": 195458535.65789473,
+    "cold_total_cycles": 632586913.3761473,
+    "cold_total_saving_pct": 26.741925939306814,
+    "image_bytes_after": 13369344,
+    "rtf_steady_before": 3.239564002114796,
+    "rtf_steady_after": 2.982484428189476
+   },
+   "vs_b28_deployed_fallback": {
+    "steady_saving": 288209264.965958,
+    "steady_saving_pct_of_decoder_steady": 36.98344842497689,
+    "steady_cycles": 491083303.034042,
+    "cold_extra_image": 98696884.34210525,
+    "cold_total_saving": 189512380.62385273,
+    "cold_total_cycles": 712231403.3761473,
+    "rtf_steady_before": 5.649871055851419,
+    "rtf_steady_after": 3.5603539078329116
+   },
+   "per_utterance_with_early_exit": {
+    "note": "the board image walks all 24 steps, so this term is invisible in b28/b30 and appears only once the driver's early exit is in the loop",
+    "basis": "dec_cse_on per-iteration cycles / 24, with lm_head swapped",
+    "sets": {
+     "dev": {
+      "mean_steps_baseline": 12.137254901960784,
+      "mean_steps_pruned": 12.301960784313726,
+      "mean_steps_pct_more": 1.35702746365106,
+      "cycles_per_utterance_baseline": 225973646.5367647,
+      "cycles_per_utterance_pruned": 210864407.35061926,
+      "saving": 15109239.186145455,
+      "saving_pct": 6.6862837404746935,
+      "saving_pct_if_steps_were_unchanged": 7.935622625683514
+     },
+     "test": {
+      "mean_steps_baseline": 12.25259067357513,
+      "mean_steps_pruned": 12.449481865284975,
+      "mean_steps_pct_more": 1.6069351939951426,
+      "cycles_per_utterance_baseline": 228120989.16887954,
+      "cycles_per_utterance_pruned": 213393024.19927558,
+      "saving": 14727964.969603956,
+      "saving_pct": 6.456207744523123,
+      "saving_pct_if_steps_were_unchanged": 7.935622625683514
+     }
+    }
+   }
+  }
+ ]
+}

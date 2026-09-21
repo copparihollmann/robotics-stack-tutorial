@@ -1,0 +1,28 @@
+{
+ "what": "How many tokens a decoder actually emits per utterance, for a model that has been MEASURED.",
+ "set": "dev_clean",
+ "window_s": 4.0,
+ "max_new_tokens": 40,
+ "utterances": 765,
+ "models": {
+  "float": {
+   "utterances": 765,
+   "mean": 11.886274509803922,
+   "p50": 12.0,
+   "p90": 17.0,
+   "max": 24,
+   "hit_the_cap": 0,
+   "basis": "float encoder"
+  },
+  "R": {
+   "utterances": 765,
+   "mean": 11.976470588235294,
+   "p50": 12.0,
+   "p90": 17.0,
+   "max": 23,
+   "hit_the_cap": 0,
+   "basis": "generated C on the host, IR <repo>/out/q16/R/ir"
+  }
+ },
+ "host_seconds": 113.5
+}

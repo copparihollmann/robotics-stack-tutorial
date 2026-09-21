@@ -1,0 +1,318 @@
+{
+ "what": "WER of ModelBlaster's GENERATED C (host build, bit-exact with the device by the host gates) for Moonshine Tiny's encoder, HF float decoder, greedy, 40 tokens",
+ "set": {
+  "name": "dev_clean <= 4 s",
+  "utterances": 765,
+  "speakers": 40,
+  "words": 5944,
+  "subset_of_n": null
+ },
+ "float": {
+  "wer_vs_reference": {
+   "wer": 0.07301480484522208,
+   "errors": 434,
+   "words": 5944,
+   "utterances": 765
+  }
+ },
+ "decoder": {
+  "max_new_tokens": 40,
+  "greedy": true,
+  "checkpoint": "UsefulSensors/moonshine-tiny@390624ed33d594443aa4aa221f5b9f283b545b5a"
+ },
+ "variants": {
+  "F3PR_ref": {
+   "ir": "<repo>/out/q16/F3PR/ir",
+   "gen": "<repo>/out/q16/F3PR/gen_ref",
+   "q16_plan": {
+    "candidate": "F3PR",
+    "quant_fix_key": "CD F3PR: stem int16 + adds per-channel + rows + per-row",
+    "record": "quant_fix_codesign_dev.json"
+   },
+   "input_dtype": "i16",
+   "input_scale": 2.997460049363689e-05,
+   "output_scale": 0.05858209940392201,
+   "kernel_picks": {
+    "add_pc_s8": "reference",
+    "add_s16_pc_s8": "reference",
+    "conv2d_s16_pc": "reference",
+    "gelu_s8": "reference",
+    "groupnorm_s16": "reference",
+    "layernorm_pc_s8": "reference",
+    "layernorm_s16_s8": "reference",
+    "linear_s8_pc": "reference",
+    "lut16_s16": "reference",
+    "matmul_b_s8": "reference",
+    "permute4_s16": "reference",
+    "permute4_s8": "reference",
+    "rope_s8": "reference",
+    "softmax_s8": "reference"
+   },
+   "wer_vs_reference": {
+    "wer": 0.07940780619111709,
+    "errors": 472,
+    "words": 5944,
+    "utterances": 765
+   },
+   "wer_vs_float": {
+    "wer": 0.02539522367978473,
+    "errors": 151,
+    "words": 5946,
+    "utterances": 765
+   },
+   "sqnr_db": 16.253876076131213,
+   "cosine": 0.9881174314979745,
+   "identical_to_float_transcript": 671,
+   "host_seconds": 33.5,
+   "minus_float": {
+    "delta_wer": 0.00639300134589502,
+    "ci95": [
+     0.0020326332481926043,
+     0.01090793195484521
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "minus_float_sim": {
+    "delta_wer": 0.0011776581426648722,
+    "ci95": [
+     -0.0019989437064845176,
+     0.00437509764883725
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "differs_from_float": 94,
+   "examples_differing": [
+    {
+     "id": "1272-141231-0013",
+     "reference": "THE TWENTIES",
+     "float": "The twenties",
+     "c": "The twenty's"
+    },
+    {
+     "id": "174-50561-0004",
+     "reference": "THE EMPEROR'S DAUGHTER",
+     "float": "The emperor's daughter.",
+     "c": "The upper installer."
+    },
+    {
+     "id": "1988-147956-0024",
+     "reference": "SHE GOT UP ON HER KNEES AND WRUNG HER HANDS",
+     "float": "She got up on her knees and wrung her hands.",
+     "c": "She got up on her knees and around her hands."
+    },
+    {
+     "id": "2035-147961-0028",
+     "reference": "TWENTY THIRTY ENOUGH",
+     "float": "Twenty thirty knuff.",
+     "c": "Twenty-thirty enough."
+    },
+    {
+     "id": "2428-83699-0028",
+     "reference": "THERE'S A KNOCKER IF NONE OF EM HAVEN'T TWISTED IT OFF",
+     "float": "There's a knocker if none of em haven't twisted it off.",
+     "c": "There's a knocker if none of em have been twisted it off."
+    },
+    {
+     "id": "3081-166546-0064",
+     "reference": "SWEETWATER SOMEONE DREW THAT WEAPON OUT",
+     "float": "Sweetwater, someone drew that weapon out.",
+     "c": "Sweetwater, some one drew that weapon out."
+    },
+    {
+     "id": "3752-4943-0019",
+     "reference": "WHAT DOES HE CARE CARE",
+     "float": "What does he care? Care.",
+     "c": "What is he care? Care?"
+    },
+    {
+     "id": "3752-4944-0037",
+     "reference": "MACKLEWAIN SHOOK HIS HEAD SERIOUSLY",
+     "float": "Backaway and shook his head seriously.",
+     "c": "Backal Wayne shook his head seriously."
+    },
+    {
+     "id": "5536-43363-0012",
+     "reference": "THIS WAS ONLY ONE OF HIS REMARKABLE PROPHECIES",
+     "float": "This was only one of his remarkable prophecies.",
+     "c": "This was only one of his remarkable proficies."
+    },
+    {
+     "id": "5895-34629-0001",
+     "reference": "THE DOME OF SAINT PAUL'S WAS A DELIGHT TO URSUS",
+     "float": "The dome of St. Paul's was a delight to Ursus.",
+     "c": "The dome of Saint Paul's was a delight to Ursus."
+    },
+    {
+     "id": "6295-244435-0034",
+     "reference": "THERE WERE NEVER BEFORE SUCH TIMES IN OLD KENTUCKY",
+     "float": "There were never before such times in old Kentucky.",
+     "c": "There were never before such times in all Kentucky."
+    },
+    {
+     "id": "6313-76958-0008",
+     "reference": "HUMPH GRUNTED CURLEY ADAMS",
+     "float": "Hope from grunted curly atoms.",
+     "c": "Hope, granted, curly atoms."
+    }
+   ]
+  },
+  "F3PR_nl": {
+   "ir": "<repo>/out/q16/F3PR/ir",
+   "gen": "<repo>/out/q16/F3PR/gen_nl",
+   "q16_plan": {
+    "candidate": "F3PR",
+    "quant_fix_key": "CD F3PR: stem int16 + adds per-channel + rows + per-row",
+    "record": "quant_fix_codesign_dev.json"
+   },
+   "input_dtype": "i16",
+   "input_scale": 2.997460049363689e-05,
+   "output_scale": 0.05858209940392201,
+   "kernel_picks": {
+    "add_pc_s8": "pext_int_block",
+    "add_s16_pc_s8": "pext_int_block",
+    "conv2d_s16_pc": "pext_split_dot8",
+    "gelu_s8": "pext_int_lut",
+    "groupnorm_s16": "pext_int_memo",
+    "layernorm_pc_s8": "reference",
+    "layernorm_s16_s8": "reference",
+    "linear_s8_pc": "pext_row_dot8_pc",
+    "lut16_s16": "reference",
+    "matmul_b_s8": "pext_dot8_exact",
+    "permute4_s16": "reference",
+    "permute4_s8": "reference",
+    "rope_s8": "pext_int_rot",
+    "softmax_s8": "pext_int_row"
+   },
+   "wer_vs_reference": {
+    "wer": 0.07890309555854644,
+    "errors": 469,
+    "words": 5944,
+    "utterances": 765
+   },
+   "wer_vs_float": {
+    "wer": 0.027581567440296,
+    "errors": 164,
+    "words": 5946,
+    "utterances": 765
+   },
+   "sqnr_db": 16.27739757923612,
+   "cosine": 0.9881794166469909,
+   "identical_to_float_transcript": 661,
+   "host_seconds": 46.2,
+   "minus_float": {
+    "delta_wer": 0.0058882907133243605,
+    "ci95": [
+     0.0014826703508639013,
+     0.010588693482033182
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "minus_float_sim": {
+    "delta_wer": 0.0006729475100942127,
+    "ci95": [
+     -0.0023421563760886548,
+     0.003776970600840559
+    ],
+    "resamples": 2000,
+    "unit": "utterance"
+   },
+   "differs_from_float": 104,
+   "examples_differing": [
+    {
+     "id": "1272-135031-0011",
+     "reference": "NOT EXACTLY RETURNED KALIKO",
+     "float": "But exactly, return Calico.",
+     "c": "But exactly, we've turned Calico."
+    },
+    {
+     "id": "174-168635-0009",
+     "reference": "TO MEET WAS TO FIND EACH OTHER",
+     "float": "Too meat was to find each other.",
+     "c": "Two meat was to find each other."
+    },
+    {
+     "id": "1988-24833-0019",
+     "reference": "I LOOK AT MY WATCH IT'S A QUARTER TO ELEVEN",
+     "float": "I'll look at my watch. It's a quarter to eleven.",
+     "c": "Or look at my watch. It's a quarter to eleven."
+    },
+    {
+     "id": "2078-142845-0001",
+     "reference": "SEVENTEEN SEVENTEEN",
+     "float": "1717.",
+     "c": "Seventeen seventeen."
+    },
+    {
+     "id": "2428-83705-0000",
+     "reference": "HER FATHER IS A MOST REMARKABLE PERSON TO SAY THE LEAST",
+     "float": "Her father is the most remarkable person to say the least.",
+     "c": "Her father is a most remarkable person to say the least."
+    },
+    {
+     "id": "3081-166546-0064",
+     "reference": "SWEETWATER SOMEONE DREW THAT WEAPON OUT",
+     "float": "Sweetwater, someone drew that weapon out.",
+     "c": "Sweetwater, some one drew the weapon out."
+    },
+    {
+     "id": "3752-4943-0019",
+     "reference": "WHAT DOES HE CARE CARE",
+     "float": "What does he care? Care.",
+     "c": "What is he care? Care?"
+    },
+    {
+     "id": "3853-163249-0029",
+     "reference": "WE CAN'T AFFORD NO NICE VITTLES NOW WHEN OUR MEN ARE SUFFERIN SO",
+     "float": "We can't afford no nice vittles now when our men are suffering, so.",
+     "c": "We can't afford no nice fiddles now when our men are suffering, so."
+    },
+    {
+     "id": "5694-64038-0001",
+     "reference": "YANK SAYS WHAT YOU DOING JOHNNY",
+     "float": "Yanks says, What are you doing, Johnny?",
+     "c": "Yank says, What are you doing, Johnny?"
+    },
+    {
+     "id": "6295-244435-0034",
+     "reference": "THERE WERE NEVER BEFORE SUCH TIMES IN OLD KENTUCKY",
+     "float": "There were never before such times in old Kentucky.",
+     "c": "There were never before such times in all Kentucky."
+    },
+    {
+     "id": "6313-76958-0008",
+     "reference": "HUMPH GRUNTED CURLEY ADAMS",
+     "float": "Hope from grunted curly atoms.",
+     "c": "Hope, granted, curly atoms."
+    },
+    {
+     "id": "652-129742-0008",
+     "reference": "POUR MAYONNAISE OVER ALL CHILL AND SERVE",
+     "float": "Parmaine's overall chill and serve.",
+     "c": "Poor mayonnaise over all, chill and serve."
+    }
+   ]
+  }
+ },
+ "float_sim": {
+  "candidate": "F3PR",
+  "quant_fix_key": "CD F3PR: stem int16 + adds per-channel + rows + per-row",
+  "record": "quant_fix_codesign_dev.json",
+  "what": "fq.py float simulation (ESTIMATE), rerun here on the same utterances",
+  "wer_vs_reference": {
+   "wer": 0.07823014804845221,
+   "errors": 465,
+   "words": 5944,
+   "utterances": 765
+  },
+  "wer_vs_float": {
+   "wer": 0.02455432223343424,
+   "errors": 146,
+   "words": 5946,
+   "utterances": 765
+  },
+  "sqnr_db": 16.241138141424145
+ }
+}

@@ -1,0 +1,20 @@
+{
+ "what": "lm_head rows the float model EMITS on LibriSpeech train-clean-100 (disjoint from dev-clean and test-clean), the selection source for a pruned vocabulary",
+ "utterances": 8156,
+ "hours": 29.214004340277775,
+ "tokens_emitted": 311950,
+ "distinct_rows": 10549,
+ "tokens_per_utterance_mean": 46.750122609122116,
+ "max_new_tokens": 96,
+ "coverage_by_top_m": {
+  "256": 0.5340663567879468,
+  "512": 0.626661323930117,
+  "1024": 0.7261836832825773,
+  "2048": 0.8287449911844847,
+  "3072": 0.8888026927392211,
+  "4096": 0.9279115242827376,
+  "6144": 0.9716877704760378,
+  "8192": 0.9910049687449912
+ },
+ "counts_npy": "<repo>/out/moonshine/librispeech/model_train_row_counts.npy"
+}

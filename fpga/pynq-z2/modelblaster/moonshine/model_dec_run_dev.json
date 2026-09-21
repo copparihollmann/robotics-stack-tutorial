@@ -1,0 +1,29 @@
+{
+ "what": "int8 unrolled decoder, free-running through dec_driver.c",
+ "set": {
+  "name": "dev_clean <= 4 s",
+  "utterances": 765,
+  "words": 5944,
+  "speakers": 40
+ },
+ "encoder": "<repo>/out/qatu_long/gen_nl",
+ "n_steps": 24,
+ "loop": {
+  "token_count_matches_float": 390,
+  "sequence_exact": 253,
+  "mean_steps_int8": 11.815686274509805,
+  "mean_steps_float": 11.912418300653595
+ },
+ "wer_int8_decoder": 0.1440107671601615,
+ "wer_float_decoder": 0.1059892328398385,
+ "minus_float": {
+  "delta_wer": 0.038021534320323014,
+  "ci95": [
+   0.0273881067290964,
+   0.04934965577183057
+  ],
+  "resamples": 2000,
+  "unit": "utterance"
+ },
+ "elapsed_s": 1981.6
+}

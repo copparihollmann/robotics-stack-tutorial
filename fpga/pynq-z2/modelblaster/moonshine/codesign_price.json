@@ -1,0 +1,729 @@
+{
+ "what": "WER (float simulation, dev-clean; test-clean for finalists run once) against encoder RTF (4 s, steady state) under three engine assumptions. Costs from measured parts (B26, B25 run 8) with named estimates. See codesign_price.py.",
+ "float_wer": {
+  "dev": 0.073,
+  "test": 0.0752
+ },
+ "bar": "int8 WER within 2 points absolute of float",
+ "baseline_cycles_today_int8": 980231861.16,
+ "baseline_rtf": 7.10668091523651,
+ "costs": {
+  "mbp_linear_c_mac": {
+   "v": 1.2852,
+   "measured": true,
+   "src": "B26 ew_bigconv linear_s8"
+  },
+  "mbp_conv_c_mac": {
+   "v": 1.2372,
+   "measured": true,
+   "src": "B26 ew_bigconv conv2d_s8"
+  },
+  "sw8_softmax_s8": {
+   "v": 362450341.0,
+   "measured": true,
+   "src": "B26 ew_eng softmax_s8, whole encoder"
+  },
+  "sw8_softmax_s8_el": {
+   "v": 277.357,
+   "measured": true,
+   "src": "B26 ew_eng softmax_s8 cycles/element"
+  },
+  "sw8_matmul_b_s8": {
+   "v": 199893503.0,
+   "measured": true,
+   "src": "B26 ew_eng matmul_b_s8, whole encoder"
+  },
+  "sw8_matmul_b_s8_el": {
+   "v": 125.568,
+   "measured": true,
+   "src": "B26 ew_eng matmul_b_s8 cycles/element"
+  },
+  "sw8_layernorm_s8": {
+   "v": 115797773.0,
+   "measured": true,
+   "src": "B26 ew_eng layernorm_s8, whole encoder"
+  },
+  "sw8_layernorm_s8_el": {
+   "v": 187.448,
+   "measured": true,
+   "src": "B26 ew_eng layernorm_s8 cycles/element"
+  },
+  "sw8_permute4_s8": {
+   "v": 47355404.0,
+   "measured": true,
+   "src": "B26 ew_eng permute4_s8, whole encoder"
+  },
+  "sw8_permute4_s8_el": {
+   "v": 39.861,
+   "measured": true,
+   "src": "B26 ew_eng permute4_s8 cycles/element"
+  },
+  "sw8_rope_s8": {
+   "v": 37595812.0,
+   "measured": true,
+   "src": "B26 ew_eng rope_s8, whole encoder"
+  },
+  "sw8_rope_s8_el": {
+   "v": 65.93,
+   "measured": true,
+   "src": "B26 ew_eng rope_s8 cycles/element"
+  },
+  "sw8_gelu_s8": {
+   "v": 26691367.0,
+   "measured": true,
+   "src": "B26 ew_eng gelu_s8, whole encoder"
+  },
+  "sw8_gelu_s8_el": {
+   "v": 19.36,
+   "measured": true,
+   "src": "B26 ew_eng gelu_s8 cycles/element"
+  },
+  "sw8_groupnorm_s8": {
+   "v": 25897284.0,
+   "measured": true,
+   "src": "B26 ew_eng groupnorm_s8, whole encoder"
+  },
+  "sw8_groupnorm_s8_el": {
+   "v": 90.011,
+   "measured": true,
+   "src": "B26 ew_eng groupnorm_s8 cycles/element"
+  },
+  "sw8_add_s8": {
+   "v": 21448297.0,
+   "measured": true,
+   "src": "B26 ew_eng add_s8, whole encoder"
+  },
+  "sw8_add_s8_el": {
+   "v": 37.613,
+   "measured": true,
+   "src": "B26 ew_eng add_s8 cycles/element"
+  },
+  "sw8_tanh_s8": {
+   "v": 6295286.0,
+   "measured": true,
+   "src": "B26 ew_eng tanh_s8, whole encoder"
+  },
+  "sw8_tanh_s8_el": {
+   "v": 21.881,
+   "measured": true,
+   "src": "B26 ew_eng tanh_s8 cycles/element"
+  },
+  "sw16_dot_c_mac": {
+   "v": 2.7744,
+   "measured": false,
+   "src": "ESTIMATE: int16 x int8 dot on MBP as two DOT8 passes (hi, lo-128) + a per-pixel combine"
+  },
+  "sw16_lut_el": {
+   "v": 38.72,
+   "measured": false,
+   "src": "ESTIMATE: 65,536-entry int16 LUT, 2x the measured int8 LUT for its cache misses"
+  },
+  "sw16_gn_el": {
+   "v": 108.0132,
+   "measured": false,
+   "src": "ESTIMATE: 1.2x int8 GroupNorm"
+  },
+  "sw16_ln_el": {
+   "v": 224.9376,
+   "measured": false,
+   "src": "ESTIMATE: 1.2x int8 LayerNorm (int16 or per-channel input dequant)"
+  },
+  "sw16_add_el": {
+   "v": 45.1356,
+   "measured": false,
+   "src": "ESTIMATE: 1.2x int8 add"
+  },
+  "swpc_add_el": {
+   "v": 48.8969,
+   "measured": false,
+   "src": "ESTIMATE: 1.3x int8 add: a multiplier per channel instead of per tensor"
+  },
+  "sw16_softmax": {
+   "v": 1.3,
+   "measured": false,
+   "src": "ESTIMATE: 1.3x int8 softmax for int16 scores"
+  },
+  "sw16_matmul_c_mac": {
+   "v": 8.498,
+   "measured": false,
+   "src": "ESTIMATE: int16 x int16 on MBP as four DOT8 passes"
+  },
+  "sw16_rope": {
+   "v": 1.5,
+   "measured": false,
+   "src": "ESTIMATE: 1.5x int8 rope"
+  },
+  "sw16_permute": {
+   "v": 1.5,
+   "measured": false,
+   "src": "ESTIMATE: 1.5x int8 permute (bytes double)"
+  },
+  "hilo_split_el": {
+   "v": 10.0,
+   "measured": false,
+   "src": "ESTIMATE: hart-0 pass splitting an int16 tensor into two int8 tensors, per element"
+  },
+  "multirange_el": {
+   "v": 8.0,
+   "measured": false,
+   "src": "ESTIMATE: hart-0 combine per output element per extra range"
+  },
+  "stage16": {
+   "v": 2.0,
+   "measured": false,
+   "src": "ESTIMATE: NCHW->NHWC staging of an int16 stem tensor, 2x the measured int8 staging"
+  }
+ },
+ "rows": [
+  {
+   "candidate": "as extracted (W8A8)",
+   "hardware": "a",
+   "wer_dev": 1.2049125168236878,
+   "wer_test": 1.1156849983729256,
+   "quant_fix_key": "W8A8 (as extracted)",
+   "cycles": 980231861.16,
+   "rtf": 7.10668091523651,
+   "vs_today_int8": 1.0,
+   "contains_estimates": false,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 1756.0421136835366,
+    "sw_tanh": 182.5632919918038,
+    "sw_groupnorm": 751.0212277387665,
+    "sw_gelu_stem": 133.72153196906314,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 622.0006061579934,
+    "sw_layernorm": 3358.135380060511,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 1373.3067008936264
+   }
+  },
+  {
+   "candidate": "as extracted (W8A8)",
+   "hardware": "b1",
+   "wer_dev": 1.2049125168236878,
+   "wer_test": 1.1156849983729256,
+   "quant_fix_key": "W8A8 (as extracted)",
+   "cycles": 980231861.16,
+   "rtf": 7.10668091523651,
+   "vs_today_int8": 1.0,
+   "contains_estimates": false,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 1756.0421136835366,
+    "sw_tanh": 182.5632919918038,
+    "sw_groupnorm": 751.0212277387665,
+    "sw_gelu_stem": 133.72153196906314,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 622.0006061579934,
+    "sw_layernorm": 3358.135380060511,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 1373.3067008936264
+   }
+  },
+  {
+   "candidate": "as extracted (W8A8)",
+   "hardware": "b2",
+   "wer_dev": 1.2049125168236878,
+   "wer_test": 1.1156849983729256,
+   "quant_fix_key": "W8A8 (as extracted)",
+   "cycles": 980231861.16,
+   "rtf": 7.10668091523651,
+   "vs_today_int8": 1.0,
+   "contains_estimates": false,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 1756.0421136835366,
+    "sw_tanh": 182.5632919918038,
+    "sw_groupnorm": 751.0212277387665,
+    "sw_gelu_stem": 133.72153196906314,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 622.0006061579934,
+    "sw_layernorm": 3358.135380060511,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 1373.3067008936264
+   }
+  },
+  {
+   "candidate": "F2: stem int16, residual adds per-channel",
+   "hardware": "a",
+   "wer_dev": 0.09690444145356662,
+   "wer_test": null,
+   "quant_fix_key": "FACT F2: F1 + residual adds per-channel",
+   "cycles": 2383155078.1024,
+   "rtf": 17.277874126185782,
+   "vs_today_int8": 2.4312156873601207,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 40471.498296061516,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 808.6060705293332,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "F2: stem int16, residual adds per-channel",
+   "hardware": "b1",
+   "wer_dev": 0.09690444145356662,
+   "wer_test": null,
+   "quant_fix_key": "FACT F2: F1 + residual adds per-channel",
+   "cycles": 1108692509.9904,
+   "rtf": 8.038020609012174,
+   "vs_today_int8": 1.1310512889046278,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 3512.0842273670733,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 808.6060705293332,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "F2: stem int16, residual adds per-channel",
+   "hardware": "b2",
+   "wer_dev": 0.09690444145356662,
+   "wer_test": null,
+   "quant_fix_key": "FACT F2: F1 + residual adds per-channel",
+   "cycles": 1092973244.9904,
+   "rtf": 7.924055939015785,
+   "vs_today_int8": 1.1150150166481865,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 3056.2255473815194,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 808.6060705293332,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "F3: F2 + o_proj/fc2 rows",
+   "hardware": "a",
+   "wer_dev": 0.09219380888290714,
+   "wer_test": null,
+   "quant_fix_key": "FACT F3: F2 + o_proj/fc2 rows, per-tensor W8",
+   "cycles": 2383155078.1024,
+   "rtf": 17.277874126185782,
+   "vs_today_int8": 2.4312156873601207,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 40471.498296061516,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 808.6060705293332,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "F3: F2 + o_proj/fc2 rows",
+   "hardware": "b1",
+   "wer_dev": 0.09219380888290714,
+   "wer_test": null,
+   "quant_fix_key": "FACT F3: F2 + o_proj/fc2 rows, per-tensor W8",
+   "cycles": 1108692509.9904,
+   "rtf": 8.038020609012174,
+   "vs_today_int8": 1.1310512889046278,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 3512.0842273670733,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 808.6060705293332,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "F3: F2 + o_proj/fc2 rows",
+   "hardware": "b2",
+   "wer_dev": 0.09219380888290714,
+   "wer_test": null,
+   "quant_fix_key": "FACT F3: F2 + o_proj/fc2 rows, per-tensor W8",
+   "cycles": 1092973244.9904,
+   "rtf": 7.924055939015785,
+   "vs_today_int8": 1.1150150166481865,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 3056.2255473815194,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 808.6060705293332,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "F3 + per-row weights (a: 4 row groups)",
+   "hardware": "a",
+   "wer_dev": 0.07957604306864065,
+   "wer_test": null,
+   "quant_fix_key": "FACT W: F3 + ALL weights in 4 row groups (dispatch splits)",
+   "cycles": 2389712442.1024,
+   "rtf": 17.325415014662834,
+   "vs_today_int8": 2.4379052924013607,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2401.53544558311,
+    "stem_convs": 40471.498296061516,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 808.6060705293332,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "F3 + per-row weights (a: 4 row groups)",
+   "hardware": "b1",
+   "wer_dev": 0.07823014804845221,
+   "wer_test": null,
+   "quant_fix_key": "CD F3PR: stem int16 + adds per-channel + rows + per-row",
+   "cycles": 1108692509.9904,
+   "rtf": 8.038020609012174,
+   "vs_today_int8": 1.1310512889046278,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 3512.0842273670733,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 808.6060705293332,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "F3 + per-row weights (a: 4 row groups)",
+   "hardware": "b2",
+   "wer_dev": 0.07823014804845221,
+   "wer_test": null,
+   "quant_fix_key": "CD F3PR: stem int16 + adds per-channel + rows + per-row",
+   "cycles": 1092973244.9904,
+   "rtf": 7.924055939015785,
+   "vs_today_int8": 1.1150150166481865,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 3056.2255473815194,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 808.6060705293332,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "F2 + per-row weights",
+   "hardware": "b1",
+   "wer_dev": 0.08647375504710633,
+   "wer_test": null,
+   "quant_fix_key": "CD F2PR: stem int16 + adds per-channel + per-row",
+   "cycles": 1108692509.9904,
+   "rtf": 8.038020609012174,
+   "vs_today_int8": 1.1310512889046278,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 3512.0842273670733,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 808.6060705293332,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "F2 + per-row weights",
+   "hardware": "b2",
+   "wer_dev": 0.08647375504710633,
+   "wer_test": null,
+   "quant_fix_key": "CD F2PR: stem int16 + adds per-channel + per-row",
+   "cycles": 1092973244.9904,
+   "rtf": 7.924055939015785,
+   "vs_today_int8": 1.1150150166481865,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 3056.2255473815194,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 808.6060705293332,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "A16: stem + residual adds int16, per-row weights",
+   "hardware": "b1",
+   "wer_dev": 0.0822678331090175,
+   "wer_test": null,
+   "quant_fix_key": "CD A16PR: stem int16 + residual adds int16 + per-row",
+   "cycles": 1106547666.2784,
+   "rtf": 8.022470492271225,
+   "vs_today_int8": 1.1288631905607707,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 3512.0842273670733,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 746.4056035655383,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "A16: stem + residual adds int16, per-row weights",
+   "hardware": "b2",
+   "wer_dev": 0.0822678331090175,
+   "wer_test": null,
+   "quant_fix_key": "CD A16PR: stem int16 + residual adds int16 + per-row",
+   "cycles": 1090828401.2784,
+   "rtf": 7.908505822274836,
+   "vs_today_int8": 1.1128269183043293,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 3056.2255473815194,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 746.4056035655383,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "R: split stem (1,64), 2 stem row groups, adds pc + rows",
+   "hardware": "a",
+   "wer_dev": 0.08310901749663527,
+   "wer_test": 0.08184184835665473,
+   "quant_fix_key": "FINAL R: split stem (1, 64), stem weights 2 group(s), adds per-channel + o_proj/fc2 rows",
+   "cycles": 1188845535.9904,
+   "rtf": 8.61913004111997,
+   "vs_today_int8": 1.2128207448628818,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 5836.521955798258,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 808.6060705293332,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "R: split stem (1,16,256), 4 stem row groups, adds pc + rows",
+   "hardware": "a",
+   "wer_dev": 0.08142664872139974,
+   "wer_test": 0.07517084282460136,
+   "quant_fix_key": "FINAL R: split stem (1, 16, 256), stem weights 4 group(s), adds per-channel + o_proj/fc2 rows",
+   "cycles": 1312429521.9904,
+   "rtf": 9.515113929764148,
+   "vs_today_int8": 1.338897024258403,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 2211.3718916749094,
+    "stem_convs": 9420.457510374968,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 640.3110841565781,
+    "sw_add": 808.6060705293332,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 10511.059773378342,
+    "sw_matmul_b": 5796.911523233974,
+    "sw_rope": 1090.278536006936,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "ALL16: every activation int16, per-tensor weights",
+   "hardware": "b1",
+   "wer_dev": 0.08462314939434724,
+   "wer_test": null,
+   "quant_fix_key": "CD ALL16: every activation int16, W8 per-tensor",
+   "cycles": 1933233717.0704594,
+   "rtf": 14.015944294585443,
+   "vs_today_int8": 1.9722208527099734,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 4455.781391856125,
+    "stem_convs": 3512.0842273670733,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 1280.6221683131562,
+    "sw_add": 746.4056035655383,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 13664.377705391846,
+    "sw_matmul_b": 23187.62894813608,
+    "sw_rope": 1635.417804010404,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "ALL16: every activation int16, per-tensor weights",
+   "hardware": "b2",
+   "wer_dev": 0.08462314939434724,
+   "wer_test": null,
+   "quant_fix_key": "CD ALL16: every activation int16, W8 per-tensor",
+   "cycles": 1886721492.0704594,
+   "rtf": 13.678730667044793,
+   "vs_today_int8": 1.9247706250210288,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 3562.785561679079,
+    "stem_convs": 3056.2255473815194,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 1280.6221683131562,
+    "sw_add": 746.4056035655383,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 13664.377705391846,
+    "sw_matmul_b": 23187.62894813608,
+    "sw_rope": 1635.417804010404,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "ALL16 + per-row weights",
+   "hardware": "b1",
+   "wer_dev": 0.07251009421265141,
+   "wer_test": null,
+   "quant_fix_key": "CD ALL16PR: every activation int16, per-row weights",
+   "cycles": 1933233717.0704594,
+   "rtf": 14.015944294585443,
+   "vs_today_int8": 1.9722208527099734,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 4455.781391856125,
+    "stem_convs": 3512.0842273670733,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 1280.6221683131562,
+    "sw_add": 746.4056035655383,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 13664.377705391846,
+    "sw_matmul_b": 23187.62894813608,
+    "sw_rope": 1635.417804010404,
+    "sw_permute": 2059.9600513404393
+   }
+  },
+  {
+   "candidate": "ALL16 + per-row weights",
+   "hardware": "b2",
+   "wer_dev": 0.07251009421265141,
+   "wer_test": null,
+   "quant_fix_key": "CD ALL16PR: every activation int16, per-row weights",
+   "cycles": 1886721492.0704594,
+   "rtf": 13.678730667044793,
+   "vs_today_int8": 1.9247706250210288,
+   "contains_estimates": true,
+   "parts_ms": {
+    "linears": 3562.785561679079,
+    "stem_convs": 3056.2255473815194,
+    "sw_tanh": 323.0660470062735,
+    "sw_groupnorm": 901.2241102401348,
+    "sw_gelu_stem": 267.4430639381263,
+    "sw_gelu_mlp": 1280.6221683131562,
+    "sw_add": 746.4056035655383,
+    "sw_layernorm": 4029.766057176573,
+    "sw_softmax": 13664.377705391846,
+    "sw_matmul_b": 23187.62894813608,
+    "sw_rope": 1635.417804010404,
+    "sw_permute": 2059.9600513404393
+   }
+  }
+ ]
+}

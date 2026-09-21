@@ -1,0 +1,1001 @@
+{
+ "what": "Hidden libcalls in hart 0's kernels: every call site of a libgcc soft-float (or bit-count)",
+ "gen": "<repo>/out/rocket_moonshine_enc_perm/enc_ew_eng_smx2_nhwc_perm/gen",
+ "label": "perm",
+ "cflags": [
+  "-DMB_PEXT_HW=1",
+  "-DMB_ICOUNT_WARMUP=0",
+  "-DMB_PEXT_CONV_MAXROWS=2048",
+  "-DMB_PEXT_CONV_WBYTES=2097152",
+  "-falign-loops=4"
+ ],
+ "inference_instret": 1338340543,
+ "output_mismatches": 0,
+ "routine_instructions": {
+  "__clzdi2": 1499534,
+  "__eqsf2": 732435,
+  "__mulsf3": 146557,
+  "__subsf3": 123230,
+  "__addsf3": 46766,
+  "__divsf3": 29295,
+  "__floatsisf": 7229,
+  "__fixsfsi": 4967,
+  "__gesf2": 0,
+  "__lesf2": 0
+ },
+ "routine_calls": {
+  "__clzdi2": 73033,
+  "__divsf3": 383,
+  "__eqsf2": 31845,
+  "__addsf3": 657,
+  "__fixsfsi": 213,
+  "__floatsisf": 213,
+  "__mulsf3": 1777,
+  "__gesf2": 0,
+  "__subsf3": 1685,
+  "__lesf2": 0
+ },
+ "sites_executed": [
+  {
+   "pc": "0x8000e2dc",
+   "caller": "kernel_permute4_s8_moonshine_enc",
+   "callee": "__eqsf2",
+   "insn": "jalr",
+   "executions": 31845,
+   "caller_entries": 25,
+   "loop_borne": true,
+   "instructions_attributed": 732435
+  },
+  {
+   "pc": "0x8000ec88",
+   "caller": "kernel_rope_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 31680,
+   "caller_entries": 12,
+   "loop_borne": true,
+   "instructions_attributed": 650463
+  },
+  {
+   "pc": "0x8000ed08",
+   "caller": "kernel_rope_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 31488,
+   "caller_entries": 12,
+   "loop_borne": true,
+   "instructions_attributed": 646520
+  },
+  {
+   "pc": "0x80009fdc",
+   "caller": "kernel_add_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 3060,
+   "caller_entries": 12,
+   "loop_borne": true,
+   "instructions_attributed": 62829
+  },
+  {
+   "pc": "0x8000a05c",
+   "caller": "kernel_add_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 3060,
+   "caller_entries": 12,
+   "loop_borne": true,
+   "instructions_attributed": 62829
+  },
+  {
+   "pc": "0x8000b2a6",
+   "caller": "int_rsqrt_q31",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 2146,
+   "caller_entries": 2146,
+   "loop_borne": false,
+   "instructions_attributed": 44062
+  },
+  {
+   "pc": "0x80013074",
+   "caller": "__subsf3",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 500,
+   "caller_entries": 1685,
+   "loop_borne": false,
+   "instructions_attributed": 10266
+  },
+  {
+   "pc": "0x8000f60c",
+   "caller": "kernel_tanh_s8_moonshine_enc",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 120,
+   "caller_entries": 1,
+   "loop_borne": true,
+   "instructions_attributed": 9897
+  },
+  {
+   "pc": "0x80011a86",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 9814
+  },
+  {
+   "pc": "0x80011a94",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 9814
+  },
+  {
+   "pc": "0x80011aa6",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 9814
+  },
+  {
+   "pc": "0x80011ac0",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 9814
+  },
+  {
+   "pc": "0x80011ada",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 9814
+  },
+  {
+   "pc": "0x80011af4",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 9814
+  },
+  {
+   "pc": "0x80011b0e",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 9814
+  },
+  {
+   "pc": "0x80011b2c",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 9814
+  },
+  {
+   "pc": "0x80011b5c",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 9814
+  },
+  {
+   "pc": "0x80011b84",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 9814
+  },
+  {
+   "pc": "0x8000f61e",
+   "caller": "kernel_tanh_s8_moonshine_enc",
+   "callee": "__divsf3",
+   "insn": "jalr",
+   "executions": 120,
+   "caller_entries": 1,
+   "loop_borne": true,
+   "instructions_attributed": 9179
+  },
+  {
+   "pc": "0x80011b9e",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 111,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 9155
+  },
+  {
+   "pc": "0x80011b7a",
+   "caller": "expm1f",
+   "callee": "__divsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 9102
+  },
+  {
+   "pc": "0x80011ad0",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8703
+  },
+  {
+   "pc": "0x80011b04",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8703
+  },
+  {
+   "pc": "0x80011b3e",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8703
+  },
+  {
+   "pc": "0x80011b4c",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8703
+  },
+  {
+   "pc": "0x80011b6e",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8703
+  },
+  {
+   "pc": "0x80011ab6",
+   "caller": "expm1f",
+   "callee": "__addsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8471
+  },
+  {
+   "pc": "0x80011aea",
+   "caller": "expm1f",
+   "callee": "__addsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8471
+  },
+  {
+   "pc": "0x80011b1e",
+   "caller": "expm1f",
+   "callee": "__addsf3",
+   "insn": "jalr",
+   "executions": 119,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8471
+  },
+  {
+   "pc": "0x80011b94",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 111,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8118
+  },
+  {
+   "pc": "0x80011ba8",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 111,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8118
+  },
+  {
+   "pc": "0x80011bb2",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 111,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8118
+  },
+  {
+   "pc": "0x80011c4a",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 111,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8118
+  },
+  {
+   "pc": "0x80011c58",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 111,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8118
+  },
+  {
+   "pc": "0x80011c62",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 111,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 8118
+  },
+  {
+   "pc": "0x80011a36",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 93,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 7670
+  },
+  {
+   "pc": "0x80011a56",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 93,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 7670
+  },
+  {
+   "pc": "0x80011d58",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 93,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 7670
+  },
+  {
+   "pc": "0x80011a42",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 93,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 6801
+  },
+  {
+   "pc": "0x80011a0e",
+   "caller": "expm1f",
+   "callee": "__addsf3",
+   "insn": "jalr",
+   "executions": 93,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 6620
+  },
+  {
+   "pc": "0x800118fc",
+   "caller": "tanhf",
+   "callee": "__divsf3",
+   "insn": "jalr",
+   "executions": 69,
+   "caller_entries": 120,
+   "loop_borne": false,
+   "instructions_attributed": 5278
+  },
+  {
+   "pc": "0x8001190e",
+   "caller": "tanhf",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 69,
+   "caller_entries": 120,
+   "loop_borne": false,
+   "instructions_attributed": 5046
+  },
+  {
+   "pc": "0x80011bee",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 69,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 5046
+  },
+  {
+   "pc": "0x80011bfa",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 69,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 5046
+  },
+  {
+   "pc": "0x800118d2",
+   "caller": "tanhf",
+   "callee": "__addsf3",
+   "insn": "jalr",
+   "executions": 69,
+   "caller_entries": 120,
+   "loop_borne": false,
+   "instructions_attributed": 4911
+  },
+  {
+   "pc": "0x800118ea",
+   "caller": "tanhf",
+   "callee": "__addsf3",
+   "insn": "jalr",
+   "executions": 69,
+   "caller_entries": 120,
+   "loop_borne": false,
+   "instructions_attributed": 4911
+  },
+  {
+   "pc": "0x80013156",
+   "caller": "__floatsisf",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 212,
+   "caller_entries": 213,
+   "loop_borne": false,
+   "instructions_attributed": 4353
+  },
+  {
+   "pc": "0x80011972",
+   "caller": "tanhf",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 50,
+   "caller_entries": 120,
+   "loop_borne": false,
+   "instructions_attributed": 4124
+  },
+  {
+   "pc": "0x8000f602",
+   "caller": "kernel_tanh_s8_moonshine_enc",
+   "callee": "__floatsisf",
+   "insn": "jalr",
+   "executions": 120,
+   "caller_entries": 1,
+   "loop_borne": true,
+   "instructions_attributed": 4073
+  },
+  {
+   "pc": "0x800127d2",
+   "caller": "__addsf3",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 187,
+   "caller_entries": 657,
+   "loop_borne": false,
+   "instructions_attributed": 3840
+  },
+  {
+   "pc": "0x8001199a",
+   "caller": "tanhf",
+   "callee": "__divsf3",
+   "insn": "jalr",
+   "executions": 50,
+   "caller_entries": 120,
+   "loop_borne": false,
+   "instructions_attributed": 3824
+  },
+  {
+   "pc": "0x8001198e",
+   "caller": "tanhf",
+   "callee": "__addsf3",
+   "insn": "jalr",
+   "executions": 50,
+   "caller_entries": 120,
+   "loop_borne": false,
+   "instructions_attributed": 3559
+  },
+  {
+   "pc": "0x80011a24",
+   "caller": "expm1f",
+   "callee": "__floatsisf",
+   "insn": "jalr",
+   "executions": 93,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 3156
+  },
+  {
+   "pc": "0x8000f62e",
+   "caller": "kernel_tanh_s8_moonshine_enc",
+   "callee": "__fixsfsi",
+   "insn": "jalr",
+   "executions": 120,
+   "caller_entries": 1,
+   "loop_borne": true,
+   "instructions_attributed": 2798
+  },
+  {
+   "pc": "0x80011a16",
+   "caller": "expm1f",
+   "callee": "__fixsfsi",
+   "insn": "jalr",
+   "executions": 93,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 2169
+  },
+  {
+   "pc": "0x8000e25e",
+   "caller": "kernel_permute4_s8_moonshine_enc",
+   "callee": "__divsf3",
+   "insn": "jalr",
+   "executions": 25,
+   "caller_entries": 25,
+   "loop_borne": false,
+   "instructions_attributed": 1912
+  },
+  {
+   "pc": "0x80011dc8",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 24,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 1755
+  },
+  {
+   "pc": "0x80011dda",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 24,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 1755
+  },
+  {
+   "pc": "0x80011dec",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 24,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 1755
+  },
+  {
+   "pc": "0x80011d9a",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 18,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 1485
+  },
+  {
+   "pc": "0x80011d8a",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 18,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 1316
+  },
+  {
+   "pc": "0x80011daa",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 18,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 1316
+  },
+  {
+   "pc": "0x80011c32",
+   "caller": "expm1f",
+   "callee": "__addsf3",
+   "insn": "jalr",
+   "executions": 18,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 1281
+  },
+  {
+   "pc": "0x80009344",
+   "caller": "pint_rope_exact",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 60,
+   "caller_entries": 60,
+   "loop_borne": false,
+   "instructions_attributed": 1232
+  },
+  {
+   "pc": "0x8000966c",
+   "caller": "pint_rope_exact",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 60,
+   "caller_entries": 60,
+   "loop_borne": false,
+   "instructions_attributed": 1232
+  },
+  {
+   "pc": "0x80009684",
+   "caller": "pint_rope_exact",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 60,
+   "caller_entries": 60,
+   "loop_borne": false,
+   "instructions_attributed": 1232
+  },
+  {
+   "pc": "0x800096b6",
+   "caller": "pint_rope_exact",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 60,
+   "caller_entries": 60,
+   "loop_borne": false,
+   "instructions_attributed": 1232
+  },
+  {
+   "pc": "0x80008214",
+   "caller": "fx32_add",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 59,
+   "caller_entries": 60,
+   "loop_borne": false,
+   "instructions_attributed": 1211
+  },
+  {
+   "pc": "0x800093f6",
+   "caller": "pint_rope_exact",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 59,
+   "caller_entries": 60,
+   "loop_borne": false,
+   "instructions_attributed": 1211
+  },
+  {
+   "pc": "0x80011cec",
+   "caller": "expm1f",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 8,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 660
+  },
+  {
+   "pc": "0x800094f8",
+   "caller": "pint_rope_exact",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 32,
+   "caller_entries": 60,
+   "loop_borne": false,
+   "instructions_attributed": 657
+  },
+  {
+   "pc": "0x80009cbc",
+   "caller": "pint_rope_exact",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 32,
+   "caller_entries": 60,
+   "loop_borne": false,
+   "instructions_attributed": 657
+  },
+  {
+   "pc": "0x80011cf6",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 8,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 585
+  },
+  {
+   "pc": "0x80011d02",
+   "caller": "expm1f",
+   "callee": "__subsf3",
+   "insn": "jalr",
+   "executions": 8,
+   "caller_entries": 119,
+   "loop_borne": false,
+   "instructions_attributed": 585
+  },
+  {
+   "pc": "0x80009c3a",
+   "caller": "pint_rope_exact",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 28,
+   "caller_entries": 60,
+   "loop_borne": false,
+   "instructions_attributed": 575
+  },
+  {
+   "pc": "0x800098e2",
+   "caller": "pint_rope_exact",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 27,
+   "caller_entries": 60,
+   "loop_borne": false,
+   "instructions_attributed": 554
+  },
+  {
+   "pc": "0x80007b3e",
+   "caller": "pmmb_exact",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 21,
+   "caller_entries": 21,
+   "loop_borne": false,
+   "instructions_attributed": 431
+  },
+  {
+   "pc": "0x80007bee",
+   "caller": "pmmb_exact",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 21,
+   "caller_entries": 21,
+   "loop_borne": false,
+   "instructions_attributed": 431
+  },
+  {
+   "pc": "0x80009e3e",
+   "caller": "kernel_add_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x80009e6e",
+   "caller": "kernel_add_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x80009e9a",
+   "caller": "kernel_add_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x8000d2a2",
+   "caller": "kernel_matmul_b_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x8000d2e0",
+   "caller": "kernel_matmul_b_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x8000d32e",
+   "caller": "kernel_matmul_b_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x8000d360",
+   "caller": "kernel_matmul_b_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x8000d386",
+   "caller": "kernel_matmul_b_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x8000d392",
+   "caller": "kernel_matmul_b_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x8000d454",
+   "caller": "kernel_matmul_b_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x8000d48a",
+   "caller": "kernel_matmul_b_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x8000df3a",
+   "caller": "kernel_matmul_b_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x8000e578",
+   "caller": "kernel_rope_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x8000e5aa",
+   "caller": "kernel_rope_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x8000e640",
+   "caller": "kernel_rope_s8_moonshine_enc",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 12,
+   "caller_entries": 12,
+   "loop_borne": false,
+   "instructions_attributed": 246
+  },
+  {
+   "pc": "0x80011960",
+   "caller": "tanhf",
+   "callee": "__mulsf3",
+   "insn": "jalr",
+   "executions": 1,
+   "caller_entries": 120,
+   "loop_borne": false,
+   "instructions_attributed": 82
+  },
+  {
+   "pc": "0x80011956",
+   "caller": "tanhf",
+   "callee": "__addsf3",
+   "insn": "jalr",
+   "executions": 1,
+   "caller_entries": 120,
+   "loop_borne": false,
+   "instructions_attributed": 71
+  },
+  {
+   "pc": "0x80007f74",
+   "caller": "fx32_add",
+   "callee": "__clzdi2",
+   "insn": "jalr",
+   "executions": 1,
+   "caller_entries": 60,
+   "loop_borne": false,
+   "instructions_attributed": 21
+  }
+ ],
+ "sites_never_executed": 84
+}

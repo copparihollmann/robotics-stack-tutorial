@@ -1,0 +1,816 @@
+{
+ "model": "UsefulSensors/moonshine-tiny@390624ed",
+ "utt_s": 4.0,
+ "tokens": 15,
+ "encoder_frames": 165,
+ "params_recount": 27092736,
+ "port": {
+  "core_dram": 1.37,
+  "core_l2": 2.85,
+  "dram": {
+   "1": 2.1587,
+   "2": 4.3167,
+   "3": 6.2511,
+   "4": 5.9598,
+   "6": 6.1249,
+   "8": 6.1249
+  },
+  "l2": {
+   "1": 4.5714,
+   "2": 7.9999,
+   "3": 7.9999,
+   "4": 7.9999,
+   "6": 7.9999,
+   "8": 7.9999
+  },
+  "dram_peak": 6.2511,
+  "dram_peak_out": 3,
+  "l2_peak": 7.9999,
+  "rt_dram_1": 29.647473016167137,
+  "rt_l2_1": 14.00008750054688
+ },
+ "bypass": [
+  {
+   "label": "MBUS attach, core clock, 1 HP port (lever 1 + item 13)",
+   "F": 8.0,
+   "lower": 6.2511,
+   "upper": 8.0,
+   "derivation": "round trip <= 29.6 - (14.0 - 8) = 23.6 cycles -> >= 2.71 B/cycle per transaction -> the 8.00 B/cycle link is reached at 3 outstanding",
+   "assumes": "TLToAXI4, the AXI4->AXI3 shim and S_AXI_HP0 accept >= 3 outstanding reads"
+  },
+  {
+   "label": "+ lever 2: fill path on a 100 MHz memory clock",
+   "F": 21.651442171558415,
+   "lower": 6.2511,
+   "upper": 23.199999744800003,
+   "derivation": "8 B per memory cycle = 23.2 B per core cycle; eight outstanding at a worst-case 69-memory-cycle round trip gives 21.7",
+   "assumes": "the fill FSM and the scratchpad's BRAM write port move to the memory domain (an engine left in the core domain re-caps at 8.00); S_AXI_HP0 accepts 8 outstanding reads; FCLK1 set AND READ BACK at 100 MHz (lever 2's rows ran at an unset 142.857 MHz -- bwlab/errata.csv)"
+  },
+  {
+   "label": "+ lever 3: two HP ports, one fill client on each",
+   "F": 43.30288434311683,
+   "lower": 6.2511,
+   "upper": 46.399999489600006,
+   "derivation": "two independent 64-bit D channels at 100 MHz",
+   "assumes": "two fill clients (one 64-bit client's D channel is the cap, so a second port alone adds nothing); mbus xbar routes them in parallel; the DDR3 controller (~2,100 MB/s, MEMORY_BANDWIDTH.md 0) is not reached"
+  }
+ ],
+ "bypass_derivation": {
+  "hit_pipeline": 6.000087500546879,
+  "rt_bypass_max": 23.647385515620257,
+  "per_txn_min": 2.7064302714448014,
+  "rt_mem_worst": 68.57741724094716
+ },
+ "costs": {
+  "linear_c_mac": {
+   "v": 1.3622644543647766,
+   "est": false,
+   "src": "ROCC_DECOUPLED.md 2.2, ffn_block"
+  },
+  "conv_w_c_mac": {
+   "v": 1.24,
+   "est": false,
+   "src": "SPEECH_ON_ROCKET.md 11.4, digit_ctc_t"
+  },
+  "conv_h_c_mac": {
+   "v": 20.92,
+   "est": false,
+   "src": "SPEECH_ON_ROCKET.md 11.4, digit_ctc_wide"
+  },
+  "matmul_c_mac": {
+   "v": 1.36,
+   "est": true,
+   "src": "ESTIMATE: DOT8-shaped reduction at the linear rate"
+  },
+  "softmax_int": {
+   "v": 168.0,
+   "est": false,
+   "src": "ROCC_DECOUPLED.md 1, Lab B20, K>=128"
+  },
+  "layernorm_int": {
+   "v": 69.0,
+   "est": false,
+   "src": "Lab B20, K=512 (70 at K=256)"
+  },
+  "matmul_rq_int": {
+   "v": 37.0,
+   "est": false,
+   "src": "ROCC_DECOUPLED.md 1.2"
+  },
+  "matmul_rq_float": {
+   "v": 244.0,
+   "est": false,
+   "src": "ROCC_DECOUPLED.md 1.2"
+  },
+  "add_float": {
+   "v": 706.2409362792969,
+   "est": false,
+   "src": "ROCC_DECOUPLED.md 2.2, ffn_block add_s8"
+  },
+  "mul_float": {
+   "v": 705.20703125,
+   "est": false,
+   "src": "ROCC_DECOUPLED.md 2.2, attn_block mul_s8"
+  },
+  "layernorm_float": {
+   "v": 1157.0,
+   "est": false,
+   "src": "Lab B20, K=512"
+  },
+  "softmax_float": {
+   "v": 5543.0,
+   "est": false,
+   "src": "Lab B20, K=512"
+  },
+  "tanh_float": {
+   "v": 5323.0,
+   "est": true,
+   "src": "ESTIMATE: no tanh_s8 kernel exists; float gelu_s8's 5,323"
+  },
+  "groupnorm_float": {
+   "v": 1157.0,
+   "est": true,
+   "src": "ESTIMATE: no groupnorm_s8 kernel; float layernorm's 1,157"
+  },
+  "groupnorm_int": {
+   "v": 69.0,
+   "est": true,
+   "src": "ESTIMATE: integer layernorm's 69"
+  },
+  "silu_float": {
+   "v": 5323.0,
+   "est": true,
+   "src": "ESTIMATE: sigmoid via expf, priced as float gelu"
+  },
+  "add_int": {
+   "v": 74.0,
+   "est": true,
+   "src": "ESTIMATE: two integer requantise terms per element"
+  },
+  "mul_int": {
+   "v": 37.0,
+   "est": true,
+   "src": "ESTIMATE: one integer requantise per element"
+  },
+  "neg_int": {
+   "v": 10.0,
+   "est": true,
+   "src": "ESTIMATE: a byte negate and clamp"
+  }
+ },
+ "clock_hz": 34482759.0,
+ "baseline": {
+  "ENCODER": {
+   "nl": {
+    "conv": {
+     "cycles": 623740435.2,
+     "macs": 503016480,
+     "els": 525888,
+     "wb": 1698912,
+     "est": false,
+     "ms": 18088.472421826806
+    },
+    "tanh": {
+     "cycles": 1531490976.0,
+     "macs": 0,
+     "els": 287712,
+     "wb": 0,
+     "est": true,
+     "ms": 44413.237815454384
+    },
+    "groupnorm": {
+     "cycles": 332882784.0,
+     "macs": 0,
+     "els": 287712,
+     "wb": 0,
+     "est": true,
+     "ms": 9653.600629810393
+    },
+    "gelu": {
+     "cycles": 27689049.2205175,
+     "macs": 0,
+     "els": 1378656,
+     "wb": 0,
+     "est": false,
+     "ms": 802.982418562201
+    },
+    "layernorm": {
+     "cycles": 42625440.0,
+     "macs": 0,
+     "els": 617760,
+     "wb": 0,
+     "est": false,
+     "ms": 1236.1377464024847
+    },
+    "linear": {
+     "cycles": 1342340955.2856445,
+     "macs": 985374720,
+     "els": 2566080,
+     "wb": 6006528,
+     "est": false,
+     "ms": 38927.88727507694
+    },
+    "mul": {
+     "cycles": 714910680.0,
+     "macs": 0,
+     "els": 1013760,
+     "wb": 0,
+     "est": false,
+     "ms": 20732.409491943497
+    },
+    "neg": {
+     "cycles": 178727670.0,
+     "macs": 0,
+     "els": 253440,
+     "wb": 0,
+     "est": true,
+     "ms": 5183.102372985874
+    },
+    "add": {
+     "cycles": 760706237.2851562,
+     "macs": 0,
+     "els": 1077120,
+     "wb": 0,
+     "est": false,
+     "ms": 22060.480638604244
+    },
+    "matmul": {
+     "cycles": 186862896.0,
+     "macs": 94089600,
+     "els": 1591920,
+     "wb": 0,
+     "est": true,
+     "ms": 5419.023924390736
+    },
+    "softmax": {
+     "cycles": 219542400.0,
+     "macs": 0,
+     "els": 1306800,
+     "wb": 0,
+     "est": false,
+     "ms": 6366.729529965975
+    }
+   },
+   "nl+ew": {
+    "conv": {
+     "cycles": 623740435.2,
+     "macs": 503016480,
+     "els": 525888,
+     "wb": 1698912,
+     "est": false,
+     "ms": 18088.472421826806
+    },
+    "tanh": {
+     "cycles": 5754240.0,
+     "macs": 0,
+     "els": 287712,
+     "wb": 0,
+     "est": true,
+     "ms": 166.87295816439746
+    },
+    "groupnorm": {
+     "cycles": 19852128.0,
+     "macs": 0,
+     "els": 287712,
+     "wb": 0,
+     "est": true,
+     "ms": 575.7117056671713
+    },
+    "gelu": {
+     "cycles": 27689049.2205175,
+     "macs": 0,
+     "els": 1378656,
+     "wb": 0,
+     "est": false,
+     "ms": 802.982418562201
+    },
+    "layernorm": {
+     "cycles": 42625440.0,
+     "macs": 0,
+     "els": 617760,
+     "wb": 0,
+     "est": false,
+     "ms": 1236.1377464024847
+    },
+    "linear": {
+     "cycles": 1342340955.2856445,
+     "macs": 985374720,
+     "els": 2566080,
+     "wb": 6006528,
+     "est": false,
+     "ms": 38927.88727507694
+    },
+    "mul": {
+     "cycles": 37509120.0,
+     "macs": 0,
+     "els": 1013760,
+     "wb": 0,
+     "est": true,
+     "ms": 1087.764468034591
+    },
+    "neg": {
+     "cycles": 2534400.0,
+     "macs": 0,
+     "els": 253440,
+     "wb": 0,
+     "est": true,
+     "ms": 73.4975991915264
+    },
+    "add": {
+     "cycles": 79706880.0,
+     "macs": 0,
+     "els": 1077120,
+     "wb": 0,
+     "est": true,
+     "ms": 2311.4994945735057
+    },
+    "matmul": {
+     "cycles": 186862896.0,
+     "macs": 94089600,
+     "els": 1591920,
+     "wb": 0,
+     "est": true,
+     "ms": 5419.023924390736
+    },
+    "softmax": {
+     "cycles": 219542400.0,
+     "macs": 0,
+     "els": 1306800,
+     "wb": 0,
+     "est": false,
+     "ms": 6366.729529965975
+    }
+   }
+  },
+  "DECODER, once per utterance": {
+   "nl": {
+    "linear": {
+     "cycles": 223723492.54760742,
+     "macs": 164229120,
+     "els": 570240,
+     "wb": 995328,
+     "est": false,
+     "ms": 6487.981212512822
+    }
+   },
+   "nl+ew": {
+    "linear": {
+     "cycles": 223723492.54760742,
+     "macs": 164229120,
+     "els": 570240,
+     "wb": 995328,
+     "est": false,
+     "ms": 6487.981212512822
+    }
+   }
+  },
+  "DECODER, per token": {
+   "nl": {
+    "embed": {
+     "cycles": 288.0,
+     "macs": 0,
+     "els": 288,
+     "wb": 288,
+     "est": true,
+     "ms": 0.008351999908128002
+    },
+    "layernorm": {
+     "cycles": 377568.0,
+     "macs": 0,
+     "els": 5472,
+     "wb": 0,
+     "est": false,
+     "ms": 10.949471879555809
+    },
+    "linear": {
+     "cycles": 25059039.90600586,
+     "macs": 18395136,
+     "els": 58688,
+     "wb": 18457344,
+     "est": false,
+     "ms": 726.7121492803362
+    },
+    "mul": {
+     "cycles": 9207183.0,
+     "macs": 0,
+     "els": 13056,
+     "wb": 0,
+     "est": false,
+     "ms": 267.0083040629087
+    },
+    "neg": {
+     "cycles": 1083198.0,
+     "macs": 0,
+     "els": 1536,
+     "wb": 0,
+     "est": true,
+     "ms": 31.412741654459843
+    },
+    "add": {
+     "cycles": 5830725.169921875,
+     "macs": 0,
+     "els": 8256,
+     "wb": 0,
+     "est": false,
+     "ms": 169.09102806773308
+    },
+    "matmul": {
+     "cycles": 1248247.6799999995,
+     "macs": 597888,
+     "els": 11760,
+     "wb": 0,
+     "est": true,
+     "ms": 36.199182321808976
+    },
+    "softmax": {
+     "cycles": 1395072.0,
+     "macs": 0,
+     "els": 8304,
+     "wb": 0,
+     "est": false,
+     "ms": 40.457087554972034
+    },
+    "silu": {
+     "cycles": 36792576.0,
+     "macs": 0,
+     "els": 6912,
+     "wb": 0,
+     "est": true,
+     "ms": 1066.9846922631682
+    }
+   },
+   "nl+ew": {
+    "embed": {
+     "cycles": 288.0,
+     "macs": 0,
+     "els": 288,
+     "wb": 288,
+     "est": true,
+     "ms": 0.008351999908128002
+    },
+    "layernorm": {
+     "cycles": 377568.0,
+     "macs": 0,
+     "els": 5472,
+     "wb": 0,
+     "est": false,
+     "ms": 10.949471879555809
+    },
+    "linear": {
+     "cycles": 25059039.90600586,
+     "macs": 18395136,
+     "els": 58688,
+     "wb": 18457344,
+     "est": false,
+     "ms": 726.7121492803362
+    },
+    "mul": {
+     "cycles": 483072.0,
+     "macs": 0,
+     "els": 13056,
+     "wb": 0,
+     "est": true,
+     "ms": 14.009087845900034
+    },
+    "neg": {
+     "cycles": 15360.0,
+     "macs": 0,
+     "els": 1536,
+     "wb": 0,
+     "est": true,
+     "ms": 0.44543999510016
+    },
+    "add": {
+     "cycles": 610944.0,
+     "macs": 0,
+     "els": 8256,
+     "wb": 0,
+     "est": true,
+     "ms": 17.717375805108865
+    },
+    "matmul": {
+     "cycles": 1248247.6799999995,
+     "macs": 597888,
+     "els": 11760,
+     "wb": 0,
+     "est": true,
+     "ms": 36.199182321808976
+    },
+    "softmax": {
+     "cycles": 1395072.0,
+     "macs": 0,
+     "els": 8304,
+     "wb": 0,
+     "est": false,
+     "ms": 40.457087554972034
+    },
+    "silu": {
+     "cycles": 932236.4152689206,
+     "macs": 0,
+     "els": 6912,
+     "wb": 0,
+     "est": true,
+     "ms": 27.034855745415285
+    }
+   }
+  }
+ },
+ "sizing": {
+  "F": 6.2511,
+  "rows": [
+   {
+    "layer": "conv1",
+    "M": 999,
+    "K": 127,
+    "N": 288,
+    "traffic": 164864,
+    "tiles": 16,
+    "ai": 221.6337344720497,
+    "nch_max": 173.18182969477874
+   },
+   {
+    "layer": "conv2",
+    "M": 331,
+    "K": 2016,
+    "N": 576,
+    "traffic": 11498112,
+    "tiles": 1512,
+    "ai": 33.428313796212805,
+    "nch_max": 26.120466546438234
+   },
+   {
+    "layer": "conv3",
+    "M": 165,
+    "K": 1728,
+    "N": 288,
+    "traffic": 3929472,
+    "tiles": 504,
+    "ai": 20.897097625329817,
+    "nch_max": 16.328730870712402
+   },
+   {
+    "layer": "q",
+    "M": 165,
+    "K": 288,
+    "N": 288,
+    "traffic": 225504,
+    "tiles": 18,
+    "ai": 60.689655172413794,
+    "nch_max": 47.422137931034484
+   },
+   {
+    "layer": "k",
+    "M": 165,
+    "K": 288,
+    "N": 288,
+    "traffic": 225504,
+    "tiles": 18,
+    "ai": 60.689655172413794,
+    "nch_max": 47.422137931034484
+   },
+   {
+    "layer": "v",
+    "M": 165,
+    "K": 288,
+    "N": 288,
+    "traffic": 225504,
+    "tiles": 18,
+    "ai": 60.689655172413794,
+    "nch_max": 47.422137931034484
+   },
+   {
+    "layer": "o",
+    "M": 165,
+    "K": 288,
+    "N": 288,
+    "traffic": 225504,
+    "tiles": 18,
+    "ai": 60.689655172413794,
+    "nch_max": 47.422137931034484
+   },
+   {
+    "layer": "fc1",
+    "M": 165,
+    "K": 288,
+    "N": 1152,
+    "traffic": 854496,
+    "tiles": 66,
+    "ai": 64.06471183013144,
+    "nch_max": 50.05936501516683
+   },
+   {
+    "layer": "fc2",
+    "M": 165,
+    "K": 1152,
+    "N": 288,
+    "traffic": 2422656,
+    "tiles": 264,
+    "ai": 22.5962910128388,
+    "nch_max": 17.65645934379458
+   }
+  ],
+  "decode_ai": 1.029006537783395
+ },
+ "table": [
+  {
+   "sw": "nl",
+   "config": "core only (pext_nl)",
+   "F": null,
+   "enc_rtf": 43.221016066255885,
+   "enc_conv_rtf": 43.221016066255885,
+   "dec_ms_per_token": 2348.8230090848515,
+   "dec_once_s": 6.487981212512822,
+   "dec_rtf": 10.430081587196398,
+   "all_rtf": 53.65109765345228,
+   "all_conv_rtf": 53.65109765345228
+  },
+  {
+   "sw": "nl",
+   "config": "engine @ 6.25 measured, behind the L2",
+   "F": 6.2511,
+   "enc_rtf": 33.721820433927434,
+   "enc_conv_rtf": 29.638611488945273,
+   "dec_ms_per_token": 1720.0751522928394,
+   "dec_once_s": 0.15509728629508157,
+   "dec_rtf": 6.489056142671918,
+   "all_rtf": 40.210876576599354,
+   "all_conv_rtf": 36.12766763161719
+  },
+  {
+   "sw": "nl",
+   "config": "engine @ 8.00 bypass, core clock (est)",
+   "F": 8.0,
+   "enc_rtf": 33.72116981493327,
+   "enc_conv_rtf": 29.63790048140923,
+   "dec_ms_per_token": 1701.340018932994,
+   "dec_once_s": 0.15451895830029147,
+   "dec_rtf": 6.418654810573801,
+   "all_rtf": 40.13982462550707,
+   "all_conv_rtf": 36.05655529198303
+  },
+  {
+   "sw": "nl",
+   "config": "engine @ 21.7 bypass + lever 2 (est)",
+   "F": 21.651442171558415,
+   "enc_rtf": 33.71970355856646,
+   "enc_conv_rtf": 29.636298131437997,
+   "dec_ms_per_token": 1659.117906114571,
+   "dec_once_s": 0.15321561930755082,
+   "dec_rtf": 6.259996052756529,
+   "all_rtf": 39.979699611322985,
+   "all_conv_rtf": 35.896294184194524
+  },
+  {
+   "sw": "nl",
+   "config": "engine @ 43.3 bypass + levers 2,3 (est)",
+   "F": 43.30288434311683,
+   "enc_rtf": 33.71927393176265,
+   "enc_conv_rtf": 29.63582862793758,
+   "dec_ms_per_token": 1651.08485491849,
+   "dec_once_s": 0.15283372881529034,
+   "dec_rtf": 6.229776638148159,
+   "all_rtf": 39.94905056991081,
+   "all_conv_rtf": 35.86560526608574
+  },
+  {
+   "sw": "nl+ew",
+   "config": "core only (pext_nl)",
+   "F": null,
+   "enc_rtf": 18.76414488546408,
+   "enc_conv_rtf": 18.76414488546408,
+   "dec_ms_per_token": 873.5330024281054,
+   "dec_once_s": 6.487981212512822,
+   "dec_rtf": 4.897744062233601,
+   "all_rtf": 23.661888947697683,
+   "all_conv_rtf": 23.661888947697683
+  },
+  {
+   "sw": "nl+ew",
+   "config": "engine @ 6.25 measured, behind the L2",
+   "F": 6.2511,
+   "enc_rtf": 9.264949253135597,
+   "enc_conv_rtf": 5.181740308153448,
+   "dec_ms_per_token": 244.78514563609454,
+   "dec_once_s": 0.15509728629508157,
+   "dec_rtf": 0.9567186177091249,
+   "all_rtf": 10.221667870844723,
+   "all_conv_rtf": 6.138458925862573
+  },
+  {
+   "sw": "nl+ew",
+   "config": "engine @ 8.00 bypass, core clock (est)",
+   "F": 8.0,
+   "enc_rtf": 9.264298634141467,
+   "enc_conv_rtf": 5.181029300617429,
+   "dec_ms_per_token": 226.05001227624865,
+   "dec_once_s": 0.15451895830029147,
+   "dec_rtf": 0.8863172856110053,
+   "all_rtf": 10.150615919752472,
+   "all_conv_rtf": 6.067346586228434
+  },
+  {
+   "sw": "nl+ew",
+   "config": "engine @ 21.7 bypass + lever 2 (est)",
+   "F": 21.651442171558415,
+   "enc_rtf": 9.262832377774629,
+   "enc_conv_rtf": 5.179426950646179,
+   "dec_ms_per_token": 183.82789945782693,
+   "dec_once_s": 0.15321561930755082,
+   "dec_rtf": 0.7276585277937387,
+   "all_rtf": 9.990490905568368,
+   "all_conv_rtf": 5.907085478439917
+  },
+  {
+   "sw": "nl+ew",
+   "config": "engine @ 43.3 bypass + levers 2,3 (est)",
+   "F": 43.30288434311683,
+   "enc_rtf": 9.262402750970834,
+   "enc_conv_rtf": 5.178957447145779,
+   "dec_ms_per_token": 175.79484826174394,
+   "dec_once_s": 0.15283372881529034,
+   "dec_rtf": 0.6974391131853623,
+   "all_rtf": 9.959841864156196,
+   "all_conv_rtf": 5.876396560331141
+  }
+ ],
+ "decode": [
+  {
+   "sw": "nl",
+   "config": "engine @ 6.25 measured, behind the L2",
+   "F": 6.2511,
+   "memory_ms": 85.62700486508092,
+   "array_ms": 16.67059181662349,
+   "core_rest_ms": 1622.1108598045148,
+   "nch_fed": 0.7787539383347897
+  },
+  {
+   "sw": "nl",
+   "config": "engine @ 8.00 bypass, core clock (est)",
+   "F": 8.0,
+   "memory_ms": 66.90787126401342,
+   "array_ms": 16.67059181662349,
+   "core_rest_ms": 1622.1108598045148,
+   "nch_fed": 0.9966296342529023
+  },
+  {
+   "sw": "nl",
+   "config": "engine @ 21.7 bypass + lever 2 (est)",
+   "F": 21.651442171558415,
+   "memory_ms": 24.721816028275242,
+   "array_ms": 16.67059181662349,
+   "core_rest_ms": 1622.1108598045148,
+   "nch_fed": 2.697308611561016
+  },
+  {
+   "sw": "nl",
+   "config": "engine @ 43.3 bypass + levers 2,3 (est)",
+   "F": 43.30288434311683,
+   "memory_ms": 12.360908014137621,
+   "array_ms": 16.67059181662349,
+   "core_rest_ms": 1622.1108598045148,
+   "nch_fed": 5.394617223122032
+  },
+  {
+   "sw": "nl+ew",
+   "config": "engine @ 6.25 measured, behind the L2",
+   "F": 6.2511,
+   "memory_ms": 85.62700486508092,
+   "array_ms": 16.67059181662349,
+   "core_rest_ms": 146.82085314776933,
+   "nch_fed": 0.7787539383347897
+  },
+  {
+   "sw": "nl+ew",
+   "config": "engine @ 8.00 bypass, core clock (est)",
+   "F": 8.0,
+   "memory_ms": 66.90787126401342,
+   "array_ms": 16.67059181662349,
+   "core_rest_ms": 146.82085314776933,
+   "nch_fed": 0.9966296342529023
+  },
+  {
+   "sw": "nl+ew",
+   "config": "engine @ 21.7 bypass + lever 2 (est)",
+   "F": 21.651442171558415,
+   "memory_ms": 24.721816028275242,
+   "array_ms": 16.67059181662349,
+   "core_rest_ms": 146.82085314776933,
+   "nch_fed": 2.697308611561016
+  },
+  {
+   "sw": "nl+ew",
+   "config": "engine @ 43.3 bypass + levers 2,3 (est)",
+   "F": 43.30288434311683,
+   "memory_ms": 12.360908014137621,
+   "array_ms": 16.67059181662349,
+   "core_rest_ms": 146.82085314776933,
+   "nch_fed": 5.394617223122032
+  }
+ ],
+ "weight_traffic": {
+  "per_token_bytes": 18457632,
+  "once_bytes": 995328,
+  "encoder_bytes": 7705440,
+  "utterance_bytes": 285565248
+ }
+}

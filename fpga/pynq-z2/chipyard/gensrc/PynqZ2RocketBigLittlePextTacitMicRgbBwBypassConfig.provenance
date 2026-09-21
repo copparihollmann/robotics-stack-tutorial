@@ -1,0 +1,82 @@
+config:            PynqZ2RocketBigLittlePextTacitMicRgbBwBypassConfig
+elaborated:        2026-09-16T23:11:59-07:00   (mtime of the generated top.f)
+packed:            2026-09-16T23:12:07-07:00
+packed_by:         scripts/08_gensrc.sh
+source_files:      506  (+ 1 SRAM macro file(s))
+
+chipyard_remote:   https://github.com/lorenshung/chipyard.git
+chipyard_rev:      8dd1b34ccdf863bc2d9909b2f77ef57095c10d31
+rocketchip_rev:    5f66627154292b2fb7bc84fb12faf370cf54f8ca
+
+# Every patch this repo applies to the rocket-chip generator -- both the
+# *-rocketchip-* ones (scripts/07) and the *-rocket-* ones (scripts/09) -- and
+# whether each was present in the tree at PACK time (measured by reverse-applying
+# it). 'stale' means the patch file is newer than this elaboration, so the bundle
+# predates it -- re-elaborate and re-pack.
+patch:             0004-rocketchip-mcycle-free-run.patch  sha256=ce168c26cbf1d21e  applied_at_pack_time=yes
+patch:             0091-rocketchip-cachecork-releaseack-first.patch  sha256=1019b3bba0648c4a  applied_at_pack_time=yes
+patch:             0008-rocket-pext-alu.patch  sha256=587ca2f0b8f8775d  applied_at_pack_time=yes
+patch:             0101-rocket-roccdecode-declared-opcodes.patch  sha256=2ecefae75e408635  applied_at_pack_time=yes
+
+# Uncommitted delta in the Chipyard tree at pack time. A long list here is the
+# reason a bare revision is not enough to reproduce an elaboration.
+chipyard_dirty:
+   m fpga/fpga-shells
+   M fpga/src/main/scala/arty200t/RbAreaExperimentsTacit.scala
+   M fpga/src/main/scala/arty200t/TacitAccelConfigs.scala
+   M fpga/src/main/scala/ku040/Configs.scala
+   M fpga/src/main/scala/ku040/HarnessBinders.scala
+   M generators/chipyard/src/main/scala/DigitalTop.scala
+   M generators/chipyard/src/main/scala/iobinders/IOBinders.scala
+   M generators/chipyard/src/main/scala/iobinders/Ports.scala
+   M generators/gemmini
+   M generators/rocket-chip
+   m generators/rocket-chip-inclusive-cache
+   M generators/saturn
+   M generators/tacit
+   ? generators/vexiiriscv
+   M riskybird/tcl/rb_attributes.tcl
+   ? software/tacit_decoder
+  ?? .Xil/
+  ?? bitstreams/
+  ?? fpga/src/main/scala/arty200t/RbClockExperiments.scala
+  ?? fpga/src/main/scala/arty200t/RbFcRoCCConfig.scala
+  ?? fpga/src/main/scala/arty200t/RbFcRoCCTacitConfig.scala
+  ?? fpga/src/main/scala/arty200t/RbFpuExperiment.scala
+  ?? fpga/src/main/scala/arty200t/RbMinVConfig.scala
+  ?? fpga/src/main/scala/arty200t/RbV64Experiment.scala
+  ?? fpga_build.done
+  ?? generators/chipyard/src/main/resources/vsrc/fc_rocc_core.sv
+  ?? generators/chipyard/src/main/resources/vsrc/fc_rocc_init.hex
+  ?? generators/chipyard/src/main/resources/vsrc/fc_rocc_rom.hex
+  ?? generators/chipyard/src/main/scala/bwprobe/
+  ?? generators/chipyard/src/main/scala/config/MinSaturnConfigs.scala
+  ?? generators/chipyard/src/main/scala/config/MinSaturnRobotMpcGemminiSimConfig.scala
+  ?? generators/chipyard/src/main/scala/config/MinSaturnRobotMpcSimConfig.scala
+  ?? generators/chipyard/src/main/scala/config/PextStudyConfigs.scala
+  ?? generators/chipyard/src/main/scala/config/PynqZ2Configs.scala
+  ?? generators/chipyard/src/main/scala/config/PynqZ2RV32Configs.scala
+  ?? generators/chipyard/src/main/scala/config/PynqZ2SecondCoreConfigs.scala
+  ?? generators/chipyard/src/main/scala/fc/
+  ?? generators/chipyard/src/main/scala/pdmmic/
+  ?? generators/chipyard/src/main/scala/roccmoon/
+  ?? rb_fcrocc_area.sentinel
+rocketchip_dirty:
+  A  src/main/resources/vsrc/TestDriver.v.orig
+   M src/main/scala/rocket/ALU.scala
+   M src/main/scala/rocket/CSR.scala
+   M src/main/scala/rocket/IDecode.scala
+   M src/main/scala/rocket/RocketCore.scala
+  A  src/main/scala/rocket/RocketCore.scala.f4bak
+   M src/main/scala/subsystem/Ports.scala
+  A  src/main/scala/tile/BaseTile.scala.fcbak
+   M src/main/scala/tile/Core.scala
+  A  src/main/scala/tile/Core.scala.fcbak
+   M src/main/scala/tile/RocketTile.scala
+  A  src/main/scala/tile/RocketTile.scala.fcbak
+   M src/main/scala/tilelink/CacheCork.scala
+  ?? src/main/scala/rocket/ALU.scala.bak_pext
+  ?? src/main/scala/rocket/CSR.scala.bak_mcycle_wfi
+  ?? src/main/scala/rocket/IDecode.scala.bak_pext
+  ?? src/main/scala/rocket/RocketCore.scala.bak_pext
+  ?? src/main/scala/tile/Core.scala.bak_pext

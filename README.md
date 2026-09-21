@@ -1,0 +1,178 @@
+# A robotics stack on an open RISC-V SoC, on a $200 FPGA board
+
+This repository is the material for a hands-on tutorial: you take a PyTorch network, push it
+through a quantising compiler, run it on a **Rocket** RISC-V SoC that you load into the PL of a
+**PYNQ-Z1/Z2**, and watch what it costs — with a hardware tracer, a packed-SIMD extension and a
+decoupled accelerator you can switch in and out to see each one pay for itself.
+
+Everything here runs on one board plus a Linux workstation. The bitstreams are prebuilt and
+committed, so **you do not need a Vivado licence** to do any of the hardware labs.
+
+---
+
+## What is in the stack
+
+```
+  PyTorch model
+        |  ModelBlaster: quantise to int8/q16, generate C kernels
+        v
+  Zephyr application  ──────────────┐
+        |  riscv64 build             │  samples/ — 35 apps
+        v                            │
+  Rocket SoC in the PYNQ's PL  <─────┘
+   ├─ big.LITTLE dual-core RV64GC
+   ├─ MBP packed-SIMD ("P-ext") on hart 0
+   ├─ RoccMoon — a decoupled RoCC matmul/attention engine with LayerNorm, softmax and LUT lanes
+   ├─ TACIT — a hardware branch-trace encoder, traced back on the host with Spike + a decoder
+   └─ peripherals: PDM microphone, RGB LEDs, buttons, SSD1306 OLED, HM01B0 camera
+```
+
+The worked example that ties it together is **Moonshine Tiny**, a small speech transformer: it is
+quantised, code-generated, run on the board, fed from the board's own microphone, and profiled
+dispatch by dispatch.
+
+## Hardware you need
+
+| | |
+|---|---|
+| **Board** | PYNQ-Z1 or PYNQ-Z2 (Zynq-7020). The bitstreams here are Z1 pinouts; a Z2 works for everything that does not use the Z1-only shield headers. |
+| **SD card** | 16 GB+, written with the stock **PYNQ v3.1.1** image. See `fpga/pynq-z2/sdcard/README.md`. |
+| **Network** | Ethernet from your workstation to the board. Point-to-point is fine and is what most people use. |
+| **Optional** | An HM01B0 camera on a shield (`fpga/pynq-z2/docs/CAMERA_PCB_SPEC.md`), a 0.96" SSD1306 OLED on the same I²C bus, a USB-UART for console. |
+| **Workstation** | Linux, ~60 GB free for the toolchains. Vivado only if you want to *rebuild* a bitstream. |
+
+## Getting started
+
+```bash
+git clone --recursive https://github.com/ucb-bar/robotics-stack-tutorial
+cd robotics-stack-tutorial
+
+scripts/00_bootstrap.sh          # Zephyr SDK, conda env, west modules  (long, once)
+source env.sh
+scripts/01_doctor.sh             # says exactly what is missing and what to run
+```
+
+`01_doctor.sh` is the thing to run whenever anything is confusing. It checks the toolchains, the
+patched trees, the bitstream manifest and the board, and every failure it reports names the script
+that fixes it.
+
+### Tell it which board is yours
+
+**Nothing in this repository defaults to a board address.** A lab that silently connects to
+whatever answers at a hard-coded IP is worse than one that refuses to start — on a shared network
+that is somebody else's FPGA, and the first thing a lab does is load a bitstream into it.
+
+```bash
+cp board.conf.example board.conf      # then edit: PYNQ_HOST=xilinx@<your board>
+```
+
+or set it per command: `PYNQ_HOST=xilinx@10.0.0.42 scripts/20_rocket_run.sh ...`
+
+Before your first lab, put an SSH key on the board and give it passwordless sudo — the labs run
+non-interactively (`ssh -o BatchMode=yes`), so a password prompt is not something they can answer.
+`fpga/pynq-z2/docs/BRINGUP.md` §1b is the five-line version; `scripts/provision_board.sh` checks it.
+
+### Run something
+
+```bash
+scripts/10_tacit_hello.sh                     # Lab A: no board — Spike, TACIT trace, decoder
+scripts/11_pext_selftest.sh                   # Lab A2: the packed-SIMD ISA on Spike
+scripts/with_board.sh scripts/20_rocket_run.sh   # Lab B: Zephyr on Rocket, on the FPGA
+```
+
+`scripts/with_board.sh` takes a `flock` so two people cannot drive one board at once. Every board
+lab goes through it.
+
+## The labs
+
+**A-series — host only, no board.** `scripts/10`, `11`: the Spike + TACIT + decoder flow, and the
+packed-SIMD instructions proved in simulation before any silicon.
+
+**RTL gates — Verilator, seconds, no licence.** `scripts/27`, `52`, `55`, `63`, `65`, `72`: the
+P-ext ALU, the RoCC engine, the OLED I²C path, the fast multiplier and the camera capture path, each
+simulated in the SoC's *own* RTL. Three hardware bugs in this project reached a board through RTL
+that had never been simulated; these gates are why the build scripts run them first.
+
+**B-series — on the board.** `scripts/20` … `scripts/81`. Roughly in order: bring-up and Zephyr,
+TACIT off real silicon, dual-core, the memory hierarchy, packed-SIMD kernels, the peripherals
+(microphone, LEDs, camera, OLED, buttons), then the speech stack — encoder, decoder, live
+microphone, and the accelerator A/Bs.
+
+Each lab writes a run directory under `out/`, a `run.json` naming the bitstream md5 and the clocks
+as read back, and a results row. `expected/` holds the golden outputs the labs check themselves
+against.
+
+## Bitstreams
+
+**Ten bitstreams are committed to this repository** (~4 MB each, `fpga/pynq-z2/build_*_z1/*.bit`).
+That is a deliberate choice: an attendee should be able to do every hardware lab on the first
+morning, and building one takes a Vivado licence, a Chipyard tree and a couple of hours. They cover
+the tutorial path end to end — DRAM self-test, single-core Rocket + TACIT, dual-core big.LITTLE,
+packed-SIMD, the microphone and RGB builds, and the AXI interface-ceiling variants.
+
+`fpga/pynq-z2/bitstreams.csv` is the manifest: every file, its md5, its size, the SoC magic word it
+self-identifies with, and what it is for. **The flow fails loudly, never silently:**
+
+```bash
+scripts/check_bitstreams.sh      # verifies every row; --write recomputes the md5s
+```
+
+and every board lab calls `bitstream_require()` (`scripts/lib/bitstream_id.sh`), which refuses a
+missing file *and* refuses a file whose md5 disagrees with the manifest. A bitstream that is not the
+one the goldens in `expected/` were measured against is not a smaller problem than no bitstream at
+all, so it is treated as the same problem.
+
+**Five bitstreams are listed but not shipped**, marked `untracked` in the manifest
+(`0x5A5A0035`–`0x5A5A0039`). They are the measurement builds for the speech workstream — the ones
+behind the published accelerator numbers — not tutorial content, and shipping another 20 MB of
+binaries for labs nobody runs on day one is not a good trade. The labs that want them
+(`scripts/56`, `57`, `66`, `79`, `80`, `81`) fail with the md5, the filename and where to look.
+To supply them, point `IISWC_BIT_DIR` at a directory holding the files, or drop them in
+`/opt/iiswc/bit`; both are searched. To rebuild one, `fpga/pynq-z2/scripts/build_*_z1.sh` with
+Vivado 2023.1 and a Chipyard tree.
+
+## How the tree is laid out
+
+| | |
+|---|---|
+| `scripts/` | every lab and flow driver, numbered in the order you meet them; `scripts/lib/` is the shared shell library (locking, board identity, bitstream gating, feature gates) |
+| `samples/` | 35 Zephyr applications — `moonshine_live`, `cam_capture`, `mic_*`, `oled_status`, `panel_buttons`, `modelblaster_pext`, the benches and the smoke tests |
+| `boards/chipyard/` | Zephyr board definitions, one per SoC variant and clock |
+| `patches/` | the patch series applied into Chipyard, rocket-chip, Zephyr, Spike and the TACIT decoder; `scripts/02_verify_patches.sh` reconstructs each tree byte-for-byte and reports drift |
+| `expected/` | golden outputs — what each lab's console is supposed to say |
+| `fpga/pynq-z2/src/`, `tcl/` | the RTL and constraints, and the Vivado build flows |
+| `fpga/pynq-z2/chipyard/` | the Chisel configs, plus the **vendored generated Verilog** for every pinned SoC — `scripts/08_gensrc.sh` unpacks it, so rebuilding a bitstream needs Vivado but not a Chipyard install |
+| `fpga/pynq-z2/host/` | what runs on the workstation to drive the board: bitstream loading, clocks, console, captures |
+| `fpga/pynq-z2/sw/` | the on-target C: the accelerator runtime, the P-ext kernels, the integer non-linearities |
+| `fpga/pynq-z2/modelblaster/` | the quantise + codegen pipeline and its curated kernels, for speech, vision and keyword spotting |
+| `fpga/pynq-z2/rtl_study/` | the Verilator testbenches and out-of-context area/timing flows behind the RTL gates |
+| `fpga/pynq-z2/sdcard/` | preparing a card, and `per_board_setup.sh`, which also scrubs the credential the stock PYNQ image leaves in `/boot/REVISION` |
+
+## Documentation
+
+The docs kept here are the ones that tell you how to *do* something:
+
+* `docs/REPRODUCING.md` — rebuilding the whole environment from nothing
+* `fpga/pynq-z2/docs/BRINGUP.md` — day one with a board: card, network, SSH key, passwordless sudo
+* `fpga/pynq-z2/docs/PROGRAMMING_AND_LOADING.md` — getting bitstreams and binaries into the part
+* `fpga/pynq-z2/docs/UART.md` — console options, and what the on-board FTDI can and cannot do
+* `fpga/pynq-z2/docs/ROCKET.md`, `ZEPHYR_ON_ROCKET.md` — the SoC, and how Zephyr boots on it
+* `fpga/pynq-z2/docs/MICROPHONE.md`, `RGB_LEDS.md`, `OLED_SSD1306.md`, `CAMERA_Z1.md`,
+  `CAMERA_PCB_SPEC.md` — each peripheral: the electrical facts, the pins, the RTL, the driver, and
+  how to wire and run the thing
+
+Comments in the code cite a larger set of design documents by name — `MEMORY_BANDWIDTH.md §7`,
+`ROCC_DECOUPLED.md §8`, and so on. Those are the project's internal research record and are **not
+part of this repository**; the citation is left in place because it says *why* a constant is what it
+is, and that is worth more than a tidy comment.
+
+## A note on the board password
+
+A stock PYNQ card ships with a well-known default login, published by the vendor, and a number of
+lab scripts still carry it as a literal for a `sudo -S` fallback. Install the passwordless-sudo
+drop-in from `fpga/pynq-z2/docs/BRINGUP.md` §1b and `sudo` never reads stdin, so that fallback is
+never exercised. Change the password on any card that will sit on a shared network, and wipe cards
+after a tutorial: the stock image also runs a root Jupyter with a fixed password and a terminal.
+
+Never commit a credential here. `board.conf` is gitignored precisely so that the one machine-local
+thing you have to write down does not travel.

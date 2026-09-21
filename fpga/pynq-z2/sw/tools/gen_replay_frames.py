@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+"""Bake held-out Visual Wake Words frames into a C file the Zephyr image carries in DRAM.
+
+    python3 gen_replay_frames.py --root <vw_coco2014_96> --feat <feat_vww> \
+            --arch cnn --out <dir> [--n 4]
+
+WHY REPLAY FRAMES AT ALL, given that the camera is a port rather than a question.  A
+measurement wants the same input every time.  A sensor pointed at a room does not give
+one: exposure drifts, someone walks past, and the number moves for reasons that have
+nothing to do with the code being measured.  The speech work fed stored features through
+the same path before the microphone was in the loop, for the same reason
+(scripts/37_rocket_kws_board.sh), and that is what makes Lab B17's cycle counts
+reproducible to 0.00 % of the median.  These frames are the vision equivalent: a fixed,
+known, held-out input that exercises the ENTIRE device path -- the 324x324 frame sitting
+in DRAM exactly as the capture DMA would leave it, the crop, the box filter, the
+de-interleave or the demosaic, the int8 map, and the model.
+
+WHAT IS BAKED.  For each of `--n` held-out images, BOTH sensor frames:
+
+    vr_mono_frame[i]    324 x 324, what a monochrome HM01B0 reads out
+    vr_bayer_frame[i]   324 x 324, what a colour one reads out (RGGB mosaic)
+
+Both are 104,976 bytes.  That is not a coincidence and it is the point of the colour
+section: a colour sensor sends exactly as many bytes as a monochrome one, because the
+colour is in the filter array and not in the data.  Carrying both lets one image time all
+three front ends on the same frames, which is what makes them comparable.
+
+Also baked: `vr_feat_golden[i]`, the feature the HOST's build of frame_fe.c produced from
+that frame.  The device must reproduce it with max_abs_err = 0 or the run is void -- the
+same gate the model has against its baked int8 golden, applied one stage earlier.  It is
+what would catch a front end that is subtly different on the target: a shift that is
+arithmetic on one side and logical on the other, an int promotion, a different rounding.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import pathlib
+import sys
+
+import numpy as np
+from PIL import Image
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import frame_sim  # noqa: E402
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]
+                       / "modelblaster" / "vision"))
+from vision_models import FEED, FEED_SHAPE  # noqa: E402
+
+FEED_ID = {"mono": 0, "rgb": 1, "bayer4": 2}
+LABELS = ["non_person", "person"]
+
+
+def which_set(name, val_pct=10.0, test_pct=10.0):
+    h = int(hashlib.sha1(name.encode()).hexdigest()[:16], 16)
+    pct = (h % (1 << 27)) * 100.0 / (1 << 27)
+    if pct < val_pct:
+        return "val"
+    if pct < val_pct + test_pct:
+        return "test"
+    return "train"
+
+
+def carr(name, a, per_line=24, typ="uint8_t"):
+    a = a.reshape(-1)
+    parts = [f"const {typ} {name}[{a.size}] = {{"]
+    for i in range(0, a.size, per_line):
+        parts.append("\t" + ",".join(str(int(v)) for v in a[i:i + per_line]) + ",")
+    parts.append("};")
+    return "\n".join(parts)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--root", required=True, help="vw_coco2014_96 directory")
+    ap.add_argument("--feat", required=True, help="featurised corpus (for meta/labels)")
+    ap.add_argument("--arch", required=True)
+    ap.add_argument("--out", required=True)
+    ap.add_argument("--n", type=int, default=4)
+    a = ap.parse_args()
+
+    root = pathlib.Path(a.root)
+    out = pathlib.Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    feed = FEED[a.arch]
+    shape = FEED_SHAPE[feed]
+    nfeat = int(np.prod(shape))
+
+    # Held-out frames only, alternating class so a run that always answers "person"
+    # cannot look right. Deterministic: the first n/2 test-split names from each class,
+    # in sorted order.
+    picks = []
+    for lab, cls in enumerate(LABELS):
+        names = sorted(p.name for p in (root / cls).iterdir()
+                       if p.suffix.lower() == ".jpg" and which_set(p.name) == "test")
+        picks.append([(cls, n, lab) for n in names[:(a.n + 1) // 2]])
+    rows = []
+    for i in range(a.n):
+        rows.append(picks[i % 2][i // 2])
+
+    fe = frame_sim.FrameFE()
+    mono_f, bay_f, feats, labs, names = [], [], [], [], []
+    for cls, name, lab in rows:
+        im = Image.open(root / cls / name).convert("RGB")
+        px = np.asarray(im, dtype=np.uint8)
+        sc = frame_sim.scene324(px)
+        mf = frame_sim.mono_frame(sc)
+        bf = frame_sim.bayer_frame(sc)
+        f = {"mono": fe.mono96(mf), "rgb": fe.rgb96(bf), "bayer4": fe.bayer4_48(bf)}[feed]
+        mono_f.append(mf); bay_f.append(bf); feats.append(f)
+        labs.append(lab); names.append(name)
+
+    mono_f = np.stack(mono_f); bay_f = np.stack(bay_f)
+    feats = np.stack(feats).astype(np.int8)
+
+    hdr = f'''/* @generated by fpga/pynq-z2/sw/tools/gen_replay_frames.py -- do not edit. */
+#pragma once
+
+#include <stdint.h>
+#include "frame_fe.h"
+
+#define VR_NFRAMES     {a.n}
+#define VR_FEED        {FEED_ID[feed]}      /* 0 = mono, 1 = rgb (demosaic), 2 = bayer4 */
+#define VR_FEED_NAME   "{feed}"
+#define VR_ARCH        "{a.arch}"
+#define VR_FEAT_ELEMS  {nfeat}
+#define VR_NCLASS      {len(LABELS)}
+
+extern const uint8_t vr_mono_frame[VR_NFRAMES * FRAME_BYTES];
+extern const uint8_t vr_bayer_frame[VR_NFRAMES * FRAME_BYTES];
+extern const int8_t  vr_feat_golden[VR_NFRAMES * VR_FEAT_ELEMS];
+extern const uint8_t vr_label[VR_NFRAMES];
+extern const char *const vr_label_name[VR_NCLASS];
+'''
+    (out / "replay_frames.h").write_text(hdr)
+
+    src = ['/* @generated by fpga/pynq-z2/sw/tools/gen_replay_frames.py -- do not edit.',
+           ' *',
+           ' * Held-out Visual Wake Words frames, synthesised to 324x324 by',
+           ' * fpga/pynq-z2/sw/tools/frame_sim.py and reduced by the HOST build of',
+           ' * frame_fe.c.  The device must reproduce vr_feat_golden exactly.',
+           ' *']
+    for i, (n, l) in enumerate(zip(names, labs)):
+        src.append(f' *   {i}: {n}  label={LABELS[l]}')
+    src += [' */', '#include "replay_frames.h"', '']
+    src.append(carr("vr_mono_frame", mono_f))
+    src.append("")
+    src.append(carr("vr_bayer_frame", bay_f))
+    src.append("")
+    src.append(carr("vr_feat_golden", feats, typ="int8_t"))
+    src.append("")
+    src.append(carr("vr_label", np.array(labs, np.uint8), per_line=16))
+    src.append("")
+    src.append("const char *const vr_label_name[VR_NCLASS] = { "
+               + ", ".join('"%s"' % s for s in LABELS) + " };")
+    src.append("")
+    (out / "replay_frames.c").write_text("\n".join(src))
+
+    json.dump({"arch": a.arch, "feed": feed, "n": a.n, "feat_elems": nfeat,
+               "frames": [{"name": n, "label": LABELS[l]} for n, l in zip(names, labs)],
+               "frame_bytes": int(mono_f[0].size)},
+              open(out / "replay_frames.json", "w"), indent=2)
+    print("[gen_replay_frames] %s (%s): %d frames, %d B each, feature %d elems -> %s"
+          % (a.arch, feed, a.n, mono_f[0].size, nfeat, out))
+
+
+if __name__ == "__main__":
+    main()

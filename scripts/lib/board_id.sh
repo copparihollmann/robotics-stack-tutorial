@@ -48,8 +48,8 @@ require_pynq_host () {
   printf '        Set it for one command:      PYNQ_HOST=xilinx@<board-ip> %s ...\n' "${0##*/}" >&2
   printf '        or once for this checkout:   cp board.conf.example board.conf  &&  $EDITOR board.conf\n' >&2
   printf '\n' >&2
-  printf '        There is no default on purpose: the old one was this bench, and on any other\n' >&2
-  printf '        network it is either nothing at all or a board that is not yours.\n' >&2
+  printf '        There is no default on purpose: any baked-in address is right on exactly one\n' >&2
+  printf '        network, and on every other one it is nothing at all or a board that is not yours.\n' >&2
   printf '        See board.conf.example and fpga/pynq-z2/docs/BRINGUP.md.\n' >&2
   exit 1
 }

@@ -1,0 +1,1 @@
+../../kernels/pext/pext_linear_s8_pext_row_dot8.c

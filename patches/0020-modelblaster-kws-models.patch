@@ -1,0 +1,225 @@
+Six keyword spotters and digit transcribers, resolvable by `--model kws_<arch>`
+
+ModelBlaster resolves --model <id> by importing modelblaster.models.<id>, so a model that
+lives outside this submodule still needs a module inside it. These six are that module
+and nothing else: each is ~20 lines that put $IISWC_ROOT on sys.path and defer to
+fpga/pynq-z2/modelblaster/kws/mb_shim.py.
+
+The architectures, the trained weights and the calibration clips deliberately stay in the
+iiswc-tutorial repo rather than here:
+
+  * this submodule is a PINNED READ-ONLY input -- scripts/02_verify_patches.sh proves the
+    working tree equals its base plus patches/, and an untracked model file would pass
+    that gate while not surviving a fresh checkout;
+  * the trained weights are up to 560 KB of npz, which cannot be carried in a patch.
+
+That is the same split patches/0009 uses for the curated MBP kernels, which live in
+fpga/pynq-z2/modelblaster/kernels/ and reach the pipeline through --global-curated-dir.
+
+The models, all on 10-coefficient MFCC from fpga/pynq-z2/sw/audio_fe.c:
+
+  kws_cnn            2,729,728 MACs   dense conv, 12-class Speech Commands
+  kws_dscnn          2,656,768 MACs   the MLPerf Tiny DS-CNN-S shape
+  kws_cnn_tiny         679,616 MACs   a quarter of the budget
+  kws_digit_ctc      2,067,200 MACs   connected-digit CTC transcriber
+  kws_digit_ctc_wide 7,718,400 MACs   the same, wider
+  kws_digit_ctc_t    7,718,400 MACs   the same again with time on the WIDTH axis, which
+                                      is worth ~4x on this ISA for identical arithmetic
+
+The last two are TRANSCRIBERS rather than classifiers: variable-length digit strings
+decoded with CTC and scored with edit distance. Their graphs are conv2d_s8 and nothing
+else, which is the whole reason they run here -- see fpga/pynq-z2/docs/SPEECH_ON_ROCKET.md
+sections 11 and 12.
+
+diff --git a/models/kws_cnn.py b/models/kws_cnn.py
+new file mode 100644
+index 0000000..51b6812
+--- /dev/null
++++ b/models/kws_cnn.py
+@@ -0,0 +1,27 @@
++"""Keyword spotter 'cnn' -- see fpga/pynq-z2/modelblaster/kws/ in the iiswc-tutorial repo.
++
++Installed by patches/0020-modelblaster-kws-models.patch.  The architecture, the trained
++weights and the calibration clips live outside this submodule on purpose: the submodule
++is a pinned read-only input and a weight blob cannot be carried in a patch.
++"""
++import os
++import pathlib
++import sys
++
++_ROOT = pathlib.Path(os.environ.get("IISWC_ROOT", "/nonexistent"))
++sys.path.insert(0, str(_ROOT / "fpga" / "pynq-z2" / "modelblaster" / "kws"))
++import mb_shim  # noqa: E402
++
++_ARCH = "cnn"
++
++
++def get_model(seed: int = 0):
++    return mb_shim.load(_ARCH)[0]
++
++
++def get_sample_input(seed: int = 1):
++    return mb_shim.calib(_ARCH, 1)[0]
++
++
++def get_calibration_samples(n: int):
++    return mb_shim.calib(_ARCH, n)
+diff --git a/models/kws_cnn_tiny.py b/models/kws_cnn_tiny.py
+new file mode 100644
+index 0000000..9269fad
+--- /dev/null
++++ b/models/kws_cnn_tiny.py
+@@ -0,0 +1,27 @@
++"""Keyword spotter 'cnn_tiny' -- see fpga/pynq-z2/modelblaster/kws/ in the iiswc-tutorial repo.
++
++Installed by patches/0020-modelblaster-kws-models.patch.  The architecture, the trained
++weights and the calibration clips live outside this submodule on purpose: the submodule
++is a pinned read-only input and a weight blob cannot be carried in a patch.
++"""
++import os
++import pathlib
++import sys
++
++_ROOT = pathlib.Path(os.environ.get("IISWC_ROOT", "/nonexistent"))
++sys.path.insert(0, str(_ROOT / "fpga" / "pynq-z2" / "modelblaster" / "kws"))
++import mb_shim  # noqa: E402
++
++_ARCH = "cnn_tiny"
++
++
++def get_model(seed: int = 0):
++    return mb_shim.load(_ARCH)[0]
++
++
++def get_sample_input(seed: int = 1):
++    return mb_shim.calib(_ARCH, 1)[0]
++
++
++def get_calibration_samples(n: int):
++    return mb_shim.calib(_ARCH, n)
+diff --git a/models/kws_digit_ctc.py b/models/kws_digit_ctc.py
+new file mode 100644
+index 0000000..ba309ed
+--- /dev/null
++++ b/models/kws_digit_ctc.py
+@@ -0,0 +1,25 @@
++"""Connected-digit CTC transcriber 'digit_ctc' -- see fpga/pynq-z2/modelblaster/kws/.
++
++Installed by patches/0020-modelblaster-kws-models.patch.
++"""
++import os
++import pathlib
++import sys
++
++_ROOT = pathlib.Path(os.environ.get("IISWC_ROOT", "/nonexistent"))
++sys.path.insert(0, str(_ROOT / "fpga" / "pynq-z2" / "modelblaster" / "kws"))
++import mb_shim  # noqa: E402
++
++_ARCH = "digit_ctc"
++
++
++def get_model(seed: int = 0):
++    return mb_shim.load(_ARCH)[0]
++
++
++def get_sample_input(seed: int = 1):
++    return mb_shim.calib(_ARCH, 1)[0]
++
++
++def get_calibration_samples(n: int):
++    return mb_shim.calib(_ARCH, n)
+diff --git a/models/kws_digit_ctc_t.py b/models/kws_digit_ctc_t.py
+new file mode 100644
+index 0000000..f660440
+--- /dev/null
++++ b/models/kws_digit_ctc_t.py
+@@ -0,0 +1,25 @@
++"""Connected-digit CTC transcriber 'digit_ctc_t' -- see fpga/pynq-z2/modelblaster/kws/.
++
++Installed by patches/0020-modelblaster-kws-models.patch.
++"""
++import os
++import pathlib
++import sys
++
++_ROOT = pathlib.Path(os.environ.get("IISWC_ROOT", "/nonexistent"))
++sys.path.insert(0, str(_ROOT / "fpga" / "pynq-z2" / "modelblaster" / "kws"))
++import mb_shim  # noqa: E402
++
++_ARCH = "digit_ctc_t"
++
++
++def get_model(seed: int = 0):
++    return mb_shim.load(_ARCH)[0]
++
++
++def get_sample_input(seed: int = 1):
++    return mb_shim.calib(_ARCH, 1)[0]
++
++
++def get_calibration_samples(n: int):
++    return mb_shim.calib(_ARCH, n)
+diff --git a/models/kws_digit_ctc_wide.py b/models/kws_digit_ctc_wide.py
+new file mode 100644
+index 0000000..7e2c935
+--- /dev/null
++++ b/models/kws_digit_ctc_wide.py
+@@ -0,0 +1,25 @@
++"""Connected-digit CTC transcriber 'digit_ctc_wide' -- see fpga/pynq-z2/modelblaster/kws/.
++
++Installed by patches/0020-modelblaster-kws-models.patch.
++"""
++import os
++import pathlib
++import sys
++
++_ROOT = pathlib.Path(os.environ.get("IISWC_ROOT", "/nonexistent"))
++sys.path.insert(0, str(_ROOT / "fpga" / "pynq-z2" / "modelblaster" / "kws"))
++import mb_shim  # noqa: E402
++
++_ARCH = "digit_ctc_wide"
++
++
++def get_model(seed: int = 0):
++    return mb_shim.load(_ARCH)[0]
++
++
++def get_sample_input(seed: int = 1):
++    return mb_shim.calib(_ARCH, 1)[0]
++
++
++def get_calibration_samples(n: int):
++    return mb_shim.calib(_ARCH, n)
+diff --git a/models/kws_dscnn.py b/models/kws_dscnn.py
+new file mode 100644
+index 0000000..fe0d8c7
+--- /dev/null
++++ b/models/kws_dscnn.py
+@@ -0,0 +1,27 @@
++"""Keyword spotter 'dscnn' -- see fpga/pynq-z2/modelblaster/kws/ in the iiswc-tutorial repo.
++
++Installed by patches/0020-modelblaster-kws-models.patch.  The architecture, the trained
++weights and the calibration clips live outside this submodule on purpose: the submodule
++is a pinned read-only input and a weight blob cannot be carried in a patch.
++"""
++import os
++import pathlib
++import sys
++
++_ROOT = pathlib.Path(os.environ.get("IISWC_ROOT", "/nonexistent"))
++sys.path.insert(0, str(_ROOT / "fpga" / "pynq-z2" / "modelblaster" / "kws"))
++import mb_shim  # noqa: E402
++
++_ARCH = "dscnn"
++
++
++def get_model(seed: int = 0):
++    return mb_shim.load(_ARCH)[0]
++
++
++def get_sample_input(seed: int = 1):
++    return mb_shim.calib(_ARCH, 1)[0]
++
++
++def get_calibration_samples(n: int):
++    return mb_shim.calib(_ARCH, n)

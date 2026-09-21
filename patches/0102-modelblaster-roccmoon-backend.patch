@@ -1,0 +1,102 @@
+ModelBlaster: backend `roccmoon` -- linear_s8 and 1-D conv2d_s8 on the decoupled RoCC engine.
+
+iiswc-tutorial ROCC_DECOUPLED.md section 8.  Adds one Backend (roccmoon, lineage roccmoon ->
+pext_nl -> pext) and one AlgorithmCandidate, `roccmoon_engine`, to linear_s8 and conv2d_s8,
+affined to roccmoon only.  The kernels are fpga/pynq-z2/modelblaster/kernels/roccmoon/ in the
+tutorial repository; they reach the engine only on the board (__ZEPHYR__) and otherwise take
+the curated MBP fallback, which is what host verification checks.  pext and pext_nl are
+untouched: no existing candidate, file or tolerance changes.
+
+Applies on top of patches/0009, 0060 and 0100.
+--- a/pipeline/backends.py
++++ b/pipeline/backends.py
+--- a/pipeline/backends.py
++++ b/pipeline/backends.py
+@@ -700,6 +700,30 @@
+ )
+ 
+ 
++# patches/0102.  The decoupled RoCC engine (iiswc-tutorial ROCC_DECOUPLED.md section 8): a
++# RoCC on hart 1 of bitstream 0x5A5A0010 whose linear_s8 and 1-D conv2d_s8 kernels are the
++# engine, driven from hart 0 through a hart-1 worker (fpga/pynq-z2/sw/roccmoon/mbxr_rt.h).
++# Everything else is pext_nl's, and the engine's kernels fall back to pext's curated MBP
++# kernels for shapes the engine does not take -- so lineage is (roccmoon, pext_nl, pext).
++# The engine kernels are bit_exact: checked against kernel_linear_s8's reference by the RTL
++# testbench (tb_mbxr.cpp), in the SoC's RTL (samples/roccmoon_rtl_sim) and on the board.
++# The tolerance is pext_nl's, for pext_nl's integer nonlinear kernels.
++ROCCMOON = Backend(
++    name="roccmoon",
++    description=(
++        "pext_nl on hart 0 plus the decoupled RoCC engine on hart 1 (bitstream "
++        "0x5A5A0010) for linear_s8 and 1-D conv2d_s8: 64-byte fill with three "
++        "outstanding, planar BRAM scratchpad, 32 MAC/cycle, result drain. Falls back to "
++        "the curated MBP kernels. The engine paths are bit_exact."
++    ),
++    kernel_cflags=("-DMB_PEXT_HW=1",),
++    optimization_guide="optimization_guide_scalar.md",
++    verify_method=VERIFY_HOST_CTYPES,
++    curated_aliases=("pext_nl", "pext"),
++    atol_override=2.0,
++    rtol_override=0.0,
++)
++
+ BACKENDS: dict[str, Backend] = {
+     SCALAR.name: SCALAR,
+     RVV.name: RVV,
+@@ -714,6 +738,7 @@
+     GEMMINI_Q31_RVV.name: GEMMINI_Q31_RVV,
+     PEXT.name: PEXT,
+     PEXT_NL.name: PEXT_NL,
++    ROCCMOON.name: ROCCMOON,
+ }
+ 
+ 
+--- a/pipeline/reference_kernels.py
++++ b/pipeline/reference_kernels.py
+@@ -1871,6 +1871,22 @@
+         # read where they are and the input copy is SHIFTED to match each row's own
+         # misalignment, because at M = 1 (every linear dispatch in these models) a
+         # repack of the [N,K] weight tensor costs more copies than the DOT8 loop saves.
++        # patches/0102: the decoupled RoCC engine on hart 1 (backend roccmoon).
++        AlgorithmCandidate(
++            name="roccmoon_engine",
++            target_affinity=("roccmoon",),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            description=(
++                "linear_s8 on the decoupled RoCC engine: hart 0 hands the dispatch to a "
++                "hart-1 worker that tiles it over a planar BRAM scratchpad (weights cached "
++                "per layer, activations and results over TileLink), 32 MAC/cycle. Offsets "
++                "must be 0; smaller dispatches and anything else take pext_row_dot8."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "roccmoon/roccmoon_linear_s8_roccmoon_engine.c)"
++            ),
++        ),
+         AlgorithmCandidate(
+             name="pext_row_dot8",
+             target_affinity=("pext", "pext_nl"),
+@@ -2452,6 +2468,23 @@
+         # weight_layout stays "oihw": the reduction axis (ic, kh, kw) is already
+         # contiguous per output channel in PyTorch's own packing, which is exactly the
+         # order the gathered patch is built in.
++        # patches/0102: the decoupled RoCC engine on hart 1 (backend roccmoon).
++        AlgorithmCandidate(
++            name="roccmoon_engine",
++            target_affinity=("roccmoon",),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            weight_layout="oihw",
++            description=(
++                "1-D conv2d_s8 (IH = KH = 1, no padding) on the decoupled RoCC engine: "
++                "the NCHW input is gathered once into an NHWC-contiguous window, the "
++                "engine strides it by SW*IC/8 words per output pixel with no im2col, and "
++                "the output is transposed back. Everything else takes pext_patch_dot8."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "roccmoon/roccmoon_conv2d_s8_roccmoon_engine.c)"
++            ),
++        ),
+         AlgorithmCandidate(
+             name="pext_patch_dot8",
+             target_affinity=("pext", "pext_nl"),

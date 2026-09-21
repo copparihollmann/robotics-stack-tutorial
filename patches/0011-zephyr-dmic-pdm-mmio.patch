@@ -1,0 +1,381 @@
+diff --git a/drivers/audio/CMakeLists.txt b/drivers/audio/CMakeLists.txt
+index bca0f07b86e..4d0c6ae2f79 100644
+--- a/drivers/audio/CMakeLists.txt
++++ b/drivers/audio/CMakeLists.txt
+@@ -7,6 +7,7 @@ zephyr_library_sources_ifdef(CONFIG_AUDIO_TLV320DAC	tlv320dac310x.c)
+ zephyr_library_sources_ifdef(CONFIG_AUDIO_MPXXDTYY	mpxxdtyy.c)
+ zephyr_library_sources_ifdef(CONFIG_AUDIO_MPXXDTYY	mpxxdtyy-i2s.c)
+ zephyr_library_sources_ifdef(CONFIG_AUDIO_DMIC_NRFX_PDM	dmic_nrfx_pdm.c)
++zephyr_library_sources_ifdef(CONFIG_AUDIO_DMIC_PDM_MMIO	dmic_pdm_mmio.c)
+ zephyr_library_sources_ifdef(CONFIG_AUDIO_TAS6422DAC tas6422dac.c)
+ zephyr_library_sources_ifdef(CONFIG_AUDIO_CODEC_SHELL	codec_shell.c)
+ zephyr_library_sources_ifdef(CONFIG_AUDIO_DMIC_MCUX dmic_mcux.c)
+diff --git a/drivers/audio/Kconfig b/drivers/audio/Kconfig
+index 78fb3039880..011d87b17d5 100644
+--- a/drivers/audio/Kconfig
++++ b/drivers/audio/Kconfig
+@@ -64,6 +64,7 @@ module-str = audio_dmic
+ source "subsys/logging/Kconfig.template.log_config"
+ 
+ source "drivers/audio/Kconfig.mpxxdtyy"
++source "drivers/audio/Kconfig.dmic_pdm_mmio"
+ source "drivers/audio/Kconfig.dmic_pdm_nrfx"
+ source "drivers/audio/Kconfig.dmic_mcux"
+ source "drivers/audio/Kconfig.dmic_ambiq_pdm"
+diff --git a/drivers/audio/Kconfig.dmic_pdm_mmio b/drivers/audio/Kconfig.dmic_pdm_mmio
+new file mode 100644
+index 00000000000..9b8e5efdb8c
+--- /dev/null
++++ b/drivers/audio/Kconfig.dmic_pdm_mmio
+@@ -0,0 +1,14 @@
++# Copyright (c) 2026 IISWC tutorial
++# SPDX-License-Identifier: Apache-2.0
++
++config AUDIO_DMIC_PDM_MMIO
++	bool "Memory-mapped PDM microphone decimator"
++	default y
++	depends on DT_HAS_IISWC_PDM_MIC_ENABLED
++	help
++	  Zephyr DMIC driver for the PL-side PDM decimator on the PYNQ-Z1.  The
++	  hardware does the CIC + FIR decimation and buffers 16-bit PCM in a FIFO;
++	  this driver drains that FIFO into the application's mem_slab blocks.
++
++	  There is no DMA: at 16 kHz and 2 bytes a sample the whole stream is
++	  32 kB/s, which is a rounding error against a 34.5 MHz core.
+diff --git a/drivers/audio/dmic_pdm_mmio.c b/drivers/audio/dmic_pdm_mmio.c
+new file mode 100644
+index 00000000000..a1238282e6c
+--- /dev/null
++++ b/drivers/audio/dmic_pdm_mmio.c
+@@ -0,0 +1,300 @@
++/*
++ * Copyright (c) 2026 IISWC tutorial
++ * SPDX-License-Identifier: Apache-2.0
++ *
++ * Zephyr DMIC driver for the PL-side PDM decimator on the PYNQ-Z1.
++ *
++ * The hardware (fpga/pynq-z2/src/pdm_mic_core.v) clocks the board's Knowles
++ * SPK0833LM4H-B, decimates its 1-bit stream to 16-bit PCM with a CIC and a FIR, and
++ * buffers the result in a 1024-entry FIFO.  All this driver does is drain that FIFO
++ * into the mem_slab blocks the DMIC API hands out.
++ *
++ * NO DMA, AND NONE NEEDED.  16 kHz of 16-bit mono is 32 kB/s.  Each sample costs one
++ * MMIO load; at 34.48 MHz that is well under 2% of one hart even with a load every
++ * sample and a LEVEL read every block.  The 64 ms FIFO is what buys the slack, so the
++ * application can be late by most of a block without losing anything -- and if it is
++ * later than that, STATUS.overrun says so rather than the audio silently glitching.
++ *
++ * THE SAMPLE RATE IS NOT 16000.  It is FCLK0 / (2*7*22*7) = 15993.859 Hz, because
++ * FCLK0 is 1000/29 MHz and 16 kHz is not an integer divisor of it.  dmic_configure()
++ * accepts a requested rate within 1% and writes back what it actually got, which is
++ * what struct pcm_stream_cfg is for.  See fpga/pynq-z2/docs/MICROPHONE.md.
++ */
++
++#define DT_DRV_COMPAT iiswc_pdm_mic
++
++#include <zephyr/kernel.h>
++#include <zephyr/device.h>
++#include <zephyr/audio/dmic.h>
++#include <zephyr/sys/util.h>
++#include <zephyr/logging/log.h>
++
++LOG_MODULE_REGISTER(dmic_pdm_mmio, CONFIG_AUDIO_DMIC_LOG_LEVEL);
++
++/* Register map -- see the header of fpga/pynq-z2/src/pdm_mic_core.v.
++ *
++ * The stride is EIGHT, not four.  The peripheral is one 32-bit register per 64-bit
++ * periphery-bus word, because the Verilog core has a single shared reg_addr port and
++ * two fields sharing a bus word would both be selected by an 8-byte access.  Reads are
++ * still 32-bit (sys_read32); only the spacing differs.
++ */
++#define REG_ID       0x00
++#define REG_CTRL     0x08
++#define REG_STATUS   0x10
++#define REG_LEVEL    0x18
++#define REG_DATA     0x20
++#define REG_RATE     0x28
++#define REG_DEPTH    0x30
++#define REG_WMARK    0x38
++
++#define ID_MAGIC     0x504D4331U       /* "PMC1" */
++
++#define CTRL_ENABLE      BIT(0)
++#define CTRL_FIFO_RESET  BIT(1)
++#define CTRL_DC_BYPASS   BIT(2)
++#define CTRL_CLR_STICKY  BIT(3)
++
++#define STATUS_SETTLING  BIT(0)
++#define STATUS_EMPTY     BIT(1)
++#define STATUS_FULL      BIT(2)
++#define STATUS_OVERRUN   BIT(3)
++#define STATUS_SATURATED BIT(4)
++
++/* How far the requested PCM rate may be from what the hardware produces. */
++#define RATE_TOLERANCE_PERMILLE 10
++
++struct dmic_pdm_cfg {
++	uintptr_t base;
++};
++
++struct dmic_pdm_data {
++	enum dmic_state state;
++	struct k_mem_slab *slab;
++	uint32_t block_size;      /* bytes */
++	uint32_t pcm_rate;        /* Hz, as the hardware actually runs */
++	bool overrun_seen;
++};
++
++static inline uint32_t rd(const struct dmic_pdm_cfg *c, uint32_t off)
++{
++	return sys_read32(c->base + off);
++}
++
++static inline void wr(const struct dmic_pdm_cfg *c, uint32_t off, uint32_t v)
++{
++	sys_write32(v, c->base + off);
++}
++
++/* The hardware reports its rate in millihertz so the exact value survives. */
++static uint32_t hw_rate_hz(const struct dmic_pdm_cfg *c)
++{
++	return (rd(c, REG_RATE) + 500U) / 1000U;
++}
++
++static int dmic_pdm_configure(const struct device *dev, struct dmic_cfg *config)
++{
++	const struct dmic_pdm_cfg *c = dev->config;
++	struct dmic_pdm_data *d = dev->data;
++	struct pcm_stream_cfg *s;
++	uint32_t hw, lo, hi;
++
++	if (d->state == DMIC_STATE_ACTIVE) {
++		LOG_ERR("cannot reconfigure while running");
++		return -EBUSY;
++	}
++	if (config->channel.req_num_streams != 1U) {
++		return -EINVAL;
++	}
++	if (config->channel.req_num_chan != 1U) {
++		/* One microphone.  Say so rather than quietly duplicating a channel:
++		 * a caller that asked for stereo would get a silent right channel and
++		 * spend an afternoon on it.
++		 */
++		LOG_ERR("this is a mono microphone; %u channels requested",
++			config->channel.req_num_chan);
++		return -EINVAL;
++	}
++
++	s = &config->streams[0];
++	if (s->pcm_width != 16U) {
++		LOG_ERR("only 16-bit PCM; %u requested", s->pcm_width);
++		return -EINVAL;
++	}
++	if (s->mem_slab == NULL || s->block_size == 0U) {
++		return -EINVAL;
++	}
++	if ((s->block_size % sizeof(int16_t)) != 0U) {
++		return -EINVAL;
++	}
++	if (s->block_size > s->mem_slab->info.block_size) {
++		LOG_ERR("block_size %u exceeds the slab's %zu",
++			s->block_size, (size_t)s->mem_slab->info.block_size);
++		return -EINVAL;
++	}
++
++	hw = hw_rate_hz(c);
++	lo = hw - (hw * RATE_TOLERANCE_PERMILLE) / 1000U;
++	hi = hw + (hw * RATE_TOLERANCE_PERMILLE) / 1000U;
++	if (s->pcm_rate < lo || s->pcm_rate > hi) {
++		LOG_ERR("PCM rate %u Hz is not reachable; this decimator runs at %u Hz",
++			s->pcm_rate, hw);
++		return -EINVAL;
++	}
++	/* Write back what the caller will actually get. */
++	s->pcm_rate = hw;
++
++	/* The microphone's own limits, as a sanity check on the caller's io block --
++	 * there is nothing to program, the PDM clock is fixed by the SoC clock.
++	 */
++	if (config->io.max_pdm_clk_freq != 0U && config->io.max_pdm_clk_freq < 2463054U) {
++		LOG_ERR("PDM clock is fixed at 2463054 Hz, above the stated max %u",
++			config->io.max_pdm_clk_freq);
++		return -EINVAL;
++	}
++
++	config->channel.act_num_chan = 1U;
++	config->channel.act_num_streams = 1U;
++	config->channel.act_chan_map_lo = dmic_build_channel_map(0, 0, PDM_CHAN_LEFT);
++	config->channel.act_chan_map_hi = 0U;
++
++	d->slab = s->mem_slab;
++	d->block_size = s->block_size;
++	d->pcm_rate = hw;
++	d->state = DMIC_STATE_CONFIGURED;
++	return 0;
++}
++
++static int dmic_pdm_trigger(const struct device *dev, enum dmic_trigger cmd)
++{
++	const struct dmic_pdm_cfg *c = dev->config;
++	struct dmic_pdm_data *d = dev->data;
++
++	switch (cmd) {
++	case DMIC_TRIGGER_START:
++	case DMIC_TRIGGER_RELEASE:
++		if (d->state != DMIC_STATE_CONFIGURED && d->state != DMIC_STATE_PAUSED) {
++			return -EIO;
++		}
++		d->overrun_seen = false;
++		wr(c, REG_CTRL, CTRL_ENABLE | CTRL_FIFO_RESET | CTRL_CLR_STICKY);
++		wr(c, REG_CTRL, CTRL_ENABLE);
++		d->state = DMIC_STATE_ACTIVE;
++		return 0;
++
++	case DMIC_TRIGGER_STOP:
++	case DMIC_TRIGGER_PAUSE:
++		wr(c, REG_CTRL, 0U);
++		d->state = (cmd == DMIC_TRIGGER_PAUSE) ? DMIC_STATE_PAUSED
++						       : DMIC_STATE_CONFIGURED;
++		return 0;
++
++	case DMIC_TRIGGER_RESET:
++		wr(c, REG_CTRL, CTRL_FIFO_RESET | CTRL_CLR_STICKY);
++		wr(c, REG_CTRL, 0U);
++		d->state = DMIC_STATE_INITIALIZED;
++		return 0;
++
++	default:
++		return -EINVAL;
++	}
++}
++
++static int dmic_pdm_read(const struct device *dev, uint8_t stream, void **buffer,
++			 size_t *size, int32_t timeout)
++{
++	const struct dmic_pdm_cfg *c = dev->config;
++	struct dmic_pdm_data *d = dev->data;
++	k_timepoint_t deadline;
++	int16_t *out;
++	size_t want, got = 0;
++	int ret;
++
++	ARG_UNUSED(stream);
++
++	if (d->state != DMIC_STATE_ACTIVE) {
++		return -EIO;
++	}
++
++	deadline = sys_timepoint_calc((timeout == SYS_FOREVER_MS) ? K_FOREVER
++								 : K_MSEC(timeout));
++
++	ret = k_mem_slab_alloc(d->slab, (void **)&out, sys_timepoint_timeout(deadline));
++	if (ret != 0) {
++		return ret;
++	}
++
++	want = d->block_size / sizeof(int16_t);
++	while (got < want) {
++		uint32_t level = rd(c, REG_LEVEL);
++
++		if (level == 0U) {
++			if (sys_timepoint_expired(deadline)) {
++				k_mem_slab_free(d->slab, out);
++				return -EAGAIN;
++			}
++			/* A quarter of a block's worth of time.  Sleeping rather than
++			 * spinning matters on the little hart, which shares the FIFO
++			 * with whatever else is running.
++			 */
++			k_sleep(K_MSEC(2));
++			continue;
++		}
++		if (level > (want - got)) {
++			level = want - got;
++		}
++		for (uint32_t i = 0; i < level; i++) {
++			out[got++] = (int16_t)rd(c, REG_DATA);
++		}
++	}
++
++	if ((rd(c, REG_STATUS) & STATUS_OVERRUN) != 0U && !d->overrun_seen) {
++		/* Sticky, so warn once: the application was late and the hardware
++		 * dropped samples.  The audio after this point is discontinuous.
++		 */
++		LOG_WRN("FIFO overran -- samples were dropped");
++		d->overrun_seen = true;
++	}
++
++	*buffer = out;
++	*size = d->block_size;
++	return 0;
++}
++
++static int dmic_pdm_init(const struct device *dev)
++{
++	const struct dmic_pdm_cfg *c = dev->config;
++	struct dmic_pdm_data *d = dev->data;
++	uint32_t id = rd(c, REG_ID);
++
++	if (id != ID_MAGIC) {
++		LOG_ERR("no PDM microphone at 0x%lx: ID reads 0x%08x, expected 0x%08x",
++			(unsigned long)c->base, id, ID_MAGIC);
++		return -ENODEV;
++	}
++	wr(c, REG_CTRL, 0U);
++	d->state = DMIC_STATE_INITIALIZED;
++	LOG_INF("PDM microphone at 0x%lx: %u Hz, FIFO %u samples",
++		(unsigned long)c->base, hw_rate_hz(c), rd(c, REG_DEPTH));
++	return 0;
++}
++
++/* The DMIC class predates DEVICE_API(): dmic.h casts dev->api to struct _dmic_ops
++ * directly, and there is no Z_DEVICE_API_TYPE(dmic). Match the in-tree drivers. */
++static const struct _dmic_ops dmic_pdm_api = {
++	.configure = dmic_pdm_configure,
++	.trigger = dmic_pdm_trigger,
++	.read = dmic_pdm_read,
++};
++
++#define DMIC_PDM_INIT(inst)                                                            \
++	static const struct dmic_pdm_cfg dmic_pdm_cfg_##inst = {                       \
++		.base = DT_INST_REG_ADDR(inst),                                        \
++	};                                                                             \
++	static struct dmic_pdm_data dmic_pdm_data_##inst = {                           \
++		.state = DMIC_STATE_UNINIT,                                            \
++	};                                                                             \
++	DEVICE_DT_INST_DEFINE(inst, dmic_pdm_init, NULL, &dmic_pdm_data_##inst,        \
++			      &dmic_pdm_cfg_##inst, POST_KERNEL,                       \
++			      CONFIG_AUDIO_DMIC_INIT_PRIORITY, &dmic_pdm_api);
++
++DT_INST_FOREACH_STATUS_OKAY(DMIC_PDM_INIT)
+diff --git a/dts/bindings/audio/iiswc,pdm-mic.yaml b/dts/bindings/audio/iiswc,pdm-mic.yaml
+new file mode 100644
+index 00000000000..edf037c08da
+--- /dev/null
++++ b/dts/bindings/audio/iiswc,pdm-mic.yaml
+@@ -0,0 +1,25 @@
++# Copyright (c) 2026 IISWC tutorial
++# SPDX-License-Identifier: Apache-2.0
++
++description: |
++  PDM microphone front end in the PL of a PYNQ-Z1.
++
++  A CIC + FIR decimator that turns the 1-bit bitstream of the board's Knowles
++  SPK0833LM4H-B into 16-bit PCM and buffers it in a hardware FIFO.  The PCM sample
++  rate is fixed by the SoC clock and the decimation ratios, and is reported by the
++  RATE register in millihertz -- it is NOT exactly 16 kHz.  See
++  fpga/pynq-z2/docs/MICROPHONE.md.
++
++compatible: "iiswc,pdm-mic"
++
++include: base.yaml
++
++properties:
++  reg:
++    required: true
++
++  interrupts:
++    required: false
++    description: |
++      Optional level interrupt, asserted while the FIFO level is at or above the
++      watermark register.  The driver polls if this is absent.

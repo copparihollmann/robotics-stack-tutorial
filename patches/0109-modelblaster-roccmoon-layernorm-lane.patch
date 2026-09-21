@@ -1,0 +1,52 @@
+ModelBlaster: layernorm_pc_s8 on the roccmoon normalisation lane.
+
+iiswc-tutorial ROCC_DECOUPLED.md sections 8.15.21-24.  Adds one AlgorithmCandidate,
+`roccmoon_lane`, to layernorm_pc_s8, affined to the roccmoon backend that patches/0102
+already defines.  The kernel is fpga/pynq-z2/modelblaster/kernels/roccmoon/ in that repo.
+
+THE FIRST OP ON THIS ENGINE THAT DISPATCHES TO A LANE rather than to the tile sequencer:
+custom-1 functs 9/10/11 (lcfg/lgo/lst) instead of the matmul path.  Bit-exact because the
+lane computes this KernelSpec's expression term for term -- the normalisation core, the
+per-channel affine, the clamp -- rather than an approximation of it; the curated kernel's
+own fallback is this reference, and the host check
+(fpga/pynq-z2/modelblaster/moonshine/check/layernorm_lane_check.c) compares it against an
+independent transcription of the semantics over 40 random shapes, 0 bytes differing.
+
+WHY NOT FOLDED INTO patches/0102, which is where the other two roccmoon candidates live:
+patches 0103-0107 also modify pipeline/reference_kernels.py and are applied after 0102, so a
+hunk written against today's tree does not apply at 0102's position.  Applied last instead.
+
+--- a/pipeline/reference_kernels.py
++++ b/pipeline/reference_kernels.py
+@@ -9682,6 +9682,31 @@
+ }
+ """,
+     argtypes_factory=_pointwise2_f16_argtypes,  # placeholder; verified by extract_q16's golden
++    algorithms=[
++        # patches/0109: the normalisation lane inside the decoupled RoCC engine (backend
++        # roccmoon).  The FIRST op on this engine that dispatches to a lane rather than to
++        # the tile sequencer -- custom-1 functs 9/10/11 instead of the matmul path.
++        AlgorithmCandidate(
++            name="roccmoon_lane",
++            target_affinity=("roccmoon",),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            description=(
++                "layernorm_pc_s8 on the engine's normalisation lane (mbxr_ln): hart 0 hands "
++                "each tile to a hart-1 worker which fills the scratchpad, writes the "
++                "per-channel affine table, and runs the lane at one element per cycle "
++                "(0.99826 measured, Lab B33). Bit-exact because the lane computes this "
++                "KernelSpec's expression term for term, not an approximation of it. A tile "
++                "is bounded by the lane's 1,024-word reach and must be a whole number of "
++                "64-byte drain blocks, so K = 288 needs an even row count; every other "
++                "shape, and any model whose per-channel constants overflow the lane's "
++                "25/40/32-bit fields, falls back to this reference."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "roccmoon/roccmoon_layernorm_pc_s8_roccmoon_lane.c)"
++            ),
++        ),
++    ],
+ )
+ 
+ 

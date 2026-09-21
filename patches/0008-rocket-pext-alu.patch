@@ -1,0 +1,235 @@
+MBP packed SIMD in Rocket's ALU, per tile
+
+Four R-type instructions in custom-0 (opcode 0x0B), funct7 = 0, integrated into
+Rocket's ALU as single-cycle two-read ops and enabled per tile by a new
+RocketCoreParams field:
+
+    funct3 0  MBP.DOT8   rd = sum_{i=0..7} sext(rs1.b[i]) * sext(rs2.b[i])
+    funct3 1  MBP.MAX8   rd.b[i] = max_signed(rs1.b[i], rs2.b[i])
+    funct3 2  MBP.QMUL   rd = (sext32(rs1) * sext32(rs2) + 2^30) >> 31, round-half-up
+    funct3 3  MBP.CLIP8  rd = sext64(clamp(rs1, -128, +127)), rs2 ignored
+
+The contract and the bit-exact C reference are fpga/pynq-z2/sw/pext.h; the
+specification, the workload evidence and the DECISION block that split the fused
+requantize into QMUL + a scalar shift + CLIP8 are fpga/pynq-z2/docs/PEXT_SPEC.md;
+the measured cost menu is fpga/pynq-z2/docs/PEXT_FEASIBILITY.md.
+
+FOUR FILES, AND WHY EACH:
+
+  tile/Core.scala        usePExt on the CoreParams trait, as a CONCRETE def with a
+                         false default -- NOT an abstract val like useZba/useZbb/
+                         useZbs beside it -- so that every other core implementing
+                         CoreParams (BOOM, Shuttle, the groundtest and tracegen
+                         tiles) needs no change at all.
+
+  rocket/RocketCore.scala  the RocketCoreParams field that overrides it, the
+                         PExtDecode entry in decode_table, and a require() that
+                         refuses to elaborate usePExt together with RoCC, because
+                         RoCCDecode claims ALL of custom-0 and reads funct3 as a
+                         register-usage code -- the two tables would hand
+                         DecodeLogic contradictory outputs for one instruction.
+
+  rocket/IDecode.scala   the four BitPats and the PExtDecode table. DW_XPR, not
+                         DW_32: the ALU sign-extends its result from bit 31 when
+                         dw is DW_32, which would silently break DOT8's range and
+                         QMUL's top bit.
+
+  rocket/ALU.scala       fn codes 20-23 (the only free codes in the 5-bit space
+                         besides 27) and the datapath, adapted from the measured
+                         out-of-context modules in fpga/pynq-z2/rtl_study/pext/.
+
+HART 1 MUST TRAP. Without usePExt a tile gets no PExtDecode table and no datapath,
+so custom-0 decodes as illegal and raises an illegal-instruction exception. That is
+the heterogeneity mechanism (PEXT_SPEC.md 7.6), not a degradation path, and
+samples/pext_rtl_selftest checks that the trap HAPPENS, with mcause == 2, mepc at
+the instruction, and rd unwritten.
+
+WHAT THIS PATCH DOES TO A CONFIG THAT DOES NOT SET usePExt: nothing. Elaborating
+PynqZ2RocketBigLittleTacitConfig before and after leaves 500 of 505 generated
+files byte-identical; the five that differ carry only firtool source-locator
+comments whose line numbers moved, plus one simulation-only $error string inside
+an `ifndef SYNTHESIS` block that quotes an assertion's own source line
+("RocketCore.scala:910" -> "RocketCore.scala:926"). Stripped of comments, all five
+are identical. Verified, not asserted -- scripts/09_patch_rocket_pext.sh --verify
+reproduces it.
+
+--- a/src/main/scala/tile/Core.scala
++++ b/src/main/scala/tile/Core.scala
+@@ -28,6 +28,11 @@
+   val useZba: Boolean
+   val useZbb: Boolean
+   val useZbs: Boolean
++  // MBP -- the packed-SIMD four in custom-0 (fpga/pynq-z2/docs/PEXT_SPEC.md).  A
++  // CONCRETE default, unlike the abstract vals above, so that every other core that
++  // implements CoreParams (BOOM, Shuttle, the groundtest and tracegen tiles ...) needs
++  // no change; RocketCoreParams overrides it.
++  def usePExt: Boolean = false
+   val mulDiv: Option[MulDivParams]
+   val fpu: Option[FPUParams]
+   val fetchWidth: Int
+--- a/src/main/scala/rocket/ALU.scala
++++ b/src/main/scala/rocket/ALU.scala
+@@ -33,6 +33,17 @@
+   def FN_ROR  = 18.U
+   def FN_BEXT = 19.U
+ 
++  // MBP -- the packed-SIMD four, ALU-integrated, custom-0.  See
++  // fpga/pynq-z2/docs/PEXT_SPEC.md and the bit-exact C reference in
++  // fpga/pynq-z2/sw/pext.h.  20-23 and 27 are the only free codes in this 5-bit
++  // space (0-19, 24-26 and 28-31 are taken); four ops take four of them, and 27
++  // is left for a fifth.
++  def FN_PDOT8  = 20.U
++  def FN_PMAX8  = 21.U
++  def FN_PQMUL  = 22.U
++  def FN_PCLIP8 = 23.U
++  def FN_PEXT   = BitPat("b101??")   // 20..23, i.e. exactly the four above
++
+   def FN_ANDN = 24.U
+   def FN_ORN  = 25.U
+   def FN_XNOR = 26.U
+@@ -160,10 +171,58 @@
+   val rotout_l = Reverse(rotout_r)
+   val rotout = Mux(io.fn(0), rotout_r, rotout_l) | Mux(io.fn(0), shout_l, shout_r)
+ 
++  // MBP packed SIMD -- DOT8, MAX8, QMUL, CLIP8.  Elaborated only when
++  // coreParams.usePExt, so a hart without it gets an ALU that is bit-identical to
++  // the stock one (that is the property the patch's before/after Verilog diff checks).
++  //
++  // THE SPECIFICATION IS fpga/pynq-z2/sw/pext.h's mb_pext_*_sw.  If this and that
++  // disagree, this is wrong.  Adapted from the measured out-of-context datapaths in
++  // fpga/pynq-z2/rtl_study/pext/: pext_pdot8_lut.v (depth-3, ACC=0, signed only),
++  // pext_pmaxmin8.v (max, signed), and the pmulscale/clamp halves of
++  // pext_prequant.v -- NOT its fused requant2, whose 48-bit rounding barrel shifter
++  // is what missed timing (PEXT_FEASIBILITY.md 1.4).
++  val pext_ops: Seq[(UInt, UInt)] = if (!coreParams.usePExt) Nil else {
++    require(xLen == 64, "MBP packed SIMD is defined on RV64 only (8 int8 lanes per register)")
++    val a8 = io.in1.asTypeOf(Vec(8, SInt(8.W)))
++    val b8 = io.in2.asTypeOf(Vec(8, SInt(8.W)))
++
++    // MBP.DOT8: eight signed 8x8 products summed by a depth-3 balanced adder tree.
++    // |result| <= 8*128*128 = 131072, so 19 bits signed is exact; the 64-bit
++    // destination can never overflow and there is no saturation to get wrong.
++    val prod = (a8 zip b8).map { case (x, y) => x * y }        // SInt(16.W) each
++    val dot1 = Seq.tabulate(4)(i => prod(2*i) +& prod(2*i+1))  // 17 bits
++    val dot2 = Seq.tabulate(2)(i => dot1(2*i) +& dot1(2*i+1))  // 18 bits
++    val dot  = dot2(0) +& dot2(1)                              // 19 bits
++    val dot8 = Cat(Fill(xLen - 19, dot(18)), dot.asUInt)
++
++    // MBP.MAX8: eight independent signed byte maxima.  ReLU is this against x0.
++    val max8 = VecInit((a8 zip b8).map { case (x, y) => Mux(x > y, x, y) }).asUInt
++
++    // MBP.QMUL: (sext32(rs1) * sext32(rs2) + 2^30) >>> 31.
++    // ROUND-HALF-UP: add the rounding constant, then an ARITHMETIC shift.  Not
++    // half-away-from-zero and not half-to-even -- that difference is 1 LSB on
++    // roughly half of all negative outputs.  The product and the sum are exact
++    // (64 and 65 bits), so this is the C expression with no approximation in it.
++    val qprod = io.in1(31,0).asSInt * io.in2(31,0).asSInt      // SInt(64.W), exact
++    val qsum  = qprod +& (BigInt(1) << 30).S                   // SInt(65.W), exact
++    val qhi   = qsum >> 31                                     // SInt(34.W), arithmetic
++    val qmul  = Cat(Fill(xLen - 34, qhi(33)), qhi.asUInt)
++
++    // MBP.CLIP8: sext64(clamp(rs1, -128, +127)); rs2 ignored.  Two levels: the
++    // clamp is decided by the bits above the byte, not by a comparator chain.
++    val cq  = io.in1
++    val chi = ~cq(xLen-1) &  cq(xLen-2,7).orR    // > +127
++    val clo =  cq(xLen-1) & ~cq(xLen-2,7).andR   // < -128
++    val cb  = Mux(chi, 0x7f.U(8.W), Mux(clo, 0x80.U(8.W), cq(7,0)))
++    val clip8 = Cat(Fill(xLen - 8, cb(7)), cb)
++
++    Seq(FN_PDOT8 -> dot8, FN_PMAX8 -> max8, FN_PQMUL -> qmul, FN_PCLIP8 -> clip8)
++  }
++
+   val out = MuxLookup(io.fn, shift_logic_cond)(Seq(
+     FN_ADD -> io.adder_out,
+     FN_SUB -> io.adder_out
+-  ) ++ (if (coreParams.useZbb) Seq(
++  ) ++ pext_ops ++ (if (coreParams.useZbb) Seq(
+     FN_UNARY -> unary,
+     FN_MAX -> maxmin_out,
+     FN_MIN -> maxmin_out,
+--- a/src/main/scala/rocket/IDecode.scala
++++ b/src/main/scala/rocket/IDecode.scala
+@@ -523,6 +523,44 @@
+   )
+ }
+ 
++/* MBP -- the packed-SIMD four, R-type in custom-0 (opcode 0x0B), funct7 = 0,
++ * funct3 = 0 DOT8 / 1 MAX8 / 2 QMUL / 3 CLIP8.  The contract is
++ * fpga/pynq-z2/sw/pext.h; the encoding is PEXT_SPEC.md section 3.0.
++ *
++ *  31      25 24   20 19   15 14 12 11    7 6         0
++ * +----------+-------+-------+-----+-------+-----------+
++ * | funct7=0 |  rs2  |  rs1  |  f3 |  rd   | 0001011   |
++ * +----------+-------+-------+-----+-------+-----------+
++ *
++ * These are NOT in the generated Instructions object -- riscv-opcodes has no entry
++ * for a non-standard extension -- so they are written out here.  They are strictly
++ * narrower than RoCCDecode's CUSTOM0* patterns (which ignore funct7 and read funct3
++ * as a register-usage code), which is why Rocket refuses to elaborate usePExt
++ * together with RoCC; see the require in RocketCore.scala.
++ */
++object MBPInstructions {
++  def MBP_DOT8  = BitPat("b0000000??????????000?????0001011")
++  def MBP_MAX8  = BitPat("b0000000??????????001?????0001011")
++  def MBP_QMUL  = BitPat("b0000000??????????010?????0001011")
++  def MBP_CLIP8 = BitPat("b0000000??????????011?????0001011")
++}
++
++class PExtDecode(implicit val p: Parameters) extends DecodeConstants
++{
++  import MBPInstructions._
++  /* All four are two-read, one-write, single-cycle ALU ops with a full 64-bit
++   * result, so DW_XPR -- not DW_32, which would sign-extend the answer from bit 31
++   * and silently break DOT8's range and QMUL's top bit.  CLIP8 ignores rs2 and the
++   * intrinsic encodes x0, but rxs2 is declared anyway: reading x0 is free, it
++   * cannot raise a hazard, and it keeps the four rows identical. */
++  val table: Array[(BitPat, List[BitPat])] = Array(
++    MBP_DOT8 -> List(Y,N,N,N,N,N,Y,Y,A2_RS2, A1_RS1,IMM_X,DW_XPR,FN_PDOT8, N,M_X,        N,N,N,N,N,N,Y,CSR.N,N,N,N,N),
++    MBP_MAX8 -> List(Y,N,N,N,N,N,Y,Y,A2_RS2, A1_RS1,IMM_X,DW_XPR,FN_PMAX8, N,M_X,        N,N,N,N,N,N,Y,CSR.N,N,N,N,N),
++    MBP_QMUL -> List(Y,N,N,N,N,N,Y,Y,A2_RS2, A1_RS1,IMM_X,DW_XPR,FN_PQMUL, N,M_X,        N,N,N,N,N,N,Y,CSR.N,N,N,N,N),
++    MBP_CLIP8-> List(Y,N,N,N,N,N,Y,Y,A2_RS2, A1_RS1,IMM_X,DW_XPR,FN_PCLIP8,N,M_X,        N,N,N,N,N,N,Y,CSR.N,N,N,N,N),
++  )
++}
++
+ class RoCCDecode(implicit val p: Parameters) extends DecodeConstants
+ {
+   val table: Array[(BitPat, List[BitPat])] = Array(
+--- a/src/main/scala/rocket/RocketCore.scala
++++ b/src/main/scala/rocket/RocketCore.scala
+@@ -30,6 +30,10 @@
+   useZba: Boolean = false,
+   useZbb: Boolean = false,
+   useZbs: Boolean = false,
++  // MBP -- the packed-SIMD four in custom-0, integrated into the ALU as a
++  // single-cycle two-read op.  Per-tile, so a big.LITTLE pair can give it to the big
++  // hart only; the LITTLE hart then traps on it.  fpga/pynq-z2/docs/PEXT_SPEC.md.
++  override val usePExt: Boolean = false,
+   nLocalInterrupts: Int = 0,
+   useNMI: Boolean = false,
+   nBreakpoints: Int = 1,
+@@ -220,6 +224,14 @@
+       ("L2 TLB miss", () => io.ptw.perf.l2miss)))))
+ 
+   val pipelinedMul = usingMulDiv && mulDivParams.mulUnroll == xLen
++
++  // MBP packed SIMD claims R-type custom-0 with funct7 = 0; RoCCDecode claims ALL of
++  // custom-0 and reads funct3 as a register-usage code, so the two tables would hand
++  // DecodeLogic contradictory outputs for the same instruction and the result would be
++  // whatever the minimiser happened to pick.  Refuse to elaborate instead.
++  require(!(coreParams.usePExt && usingRoCC),
++    "usePExt and RoCC both claim the custom-0 opcode on this hart; move the accelerator " +
++    "to custom-1/2/3 (chipyard puts Gemmini in custom-3) or drop usePExt on this tile")
+   val decode_table = {
+     (if (usingMulDiv) new MDecode(pipelinedMul) +: (xLen > 32).option(new M64Decode(pipelinedMul)).toSeq else Nil) ++:
+     (if (usingAtomics) new ADecode +: (xLen > 32).option(new A64Decode).toSeq else Nil) ++:
+@@ -242,6 +254,10 @@
+     (if (coreParams.useZba) new ZbaDecode +: (xLen > 32).option(new Zba64Decode).toSeq else Nil) ++:
+     (if (coreParams.useZbb) Seq(new ZbbDecode, if (xLen == 32) new Zbb32Decode else new Zbb64Decode) else Nil) ++:
+     coreParams.useZbs.option(new ZbsDecode) ++:
++    // MBP packed SIMD.  Absent on a hart without usePExt, so custom-0 decodes as
++    // illegal there and traps -- which is the intended heterogeneity mechanism, not
++    // a degradation path.  See PEXT_SPEC.md section 7.6.
++    coreParams.usePExt.option(new PExtDecode) ++:
+     Seq(new IDecode)
+   } flatMap(_.table)
+ 

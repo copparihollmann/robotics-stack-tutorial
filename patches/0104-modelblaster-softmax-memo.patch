@@ -1,0 +1,40 @@
+ModelBlaster: softmax_s8 `pext_int_memo` -- pext_int_row with its exponential memoised, bit-exact.
+
+iiswc-tutorial ROCC_DECOUPLED.md section 8.14 (T1, the software levers).  The curated kernel
+is fpga/pynq-z2/modelblaster/kernels/pext_nl/pext_nl_softmax_s8_pext_int_memo.c in the
+tutorial repository.  The candidate is registered AFTER pext_int_row, so no existing build
+changes its pick.  A build selects it by generating from a curated tree that lacks
+pext_int_row's file (the reference backend's curated probe walks spec.algorithms in order and
+does not apply --algorithms); scripts/50_rocket_moonshine_enc.sh's *_smx variants do that.
+
+Applies on top of patches/0009, 0060, 0100 and 0102.
+--- a/pipeline/reference_kernels.py
++++ b/pipeline/reference_kernels.py
+@@ -11104,6 +11104,27 @@
+                 "pext_nl/pext_nl_softmax_s8_pext_int_row.c)"
+             ),
+         ),
++        # patches/0104.  pext_int_row with its exponential memoised per dispatch: the
++        # input is int8, so x - max takes 256 values and 2^z is a 256-entry table filled
++        # once with pext_int_row's own expression.  BIT-EXACT with pext_int_row (host:
++        # exhaustive over the table and 92.9 M elements of random and corner rows).  Placed
++        # AFTER pext_int_row so no existing build changes its pick; a build selects it
++        # from a curated tree without pext_int_row's file (ROCC_DECOUPLED.md 8.14).
++        AlgorithmCandidate(
++            name="pext_int_memo",
++            target_affinity=("pext_nl",),
++            accuracy_class=AccuracyClass.NUMERIC_DRIFT,
++            description=(
++                "pext_int_row, bit-exact, with 2^z read from a 256-entry table "
++                "filled once per dispatch (z depends only on the int8 "
++                "difference x - max and scale_in) instead of interpolated "
++                "twice per element; the row reciprocal as one 64-bit divide."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext_nl/pext_nl_softmax_s8_pext_int_memo.c)"
++            ),
++        ),
+         # This op carried only the synthesized `direct` candidate, so the
+         # curated probe had no named (op, algorithm) pair to look for and
+         # softmax ran the scalar reference inside builds labelled rvv_x60 --

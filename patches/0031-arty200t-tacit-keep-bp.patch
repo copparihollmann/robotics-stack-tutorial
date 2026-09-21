@@ -1,0 +1,34 @@
+Keep the arty200t TACIT configs on the branch predictor they were measured with.
+
+patches/0030 flips chipyard.WithTacitEncoder's default to useBP = false, which is
+right for this tutorial (the predictor is dead logic in BrTarget mode, and BrTarget
+is the only mode the PYNQ-Z1 labs use) but is NOT this repo's decision to make for
+the riskybird arty200t work that shares the donor Chipyard tree.
+
+fpga/src/main/scala/arty200t/TacitAccelConfigs.scala is the one TRACKED file in
+that tree that consumes the fragment. Making the `true` explicit there keeps
+RocketArty200TDroneGemminiSaturnFp16At35TacitConfig elaborating exactly what it
+elaborated before. Its sibling fragment WithTacitEncoderBP already constructs
+TacitBPParams directly, and `enable` defaults to true, so nEntries = 256 / 128
+configs are unaffected without touching them.
+
+Unlike 0030, this file IS in git, so scripts/02_verify_patches.sh checks it.
+
+diff --git a/fpga/src/main/scala/arty200t/TacitAccelConfigs.scala b/fpga/src/main/scala/arty200t/TacitAccelConfigs.scala
+index 6fea2d8f..7ecb3d49 100644
+--- a/fpga/src/main/scala/arty200t/TacitAccelConfigs.scala
++++ b/fpga/src/main/scala/arty200t/TacitAccelConfigs.scala
+@@ -59,9 +59,12 @@ class WithTacitEncoderBP(nEntries: Int = 1024, bufferDepth: Int = 16) extends Co
+ })
+ 
+ // Full-strength TACIT (1024-entry BP): DMA sink (target id 1) + encoder.
++// useBP = true is explicit because chipyard.WithTacitEncoder now defaults the DSC
++// branch predictor OFF -- it is dead logic in BrTarget mode, which is the only mode
++// the PYNQ-Z1 tutorial uses. This config keeps the predictor, so it is unchanged.
+ class WithTacitDmaTrace extends Config(
+   new tacit.WithTraceSinkDMA(1) ++
+-  new chipyard.WithTacitEncoder)
++  new chipyard.WithTacitEncoder(useBP = true))
+ 
+ // Reduced-BP TACIT (256-entry BP): for the LUT-critical combined config.
+ class WithTacitDmaTrace256 extends Config(

@@ -1,0 +1,702 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dima Nikiforov <vnikiforov@berkeley.edu>
+Date: Tue, 16 Sep 2026 09:20:00 -0700
+Subject: [PATCH] perfetto: one merged timeline, one named track per hart
+
+WHAT WAS BROKEN. `PerfettoReceiver` wrote `"pid": 0, "tid": 0` on every event it
+emitted. In Chrome/Perfetto JSON a track IS the (pid, tid) pair carried on each
+event, so two decoded traces could not be told apart even when concatenated by
+hand: every slice claimed the same track and the two harts landed on top of each
+other. A dual-hart capture was therefore two files, opened one at a time, with
+the reader doing the alignment in their head -- which is exactly the part a
+timeline is for. fpga/pynq-z2/docs/TACIT_MULTICORE.md section 8 recorded this as
+the open gap: "The two traces are still two files with two `pid`s."
+
+WHAT THIS ADDS is a second input mode and nothing else:
+
+    ltrace-decoder --binary zephyr.elf --encoder rtl --to-txt --to-perfetto \
+      --trace hart0/tacit.out:0:'hart 0 (big, MBP)' \
+      --trace hart1/tacit.out:1:'hart 1 (LITTLE)'  \
+      --merged-perfetto trace.merged.perfetto.json
+
+Repeated flags rather than a manifest file, because the caller is a shell script
+that already has the per-hart path in a loop variable:
+
+    for h in 0 1; do ARGS+=(--trace "$RUN/hart$h/tacit.out:$h:${LABEL[$h]}"); done
+
+is the whole integration. No temporary file to write, clean up, or keep in step
+with the run; the paths stay visible in the command line the lab echoes; and
+adding a third hart is one more loop iteration rather than a new file format.
+
+FILE may not contain ':'; HART defaults to the argument's position; LABEL
+defaults to "hart <N>" and is everything after the second colon, so it may
+contain colons. HART becomes the Perfetto pid and tid, and LABEL is emitted as
+the `"ph":"M"` `process_name` / `thread_name` metadata for that pair, so the UI
+shows a NAMED track per hart. The decoder does not invent the names: only the
+caller knows that hart 0 is the big core with the MBP datapath.
+
+Each trace still writes its own `trace.txt` and `trace.perfetto.json`, next to
+its encoded trace -- which is where the labs already keep them, so nothing that
+read the per-hart files stops working. The merged file is an addition.
+
+TIMESTAMPS ARE NOT TOUCHED. Nothing here rescales or re-bases anything; the
+merged file carries the same raw `mcycle` values the per-hart files carry. That
+is only meaningful because patches/0004-rocketchip-mcycle-free-run.patch made
+both harts' `mcycle` free-run, and it is the caller's job to know that. Merging
+traces from an unpatched bitstream produces two tracks millions of cycles apart,
+correctly -- the decoder has no way to detect it and does not pretend to.
+
+MEASURED, on the two dual-hart captures already on disk:
+
+  out/rocket_tacit_pext_smp, merged, one axis:
+    hart 0 (big, MBP)   tacit_sync_marker @8,971,943   mbp_body_hw    701 cycles
+    hart 1 (LITTLE)     tacit_sync_marker @8,971,933   mbp_body_sw 20,924 cycles
+  The two markers are 10 cycles apart and the two bodies sit side by side on one
+  timeline, 29.8x wide apart, which is the picture the lab exists to produce.
+
+SINGLE-TRACE BEHAVIOUR IS UNCHANGED, and that is checked rather than asserted.
+`--encoded-trace` takes `PerfettoTrack::default()`: pid 0, tid 0, `label: None`,
+and `label: None` suppresses the metadata events entirely, so the emitted bytes
+are the ones the old code emitted. Re-decoding all five single traces in the
+repo (samples/tacit's full boot, and both harts of both dual-hart captures)
+produced `trace.perfetto.json` and `trace.txt` byte-identical to what was on
+disk before this patch, and scripts/10_tacit_hello.sh still reports
+541930 / 258319 / 793201 / 2372 against expected/tacit.json.
+
+`--encoded-trace` became optional at the clap level, since `--trace` replaces
+it; passing neither, or both, is a hard error with a message that says which.
+The other nine backends each write one fixed file name into the current
+directory, which cannot be right for more than one hart, so combining them with
+`--trace` is refused rather than letting hart 1 silently overwrite hart 0.
+
+`cargo test` covers the default track's pid/tid/metadata contract, the metadata
+JSON exactly as serde_json emits it, the `traceEvents` framing with and without
+metadata, and the four `--trace` spec parses.
+---
+diff --git a/src/backend/perfetto_receiver.rs b/src/backend/perfetto_receiver.rs
+index c6b4e62..17e3907 100644
+--- a/src/backend/perfetto_receiver.rs
++++ b/src/backend/perfetto_receiver.rs
+@@ -4,9 +4,97 @@ use crate::backend::stack_unwinder::{StackUnwinder, SymbolInfo};
+ use bus::BusReader;
+ use std::fs::File;
+ use std::io::{BufWriter, Write};
++use std::path::{Path, PathBuf};
++use std::sync::{Arc, Mutex};
+ use serde_json::json;
+ use log::debug;
+ 
++/// Which Perfetto track a decoded trace's slices belong to.
++///
++/// Chrome/Perfetto JSON has no separate notion of a track: a track IS the `(pid, tid)`
++/// pair carried on every event, and its NAME comes from two `"ph":"M"` metadata events
++/// (`process_name`, `thread_name`) that carry the same pair. Two decoded traces that both
++/// say `pid 0, tid 0` are therefore indistinguishable once concatenated -- every slice
++/// claims the same track -- which is why a multi-hart capture could not be merged before.
++///
++/// A single-trace decode has exactly one track and no reason to name it, so
++/// [`PerfettoTrack::default`] is `pid 0 / tid 0` with `label: None`, and `label: None`
++/// suppresses the metadata events entirely. That is byte for byte what this receiver
++/// emitted before multi-hart support existed, and it is what `--encoded-trace` still uses.
++#[derive(Clone, Debug, PartialEq, Eq)]
++pub struct PerfettoTrack {
++    pub pid: u64,
++    pub tid: u64,
++    /// Human-readable track name, supplied by the caller (`--trace FILE:HART:LABEL`).
++    /// `None` means "emit no metadata at all", not "emit an empty name".
++    pub label: Option<String>,
++    /// Where this track's own single-hart JSON file goes.
++    pub path: PathBuf,
++}
++
++impl Default for PerfettoTrack {
++    fn default() -> Self {
++        PerfettoTrack {
++            pid: 0,
++            tid: 0,
++            label: None,
++            path: PathBuf::from("trace.perfetto.json"),
++        }
++    }
++}
++
++impl PerfettoTrack {
++    /// A named track for one hart, writing its own file at `path`.
++    pub fn hart(hart: u64, label: String, path: PathBuf) -> Self {
++        PerfettoTrack { pid: hart, tid: hart, label: Some(label), path }
++    }
++
++    /// The `M`-phase metadata that names this track in the Perfetto UI. Empty when the
++    /// track is unnamed, which is what keeps the single-trace output unchanged.
++    pub fn metadata(&self) -> Vec<String> {
++        match &self.label {
++            None => Vec::new(),
++            Some(name) => ["process_name", "thread_name"]
++                .iter()
++                .map(|which| {
++                    json!({
++                        "name": which,
++                        "ph": "M",
++                        "pid": self.pid,
++                        "tid": self.tid,
++                        "args": { "name": name }
++                    })
++                    .to_string()
++                })
++                .collect(),
++        }
++    }
++}
++
++/// Where a track's events go when several traces are decoded into one timeline.
++/// `(order, events)`: the order is the position of the `--trace` argument that produced
++/// them, so the merged file is written in the order the caller asked for regardless of
++/// which decode finished first.
++pub type MergedSink = Arc<Mutex<Vec<(usize, Vec<String>)>>>;
++
++/// Write a Chrome/Perfetto `traceEvents` object.
++///
++/// Factored out so the merged file and the per-hart files are produced by the same code.
++/// The framing (two-space indent, four-space event indent, trailing blank line) is the
++/// original one, and with an empty `metadata` this emits the same bytes it always did.
++pub fn write_trace_events<W: Write>(w: &mut W, metadata: &[String], events: &[String]) -> std::io::Result<()> {
++    writeln!(w, "{{")?;
++    writeln!(w, "  \"traceEvents\": [")?;
++    let n = metadata.len() + events.len();
++    for (i, ev) in metadata.iter().chain(events.iter()).enumerate() {
++        let comma = if i + 1 < n { "," } else { "" };
++        writeln!(w, "    {}{}", ev, comma)?;
++    }
++    writeln!(w, "  ]")?;
++    writeln!(w, "}}\n")?;
++    Ok(())
++}
++
+ /// A Chrome Tracing (Perfetto) JSON receiver for RISC‑V trace decoding,
+ /// but using the unwinder’s stack as the ground truth.
+ pub struct PerfettoReceiver {
+@@ -17,20 +105,35 @@ pub struct PerfettoReceiver {
+     start_ts: u64,
+     end_ts: u64,
+     last_frames: Vec<u64>, // addresses of frame starts we saw last
++    track: PerfettoTrack,
++    merged: Option<(usize, MergedSink)>,
+ }
+ 
+ impl PerfettoReceiver {
+-    pub fn new(bus_rx: BusReader<Entry>, elf_path: String) -> Self {
+-        debug!("PerfettoReceiver::new");
++    /// Decode onto a specific track, optionally also depositing the events into a shared
++    /// sink so several traces can be written out as one merged timeline.
++    ///
++    /// A single-trace decode passes [`PerfettoTrack::default`] and `None`, which is the
++    /// unnamed pid-0/tid-0 track this receiver has always written.
++    pub fn on_track(
++        bus_rx: BusReader<Entry>,
++        elf_path: String,
++        track: PerfettoTrack,
++        merged: Option<(usize, MergedSink)>,
++    ) -> Self {
++        debug!("PerfettoReceiver::on_track {:?}", track);
+         let unwinder = StackUnwinder::new(elf_path).unwrap();
++        let writer = BufWriter::new(create_at(&track.path));
+         PerfettoReceiver {
+-            writer: BufWriter::new(File::create("trace.perfetto.json").unwrap()),
++            writer,
+             receiver: BusReceiver { name: "perfetto".into(), bus_rx, checksum: 0 },
+             unwinder,
+             events: Vec::new(),
+             start_ts: 0,
+             end_ts: 0,
+             last_frames: Vec::new(),
++            track,
++            merged,
+         }
+     }
+ 
+@@ -54,8 +157,8 @@ impl PerfettoReceiver {
+                 "cat": "function",
+                 "ph": "E",    // end
+                 "ts": ts,
+-                "pid": 0,
+-                "tid": 0,
++                "pid": self.track.pid,
++                "tid": self.track.tid,
+                 "args": {}
+             });
+             self.events.push(evt.to_string());
+@@ -68,8 +171,8 @@ impl PerfettoReceiver {
+                 "cat": "function",
+                 "ph": "B",   // begin
+                 "ts": ts,
+-                "pid": 0,
+-                "tid": 0,
++                "pid": self.track.pid,
++                "tid": self.track.tid,
+                 "args": { "addr": format!("0x{:x}", addr) }
+             });
+             self.events.push(evt.to_string());
+@@ -78,6 +181,16 @@ impl PerfettoReceiver {
+     }
+ }
+ 
++fn create_at(path: &Path) -> File {
++    if let Some(dir) = path.parent() {
++        if !dir.as_os_str().is_empty() {
++            let _ = std::fs::create_dir_all(dir);
++        }
++    }
++    File::create(path)
++        .unwrap_or_else(|e| panic!("cannot write perfetto output at {}: {}", path.display(), e))
++}
++
+ impl AbstractReceiver for PerfettoReceiver {
+     fn bus_rx(&mut self) -> &mut BusReader<Entry> {
+         &mut self.receiver.bus_rx
+@@ -126,16 +239,82 @@ impl AbstractReceiver for PerfettoReceiver {
+         // we simply treat this like ts = end_ts
+         self.diff_stack(self.end_ts);
+ 
++        let metadata = self.track.metadata();
++
+         // write out the combined traceEvents
+-        writeln!(self.writer, "{{").unwrap();
+-        writeln!(self.writer, "  \"traceEvents\": [").unwrap();
+-        for (i, ev) in self.events.iter().enumerate() {
+-            let comma = if i + 1 < self.events.len() { "," } else { "" };
+-            writeln!(self.writer, "    {}{}", ev, comma).unwrap();
+-        }
+-        writeln!(self.writer, "  ]").unwrap();
+-        writeln!(self.writer, "}}\n").unwrap();
++        write_trace_events(&mut self.writer, &metadata, &self.events).unwrap();
+         self.writer.flush().unwrap();
++
++        // and hand the same block to the merger, if there is one. The metadata rides
++        // along so the merged file names every track it contains.
++        if let Some((order, sink)) = &self.merged {
++            let mut block = metadata;
++            block.extend(self.events.iter().cloned());
++            sink.lock().unwrap().push((*order, block));
++        }
+     }
+ }
+ 
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    // The default track is the single-trace contract: pid 0, tid 0, no metadata. If this
++    // ever changes, every `--encoded-trace` decode in the repo changes with it, including
++    // the one expected/tacit.json goldens.
++    #[test]
++    fn default_track_is_pid0_tid0_unnamed() {
++        let t = PerfettoTrack::default();
++        assert_eq!((t.pid, t.tid), (0, 0));
++        assert_eq!(t.label, None);
++        assert!(t.metadata().is_empty());
++        assert_eq!(t.path, PathBuf::from("trace.perfetto.json"));
++    }
++
++    #[test]
++    fn named_track_emits_both_metadata_events() {
++        let t = PerfettoTrack::hart(1, "hart 1 (LITTLE)".into(), PathBuf::from("h1.json"));
++        assert_eq!((t.pid, t.tid), (1, 1));
++        let m = t.metadata();
++        assert_eq!(m.len(), 2);
++        // serde_json without `preserve_order` sorts object keys, which is what makes the
++        // decoder's output stable enough for the labs to regex it.
++        assert_eq!(
++            m[0],
++            r#"{"args":{"name":"hart 1 (LITTLE)"},"name":"process_name","ph":"M","pid":1,"tid":1}"#
++        );
++        assert_eq!(
++            m[1],
++            r#"{"args":{"name":"hart 1 (LITTLE)"},"name":"thread_name","ph":"M","pid":1,"tid":1}"#
++        );
++    }
++
++    // The framing is load-bearing: expected/tacit.json counts `"ph":"B"` occurrences in a
++    // file written by this function, and 10_tacit_hello.sh reproduces it bit-exactly.
++    #[test]
++    fn framing_without_metadata_is_the_original_one() {
++        let mut buf: Vec<u8> = Vec::new();
++        write_trace_events(&mut buf, &[], &["{\"a\":1}".into(), "{\"b\":2}".into()]).unwrap();
++        assert_eq!(
++            String::from_utf8(buf).unwrap(),
++            "{\n  \"traceEvents\": [\n    {\"a\":1},\n    {\"b\":2}\n  ]\n}\n\n"
++        );
++    }
++
++    #[test]
++    fn metadata_is_counted_by_the_comma_placement() {
++        let mut buf: Vec<u8> = Vec::new();
++        write_trace_events(&mut buf, &["{\"m\":0}".into()], &["{\"a\":1}".into()]).unwrap();
++        assert_eq!(
++            String::from_utf8(buf).unwrap(),
++            "{\n  \"traceEvents\": [\n    {\"m\":0},\n    {\"a\":1}\n  ]\n}\n\n"
++        );
++    }
++
++    #[test]
++    fn empty_trace_still_closes_the_array() {
++        let mut buf: Vec<u8> = Vec::new();
++        write_trace_events(&mut buf, &[], &[]).unwrap();
++        assert_eq!(String::from_utf8(buf).unwrap(), "{\n  \"traceEvents\": [\n  ]\n}\n\n");
++    }
++}
+diff --git a/src/backend/txt_receiver.rs b/src/backend/txt_receiver.rs
+index fe5be00..512045a 100644
+--- a/src/backend/txt_receiver.rs
++++ b/src/backend/txt_receiver.rs
+@@ -3,6 +3,7 @@ use crate::backend::abstract_receiver::{AbstractReceiver, BusReceiver};
+ use bus::BusReader;
+ use std::fs::File;
+ use std::io::{BufWriter, Write};
++use std::path::{Path, PathBuf};
+ 
+ pub struct TxtReceiver {
+     writer: BufWriter<File>,
+@@ -11,11 +12,28 @@ pub struct TxtReceiver {
+ 
+ impl TxtReceiver {
+     pub fn new(bus_rx: BusReader<Entry>) -> Self {
+-        Self { writer: BufWriter::new(File::create("trace.txt").unwrap()), 
++        Self::at(bus_rx, PathBuf::from("trace.txt"))
++    }
++
++    /// Same receiver, writing somewhere other than `./trace.txt`. Multi-hart decoding
++    /// runs several traces through one process, so "the current directory" is no longer
++    /// a usable answer to "where does this hart's text trace go".
++    pub fn at(bus_rx: BusReader<Entry>, path: PathBuf) -> Self {
++        Self { writer: BufWriter::new(create_at(&path)),
+                 receiver: BusReceiver { name: "txt".to_string(), bus_rx: bus_rx, checksum: 0 } }
+     }
+ }
+ 
++fn create_at(path: &Path) -> File {
++    if let Some(dir) = path.parent() {
++        if !dir.as_os_str().is_empty() {
++            let _ = std::fs::create_dir_all(dir);
++        }
++    }
++    File::create(path)
++        .unwrap_or_else(|e| panic!("cannot write text trace at {}: {}", path.display(), e))
++}
++
+ impl AbstractReceiver for TxtReceiver {
+ 
+     fn bus_rx(&mut self) -> &mut BusReader<Entry> {
+diff --git a/src/main.rs b/src/main.rs
+index f590907..ca6f2d9 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -37,7 +37,9 @@ use frontend::f_header::FHeader;
+ 
+ // file IO
+ use std::fs::File;
+-use std::io::{Read, BufReader};
++use std::io::{Read, BufReader, BufWriter};
++use std::path::{Path, PathBuf};
++use std::sync::{Arc, Mutex};
+ // collections 
+ use std::collections::HashMap;
+ // argparse dependency
+@@ -63,7 +65,7 @@ use backend::afdo_receiver::AfdoReceiver;
+ use backend::abstract_receiver::AbstractReceiver;
+ use backend::gcda_receiver::GcdaReceiver;
+ use backend::speedscope_receiver::SpeedscopeReceiver;
+-use backend::perfetto_receiver::PerfettoReceiver;
++use backend::perfetto_receiver::{MergedSink, PerfettoReceiver, PerfettoTrack, write_trace_events};
+ use backend::vpp_receiver::VPPReceiver;
+ use backend::foc_receiver::FOCReceiver;
+ use backend::vbb_receiver::VBBReceiver;
+@@ -82,9 +84,32 @@ const BUS_SIZE: usize = 1024;
+ #[derive(Clone, Parser)]
+ #[command(name = "trace-decoder", version = "0.1.0", about = "Decode trace files")]
+ struct Args {
+-    // path to the encoded trace file
++    // path to the encoded trace file -- one hart, one trace. Mutually exclusive with
++    // --trace, which is the multi-hart form.
+     #[arg(short, long)]
+-    encoded_trace: String,
++    encoded_trace: Option<String>,
++    // one per-hart trace, repeatable:  --trace FILE[:HART[:LABEL]]
++    //
++    // Repeated flags rather than a manifest file because this is driven from shell
++    // scripts: a lab already has $RUN/hart$h/tacit.out in a loop variable, so
++    //
++    //   ARGS=(); for h in 0 1; do ARGS+=(--trace "$RUN/hart$h/tacit.out:$h:${LABEL[$h]}"); done
++    //
++    // is the whole integration -- no temporary file to write, clean up, or keep in step
++    // with the run, and every path stays visible in the command line the lab echoes.
++    //
++    // HART defaults to the argument's position and sets the Perfetto pid/tid, so each
++    // hart lands on its own track. LABEL defaults to "hart <N>" and is what the track is
++    // NAMED in the UI; it is supplied by the caller because only the caller knows that
++    // hart 0 is the big core with the MBP datapath. FILE may not contain ':'; LABEL may.
++    //
++    // Each trace also keeps its own single-hart trace.txt / trace.perfetto.json, written
++    // next to its FILE, so the per-hart files a lab already checks do not go away.
++    #[arg(long, value_name = "FILE[:HART[:LABEL]]")]
++    trace: Vec<String>,
++    // where the merged, all-harts-on-one-axis Perfetto JSON goes (--trace mode only)
++    #[arg(long, default_value_t = String::from("trace.merged.perfetto.json"))]
++    merged_perfetto: String,
+     // path to the binary file
+     #[arg(short, long)]
+     binary: String,
+@@ -194,7 +219,7 @@ fn step_bb_until(pc: u64, insn_map: &HashMap<u64, Insn>, target_pc: u64, bus: &m
+ }
+ 
+ // frontend decoding packets and pushing entries to the bus
+-fn trace_decoder(args: &Args, mut bus: Bus<Entry>) -> Result<()> {
++fn trace_decoder(args: &Args, encoded_trace: &str, mut bus: Bus<Entry>) -> Result<()> {
+     let mut elf_file = File::open(args.binary.clone())?;
+     let mut elf_buffer = Vec::new();
+     elf_file.read_to_end(&mut elf_buffer)?;
+@@ -236,7 +261,7 @@ fn trace_decoder(args: &Args, mut bus: Bus<Entry>) -> Result<()> {
+     }
+     debug!("[main] found {} instructions", insn_map.len());
+ 
+-    let encoded_trace_file = File::open(args.encoded_trace.clone())?;
++    let encoded_trace_file = File::open(encoded_trace)?;
+     let mut encoded_trace_reader : BufReader<File> = BufReader::new(encoded_trace_file);
+ 
+     let mut bp_counter = BpDoubleSaturatingCounter::new(args.bp_entries);
+@@ -370,16 +395,54 @@ fn trace_decoder(args: &Args, mut bus: Bus<Entry>) -> Result<()> {
+     Ok(())
+ }
+ 
+-fn main() -> Result<()> {
+-    env_logger::init();
+-    let args = Args::parse();
++/// One `--trace FILE[:HART[:LABEL]]` argument, parsed.
++#[derive(Clone, Debug, PartialEq, Eq)]
++struct TraceSpec {
++    path: String,
++    hart: u64,
++    label: String,
++}
+ 
++/// Split on ':' at most twice: the path first (so it may not contain a colon), then the
++/// hart id, then everything left is the label (so the label may). `idx` is the argument's
++/// position, used as the hart id when the caller did not give one.
++fn parse_trace_spec(arg: &str, idx: usize) -> Result<TraceSpec> {
++    let mut it = arg.splitn(3, ':');
++    let path = it.next().unwrap_or("").to_string();
++    if path.is_empty() {
++        return Err(anyhow::anyhow!("--trace `{}`: empty trace path", arg));
++    }
++    let hart = match it.next() {
++        Some(h) if !h.is_empty() => h.parse::<u64>().map_err(|_| {
++            anyhow::anyhow!("--trace `{}`: `{}` is not a hart id (expected FILE[:HART[:LABEL]])", arg, h)
++        })?,
++        _ => idx as u64,
++    };
++    let label = match it.next() {
++        Some(l) if !l.is_empty() => l.to_string(),
++        _ => format!("hart {}", hart),
++    };
++    Ok(TraceSpec { path, hart, label })
++}
++
++/// Decode exactly one encoded trace, with the perfetto output aimed at `track`.
++///
++/// This is the body `main()` used to be. Splitting it out is what lets several traces go
++/// through one process; for a single `--encoded-trace` the arguments are the defaults and
++/// the behaviour -- including the output file names -- is unchanged.
++fn decode_one(
++    args: &Args,
++    encoded_trace: &str,
++    txt_path: Option<PathBuf>,
++    track: PerfettoTrack,
++    merged: Option<(usize, MergedSink)>,
++) -> Result<()> {
+     let mut bus: Bus<Entry> = Bus::new(BUS_SIZE);
+     let mut receivers: Vec<Box<dyn AbstractReceiver>> = vec![];
+ 
+     // add a receiver to the bus for stats output
+     if args.to_stats {
+-        let encoded_trace_file = File::open(args.encoded_trace.clone())?;
++        let encoded_trace_file = File::open(encoded_trace)?;
+         // get the file size
+         let file_size = encoded_trace_file.metadata()?.len();
+         // close the file
+@@ -387,11 +450,14 @@ fn main() -> Result<()> {
+         let stats_bus_endpoint = bus.add_rx();
+         receivers.push(Box::new(StatsReceiver::new(stats_bus_endpoint, BrMode::from(args.br_mode), file_size)));
+     }
+-    
++
+     // add a receiver to the bus for txt output
+     if args.to_txt {
+         let txt_bus_endpoint = bus.add_rx();
+-        receivers.push(Box::new(TxtReceiver::new(txt_bus_endpoint)));
++        receivers.push(match &txt_path {
++            Some(p) => Box::new(TxtReceiver::at(txt_bus_endpoint, p.clone())) as Box<dyn AbstractReceiver>,
++            None => Box::new(TxtReceiver::new(txt_bus_endpoint)),
++        });
+     }
+ 
+     if args.to_stack_txt {
+@@ -427,7 +493,8 @@ fn main() -> Result<()> {
+ 
+     if args.to_perfetto {
+         let perfetto_bus_endpoint = bus.add_rx();
+-        receivers.push(Box::new(PerfettoReceiver::new(perfetto_bus_endpoint, args.binary.clone())));
++        receivers.push(Box::new(PerfettoReceiver::on_track(
++            perfetto_bus_endpoint, args.binary.clone(), track, merged)));
+     }
+ 
+     if args.to_vpp {
+@@ -445,7 +512,9 @@ fn main() -> Result<()> {
+         receivers.push(Box::new(VBBReceiver::new(vbb_bus_endpoint)));
+     }
+ 
+-    let frontend_handle = thread::spawn(move || trace_decoder(&args, bus));
++    let args_for_thread = args.clone();
++    let trace_for_thread = encoded_trace.to_string();
++    let frontend_handle = thread::spawn(move || trace_decoder(&args_for_thread, &trace_for_thread, bus));
+     let receiver_handles: Vec<_> = receivers.into_iter()
+         .map(|mut receiver| thread::spawn(move || receiver.try_receive_loop()))
+         .collect();
+@@ -472,3 +541,139 @@ fn main() -> Result<()> {
+ 
+     Ok(())
+ }
++
++/// Decode every `--trace` in turn and write one Perfetto file containing all of them.
++///
++/// Sequential, not parallel: each decode owns a `Bus` and a fixed set of receiver threads,
++/// and the traces are small next to the ELF parse. Doing them one at a time also means the
++/// merged file is assembled in a defined order without any cross-decode locking beyond the
++/// sink itself.
++///
++/// TIMEBASE. Nothing here rescales a timestamp. TACIT stamps packets with deltas in CORE
++/// CYCLES, so putting two harts on one axis is only meaningful when their `mcycle`s are
++/// the same clock -- on Rocket that needs patches/0004-rocketchip-mcycle-free-run.patch,
++/// without which an idle hart's counter stops in `wfi` and the two tracks come out
++/// millions of cycles apart. See fpga/pynq-z2/docs/TACIT_MULTICORE.md.
++fn decode_many(args: &Args) -> Result<()> {
++    let specs: Vec<TraceSpec> = args.trace.iter().enumerate()
++        .map(|(i, a)| parse_trace_spec(a, i))
++        .collect::<Result<_>>()?;
++
++    if args.encoded_trace.is_some() {
++        return Err(anyhow::anyhow!(
++            "--encoded-trace and --trace are two different modes; pass one or the other"));
++    }
++    if !args.to_perfetto {
++        return Err(anyhow::anyhow!(
++            "--trace merges Perfetto timelines, so it needs --to-perfetto"));
++    }
++    // Every other backend writes a fixed file name into the current directory, which
++    // cannot be right for more than one hart at a time. Rather than silently letting hart
++    // 1 overwrite hart 0, say so.
++    for (flag, on) in [("--to-stats", args.to_stats), ("--to-stack-txt", args.to_stack_txt),
++                       ("--to-atomics", args.to_atomics), ("--to-afdo", args.to_afdo),
++                       ("--to-gcda", args.to_gcda), ("--to-speedscope", args.to_speedscope),
++                       ("--to-vpp", args.to_vpp), ("--to-foc", args.to_foc),
++                       ("--to-vbb", args.to_vbb)] {
++        if on {
++            return Err(anyhow::anyhow!(
++                "{} writes one fixed file name and cannot be combined with --trace; \
++                 decode that hart on its own with --encoded-trace", flag));
++        }
++    }
++    let mut seen: Vec<u64> = Vec::new();
++    for sp in &specs {
++        if seen.contains(&sp.hart) {
++            return Err(anyhow::anyhow!(
++                "hart {} given twice; two traces on one track cannot be told apart", sp.hart));
++        }
++        seen.push(sp.hart);
++    }
++
++    let sink: MergedSink = Arc::new(Mutex::new(Vec::new()));
++    for (i, sp) in specs.iter().enumerate() {
++        // The per-hart outputs land next to the encoded trace, which is where the labs
++        // already keep them ($RUN/hart0/tacit.out -> $RUN/hart0/trace.perfetto.json).
++        let dir = Path::new(&sp.path).parent().unwrap_or(Path::new(".")).to_path_buf();
++        println!("[trace {}] hart {} `{}` <- {}", i, sp.hart, sp.label, sp.path);
++        decode_one(
++            args,
++            &sp.path,
++            Some(dir.join("trace.txt")),
++            PerfettoTrack::hart(sp.hart, sp.label.clone(), dir.join("trace.perfetto.json")),
++            Some((i, Arc::clone(&sink))),
++        )?;
++    }
++
++    let mut blocks = Arc::try_unwrap(sink)
++        .map_err(|_| anyhow::anyhow!("merged sink still shared"))?
++        .into_inner()
++        .map_err(|_| anyhow::anyhow!("merged sink poisoned"))?;
++    blocks.sort_by_key(|(order, _)| *order);
++    let events: Vec<String> = blocks.into_iter().flat_map(|(_, ev)| ev).collect();
++
++    let out = PathBuf::from(&args.merged_perfetto);
++    if let Some(d) = out.parent() {
++        if !d.as_os_str().is_empty() {
++            std::fs::create_dir_all(d)?;
++        }
++    }
++    let mut w = BufWriter::new(File::create(&out)?);
++    // The metadata already rides at the head of each hart's block, so there is nothing
++    // extra to prepend here.
++    write_trace_events(&mut w, &[], &events)?;
++    use std::io::Write as _;
++    w.flush()?;
++    println!("[Success] Merged {} traces ({} events) into {}",
++             specs.len(), events.len(), out.display());
++    Ok(())
++}
++
++fn main() -> Result<()> {
++    env_logger::init();
++    let args = Args::parse();
++
++    if !args.trace.is_empty() {
++        return decode_many(&args);
++    }
++
++    let encoded_trace = args.encoded_trace.clone().ok_or_else(|| anyhow::anyhow!(
++        "no trace to decode: pass --encoded-trace FILE, or --trace FILE[:HART[:LABEL]] \
++         once per hart for a merged multi-hart timeline"))?;
++    decode_one(&args, &encoded_trace, None, PerfettoTrack::default(), None)
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn spec_defaults_hart_to_position_and_label_to_hart() {
++        let s = parse_trace_spec("out/hart0/tacit.out", 0).unwrap();
++        assert_eq!(s, TraceSpec { path: "out/hart0/tacit.out".into(), hart: 0, label: "hart 0".into() });
++        let s = parse_trace_spec("out/hart1/tacit.out", 1).unwrap();
++        assert_eq!(s.hart, 1);
++        assert_eq!(s.label, "hart 1");
++    }
++
++    #[test]
++    fn spec_takes_an_explicit_hart_and_label() {
++        let s = parse_trace_spec("a/b.out:3:hart 3 (big, MBP)", 0).unwrap();
++        assert_eq!(s.path, "a/b.out");
++        assert_eq!(s.hart, 3);
++        assert_eq!(s.label, "hart 3 (big, MBP)");
++    }
++
++    // The label is everything after the second colon, so a label may contain one.
++    #[test]
++    fn label_may_contain_colons() {
++        let s = parse_trace_spec("a.out:1:LITTLE: no MBP", 0).unwrap();
++        assert_eq!(s.label, "LITTLE: no MBP");
++    }
++
++    #[test]
++    fn spec_rejects_a_non_numeric_hart() {
++        assert!(parse_trace_spec("a.out:big", 0).is_err());
++        assert!(parse_trace_spec("", 0).is_err());
++    }
++}

@@ -1,0 +1,75 @@
+--- a/pipeline/extract_graph.py
++++ b/pipeline/extract_graph.py
+@@ -1521,8 +1521,61 @@
+     clamp_hi = _consumer_clamp_bounds(gm)
+     gelu_fed = _gelu_only_consumers(gm)
+ 
++    # Opt-in (MB_INT8_CALIB_POLICY=pNN[.N], default "max"): calibrate the int8 range on a
++    # PERCENTILE of |t| POOLED OVER ALL CALIBRATION SAMPLES, instead of its maximum, so a handful
++    # of outlier activations do not set the scale for every ordinary one.  Default "max" is the
++    # stock rule and leaves every existing IR bit-identical.
++    #
++    # POOLED, not per-sample-then-max, and the difference is not academic: the largest per-sample
++    # p99.9 is 1.09x the pooled p99.9 at the median tensor but 1.5x on stem conv2/conv3 and 3.11x
++    # on stem conv1 -- the very tensors ROCC_DECOUPLED.md s8.12 identifies as the failure -- and
++    # that cost 5.32 WER points end to end when it was tried (MOONSHINE_MODEL.md s2.8.1).
++    #
++    # Measured on Moonshine Tiny's encoder with an unsplit stem: p99.9 scores 12.33 % WER on
++    # dev-clean 765 against max's 38.14 % -- the policy is worth 25.81 WER points on a model whose
++    # activations have outlier channels.
++    _calib_policy = os.environ.get("MB_INT8_CALIB_POLICY", "max")
++    if _calib_policy != "max" and not (
++            _calib_policy.startswith("p") and _calib_policy[1:].replace(".", "", 1).isdigit()):
++        raise SystemExit(f"MB_INT8_CALIB_POLICY={_calib_policy!r}: expected 'max' or 'pNN[.N]'")
++    _calib_q = float(_calib_policy[1:]) / 100.0 if _calib_policy != "max" else None
++    # |t| samples pooled across calibration samples, bounded so a long calibration cannot grow
++    # without limit.  Only populated when a percentile policy is selected.
++    _calib_pool: dict[str, list] = {}
++    _CALIB_POOL_PER_SAMPLE = 20000
++
++    def _pool(nname: str, t: "torch.Tensor") -> None:
++        v = t.detach().abs().reshape(-1).float()
++        if v.numel() == 0:
++            return
++        if v.numel() > _CALIB_POOL_PER_SAMPLE:
++            idx = torch.randint(0, v.numel(), (_CALIB_POOL_PER_SAMPLE,), device=v.device)
++            v = v[idx]
++        _calib_pool.setdefault(nname, []).append(v.cpu())
++
++    def _apply_calib_percentile() -> None:
++        """Replace each pooled tensor's range with its percentile, never above the max already
++        accumulated (so this can only narrow a range, never widen one)."""
++        for nname, chunks in _calib_pool.items():
++            v = torch.cat(chunks).double()
++            r = float(torch.quantile(v, _calib_q).item())
++            if r > 0.0:
++                max_abs[nname] = min(max_abs.get(nname, r), r)
++
+     def _cal_range(nname: str, t: "torch.Tensor") -> float:
+         """The magnitude this tensor's int8 scale has to span."""
++        if _calib_q is not None:
++            # Pool the values the stock rule would have taken a maximum of -- the GELU- and
++            # clamp-aware narrowings still apply, because what a consumer deletes is deleted
++            # whatever the policy -- and return the stock maximum for now.  The percentile is
++            # applied once, over the pooled values, by _apply_calib_percentile().
++            if nname in gelu_fed:
++                pos = t.detach().clamp(min=0.0)
++                neg = (-t.detach()).clamp(min=0.0).clamp(max=_GELU_NEG_FLOOR)
++                _pool(nname, torch.cat([pos.reshape(-1), neg.reshape(-1)]))
++            else:
++                hi = clamp_hi.get(nname)
++                _pool(nname, t if hi is None else t.detach().clamp(min=0.0, max=hi))
+         if nname in gelu_fed:
+             # Every consumer is GELU, and GELU(x) for x <= -8 is 0 to within 1e-15:
+             # the negative tail beyond -8 is deleted by the consumer, so spending
+@@ -1597,6 +1650,10 @@
+             _sdpa_score_ranges(cap_i.tensors)
+         print(f"[extract_int8] calibrated across "
+               f"{1 + len(extra)} samples", flush=True)
++    if _calib_q is not None:
++        _apply_calib_percentile()
++        print(f"[extract_int8] calibration policy {_calib_policy}: "
++              f"{len(_calib_pool)} tensor ranges set from the pooled percentile", flush=True)
+ 
+     # patches/0103: a frozen quantisation plan (pipeline/extract_q16.py) supplies the range
+     # of every tensor it names, replacing what calibration measured.  None = stock.

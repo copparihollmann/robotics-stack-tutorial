@@ -1,0 +1,54 @@
+TLCacheCork: an opt-in to serve ReleaseAck ahead of GrantData on the inner D channel.
+
+WHY.  TLCacheCork answers an InclusiveCache's clean Release (every eviction of a clean
+victim) with a locally generated ReleaseAck on the SAME inner D channel that carries the
+outer GrantData, through TLArbiter.lowestIndexFirst with the data first.  A cycle-accurate
+simulation of this repo's generated L2 + cork RTL (fpga/pynq-z2/rtl_study/l2tb, calibrated
+at one transaction in flight only) reproduces the silicon DRAM plateau and its dip at four
+in flight, and attributes both to this arbitration: under a dense miss stream ReleaseAcks
+wait ~7.3 cycles per block behind data, the cork's 2-entry ReleaseAck queue fills, it
+refuses further Releases, the cache cannot schedule them, and every Acquire -- which may
+only follow its Release -- goes out late and in clumps while the outer D sits idle.  In the
+same simulation, ReleaseAck-first lands exactly on 64 B / 9 messages = 7.11 B/cycle.
+fpga/pynq-z2/docs/MEMORY_BANDWIDTH.md section 6.
+
+WHAT.  A CDE Field, TLCacheCorkReleaseAckFirst, default false.  When true the ReleaseAck
+queue is the arbiter's first input; when false the arbiter call is textually the original,
+so every config that does not set it elaborates byte-identically (checked against the
+vendored PynqZ2RocketBigLittlePextTacitMicRgbBwConfig bundle).  A Field rather than a
+TLCacheCorkParams member because the InclusiveCache coherence manager constructs the cork
+with default params; reading p() inside the cork needs no change to that generator.
+
+Applied with `git -C $CHIPYARD_DIR/generators/rocket-chip apply` alongside the other
+*-rocketchip-* patches (scripts/07_patch_rocketchip.sh).
+
+--- a/src/main/scala/tilelink/CacheCork.scala
++++ b/src/main/scala/tilelink/CacheCork.scala
+@@ -17,6 +17,14 @@
+ 
+ import freechips.rocketchip.util.DataToAugmentedData
+ 
++/** Serve the cork's locally generated ReleaseAcks AHEAD of the outer GrantData on the inner
++  * D channel.  The default arbitration is data-first; under a dense miss stream through an
++  * InclusiveCache that starves ReleaseAcks, fills the 2-entry ReleaseAck queue, stops the
++  * cache scheduling Releases, and so delays every Acquire behind them (iiswc-tutorial
++  * fpga/pynq-z2/docs/MEMORY_BANDWIDTH.md section 6).  Opt-in: false leaves the arbiter, and
++  * the generated Verilog, exactly as they were. */
++case object TLCacheCorkReleaseAckFirst extends Field[Boolean](false)
++
+ case class TLCacheCorkParams(
+   unsafe: Boolean = false,
+   sinkIds: Int = 8)
+@@ -169,7 +177,11 @@
+ 
+         // Combine the sources of messages into the channels
+         TLArbiter(TLArbiter.lowestIndexFirst)(out.a, (edgeOut.numBeats1(c_a.bits), c_a), (edgeOut.numBeats1(a_a.bits), a_a))
+-        TLArbiter(TLArbiter.lowestIndexFirst)(in_d,  (edgeIn .numBeats1(d_d.bits), d_d), (0.U, Queue(c_d, 2)), (0.U, Queue(a_d, 2)))
++        if (p(TLCacheCorkReleaseAckFirst)) {
++          TLArbiter(TLArbiter.lowestIndexFirst)(in_d,  (0.U, Queue(c_d, 2)), (edgeIn .numBeats1(d_d.bits), d_d), (0.U, Queue(a_d, 2)))
++        } else {
++          TLArbiter(TLArbiter.lowestIndexFirst)(in_d,  (edgeIn .numBeats1(d_d.bits), d_d), (0.U, Queue(c_d, 2)), (0.U, Queue(a_d, 2)))
++        }
+ 
+         // Tie off unused ports
+         in.b.valid := false.B

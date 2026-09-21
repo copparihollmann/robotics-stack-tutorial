@@ -1,0 +1,194 @@
+Five Visual Wake Words classifiers, resolvable by `--model vww_<arch>`
+
+ModelBlaster resolves --model <id> by importing modelblaster.models.<id>, so a model that
+lives outside this submodule still needs a module inside it. These five are that module
+and nothing else: each is ~25 lines that put $IISWC_ROOT on sys.path and defer to
+fpga/pynq-z2/modelblaster/vision/mb_shim.py.
+
+Exactly the split patches/0020 uses for the keyword spotters, and for the same two
+reasons:
+
+  * this submodule is a PINNED READ-ONLY input -- scripts/02_verify_patches.sh proves the
+    working tree equals its base plus patches/, and an untracked model file would pass
+    that gate while not surviving a fresh checkout;
+  * the trained weights are ~1.3 MB of npz, which cannot be carried in a patch.
+
+The architectures, all on MLCommons' vw_coco2014_96 corpus (109,619 COCO-2014 images,
+person / no person), all fed by fpga/pynq-z2/sw/frame_fe.c from a 324x324 HM01B0 frame:
+
+  vww_mbnet      7,157,888 MACs  the MLPerf Tiny reference shape: MobileNetV1 alpha=0.25,
+                                 depthwise-separable throughout
+  vww_cnn        7,154,048 MACs  the SAME budget in DENSE 3x3 convolutions (-0.054 %)
+  vww_cnn_tiny   1,843,328 MACs  a quarter of it
+  vww_cnn_rgb    7,485,824 MACs  vww_cnn with a three-channel first layer (demosaiced)
+  vww_cnn_bayer  7,651,712 MACs  vww_cnn fed the RAW Bayer mosaic as four 48x48 planes
+
+The first pair is a controlled architecture experiment and the last pair a controlled
+sensor-colour one: matched MAC budgets, one variable each. See
+fpga/pynq-z2/docs/CAMERA_TASK.md for what they measure and why.
+
+diff --git a/models/vww_cnn.py b/models/vww_cnn.py
+new file mode 100644
+index 0000000..f167e59
+--- /dev/null
++++ b/models/vww_cnn.py
+@@ -0,0 +1,27 @@
++"""Visual Wake Words 'cnn' -- see fpga/pynq-z2/modelblaster/vision/ in the iiswc-tutorial repo.
++
++Installed by patches/0070-modelblaster-vww-models.patch.  The architecture, the trained
++weights and the calibration frames live outside this submodule on purpose: the submodule
++is a pinned read-only input and a weight blob cannot be carried in a patch.
++"""
++import os
++import pathlib
++import sys
++
++_ROOT = pathlib.Path(os.environ.get("IISWC_ROOT", "/nonexistent"))
++sys.path.insert(0, str(_ROOT / "fpga" / "pynq-z2" / "modelblaster" / "vision"))
++import mb_shim  # noqa: E402
++
++_ARCH = "cnn"
++
++
++def get_model(seed: int = 0):
++    return mb_shim.load(_ARCH)[0]
++
++
++def get_sample_input(seed: int = 1):
++    return mb_shim.calib(_ARCH, 1)[0]
++
++
++def get_calibration_samples(n: int):
++    return mb_shim.calib(_ARCH, n)
+diff --git a/models/vww_cnn_bayer.py b/models/vww_cnn_bayer.py
+new file mode 100644
+index 0000000..15bd065
+--- /dev/null
++++ b/models/vww_cnn_bayer.py
+@@ -0,0 +1,27 @@
++"""Visual Wake Words 'cnn_bayer' -- see fpga/pynq-z2/modelblaster/vision/ in the iiswc-tutorial repo.
++
++Installed by patches/0070-modelblaster-vww-models.patch.  The architecture, the trained
++weights and the calibration frames live outside this submodule on purpose: the submodule
++is a pinned read-only input and a weight blob cannot be carried in a patch.
++"""
++import os
++import pathlib
++import sys
++
++_ROOT = pathlib.Path(os.environ.get("IISWC_ROOT", "/nonexistent"))
++sys.path.insert(0, str(_ROOT / "fpga" / "pynq-z2" / "modelblaster" / "vision"))
++import mb_shim  # noqa: E402
++
++_ARCH = "cnn_bayer"
++
++
++def get_model(seed: int = 0):
++    return mb_shim.load(_ARCH)[0]
++
++
++def get_sample_input(seed: int = 1):
++    return mb_shim.calib(_ARCH, 1)[0]
++
++
++def get_calibration_samples(n: int):
++    return mb_shim.calib(_ARCH, n)
+diff --git a/models/vww_cnn_rgb.py b/models/vww_cnn_rgb.py
+new file mode 100644
+index 0000000..5a747f7
+--- /dev/null
++++ b/models/vww_cnn_rgb.py
+@@ -0,0 +1,27 @@
++"""Visual Wake Words 'cnn_rgb' -- see fpga/pynq-z2/modelblaster/vision/ in the iiswc-tutorial repo.
++
++Installed by patches/0070-modelblaster-vww-models.patch.  The architecture, the trained
++weights and the calibration frames live outside this submodule on purpose: the submodule
++is a pinned read-only input and a weight blob cannot be carried in a patch.
++"""
++import os
++import pathlib
++import sys
++
++_ROOT = pathlib.Path(os.environ.get("IISWC_ROOT", "/nonexistent"))
++sys.path.insert(0, str(_ROOT / "fpga" / "pynq-z2" / "modelblaster" / "vision"))
++import mb_shim  # noqa: E402
++
++_ARCH = "cnn_rgb"
++
++
++def get_model(seed: int = 0):
++    return mb_shim.load(_ARCH)[0]
++
++
++def get_sample_input(seed: int = 1):
++    return mb_shim.calib(_ARCH, 1)[0]
++
++
++def get_calibration_samples(n: int):
++    return mb_shim.calib(_ARCH, n)
+diff --git a/models/vww_cnn_tiny.py b/models/vww_cnn_tiny.py
+new file mode 100644
+index 0000000..5d4eaf3
+--- /dev/null
++++ b/models/vww_cnn_tiny.py
+@@ -0,0 +1,27 @@
++"""Visual Wake Words 'cnn_tiny' -- see fpga/pynq-z2/modelblaster/vision/ in the iiswc-tutorial repo.
++
++Installed by patches/0070-modelblaster-vww-models.patch.  The architecture, the trained
++weights and the calibration frames live outside this submodule on purpose: the submodule
++is a pinned read-only input and a weight blob cannot be carried in a patch.
++"""
++import os
++import pathlib
++import sys
++
++_ROOT = pathlib.Path(os.environ.get("IISWC_ROOT", "/nonexistent"))
++sys.path.insert(0, str(_ROOT / "fpga" / "pynq-z2" / "modelblaster" / "vision"))
++import mb_shim  # noqa: E402
++
++_ARCH = "cnn_tiny"
++
++
++def get_model(seed: int = 0):
++    return mb_shim.load(_ARCH)[0]
++
++
++def get_sample_input(seed: int = 1):
++    return mb_shim.calib(_ARCH, 1)[0]
++
++
++def get_calibration_samples(n: int):
++    return mb_shim.calib(_ARCH, n)
+diff --git a/models/vww_mbnet.py b/models/vww_mbnet.py
+new file mode 100644
+index 0000000..1b85345
+--- /dev/null
++++ b/models/vww_mbnet.py
+@@ -0,0 +1,27 @@
++"""Visual Wake Words 'mbnet' -- see fpga/pynq-z2/modelblaster/vision/ in the iiswc-tutorial repo.
++
++Installed by patches/0070-modelblaster-vww-models.patch.  The architecture, the trained
++weights and the calibration frames live outside this submodule on purpose: the submodule
++is a pinned read-only input and a weight blob cannot be carried in a patch.
++"""
++import os
++import pathlib
++import sys
++
++_ROOT = pathlib.Path(os.environ.get("IISWC_ROOT", "/nonexistent"))
++sys.path.insert(0, str(_ROOT / "fpga" / "pynq-z2" / "modelblaster" / "vision"))
++import mb_shim  # noqa: E402
++
++_ARCH = "mbnet"
++
++
++def get_model(seed: int = 0):
++    return mb_shim.load(_ARCH)[0]
++
++
++def get_sample_input(seed: int = 1):
++    return mb_shim.calib(_ARCH, 1)[0]
++
++
++def get_calibration_samples(n: int):
++    return mb_shim.calib(_ARCH, n)

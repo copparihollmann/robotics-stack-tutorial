@@ -1,0 +1,209 @@
+Make the TACIT DSC branch predictor an elaboration-time option, default OFF.
+
+WHAT IT IS.  TacitEncoder instantiates a DSCBranchPredictor: 1024 two-bit
+saturating counters in a Chisel register Vec, read through a dynamically indexed
+1024:1 mux and written through a 1024-way decoder.  On a 7-series FPGA that is
+the classic register-file-in-flops pattern.  Measured post-route in the shipped
+PYNQ-Z1 bitstreams (build_rocket_mic_z1/reports/post_route_util_hier.rpt):
+
+    .../applyOrElse/bp   DSCBranchPredictor_77   3045 LUT   2048 FF   (hart 0)
+    .../applyOrElse/bp   DSCBranchPredictor      3037 LUT   2048 FF   (hart 1)
+
+which is 6,082 of the TACIT block's 8,132 LUT -- 74.8% of it, and 83% of each
+encoder's flip-flops.
+
+WHY IT CAN GO.  The predictor's output reaches nothing in any trace this repo
+has ever taken, because every consumer of `bp.io.resp` is gated on
+`is_bp_mode = (io.control.bp_mode === 2.U)` and:
+
+  * `trace_bp_mode` in TraceEncoderController.scala is `RegInit(0.U(32.W))`, so
+    the encoder comes up in BrTarget mode (0).  That is what the generated
+    Verilog we ship says too: `trace_bp_mode <= 32'h0`.
+  * nothing in this repo ever writes offset 0x24 -- no sample, no script, no
+    patch, and the Zephyr header only declares the field.
+  * the decoder's `--br-mode` defaults to 0 (BrTarget) and no lab passes it, so
+    src/frontend/bp_double_saturating_counter.rs is never stepped either.
+
+So hardware and decoder have both been in BrTarget the whole time, and every
+validated number -- 534,990 instructions at 2.021 bits/instruction, the boot
+trace, the dual-hart skew -- was produced with the predictor sitting idle.
+This is dead-logic removal, not a compression trade.
+
+WHAT THE PATCH DOES.
+
+  DSCBranchPredictor.scala   TacitBPParams gains `enable: Boolean = true`.  The
+      default keeps every existing call site byte-identical in behaviour.
+
+  TacitEncoder.scala         `bp` becomes an Option, so with enable = false the
+      module is never instantiated -- the counters, the read mux and the write
+      decoder are not emitted rather than emitted and left unread.  `is_bp_mode`
+      becomes the Scala literal `false.B`, which folds away bp_hit_count,
+      bp_miss_flag, bp_flush_hit and bp_hit_packet with it, and `is_bt_mode`
+      becomes `true.B`, so the bp_mode register is IGNORED rather than able to
+      select a mode this encoder can no longer implement.  That last point is
+      what makes the decode side need no flag: a trace from a no-predictor
+      encoder is always a BrTarget trace, which is the decoder's own default.
+
+  TacitConfigs.scala         `WithTacitEncoder(useBP: Boolean = false)`.  Our
+      configs get the default.  Pass `true` for BrPredict (and then pass
+      `--br-mode 2` to the decoder).
+
+WHAT IT DOES NOT DO.  The 0x24 bp_mode register still exists, still resets to 0
+and is still readable and writable -- only its output to the encoder is gone.
+The generated DTS and both register maps are unchanged, so Zephyr's tacit.h and
+every lab script are untouched.
+
+MEASURED RESULT.  Re-elaborating PynqZ2RocketTacitConfig against this patch:
+DSCBranchPredictor.sv is no longer emitted, and of the 405 generated files the
+previous bundle and this one have in common, 396 are byte-identical, 5 differ
+only in `// @[...]` source annotations (line shifts from the comments above),
+and 4 differ for real: TacitEncoder.sv, RocketTile.sv and
+TraceEncoderController.sv (all three lose the bp_mode connection), plus one
+simulation-only `$error` string in Rocket.sv whose embedded RocketCore.scala
+line number moved for an unrelated reason -- see TACIT_AREA.md.
+
+APPLIED BY scripts/03_patch_tacit.sh, not by hand: $CHIPYARD_DIR is a shared
+checkout.  `generators/tacit` is UNTRACKED in the donor tree, so this patch
+cannot be verified by scripts/02_verify_patches.sh the way the others are; the
+apply script's --check reverse-applies it instead.  The one file this change
+touches that IS tracked lives in patches/0031.
+
+--- a/generators/tacit/src/main/scala/DSCBranchPredictor.scala
++++ b/generators/tacit/src/main/scala/DSCBranchPredictor.scala
+@@ -13,7 +13,15 @@
+   val STRONG_TAKEN = 3.U(2.W)
+ }
+ 
+-case class TacitBPParams(xlen: Int, n_entries: Int)
++// `enable` gates ELABORATION of the predictor, not a runtime mode.
++//
++// The predictor only ever feeds TacitEncoder's BrPredict path (`bp_mode === 2`).
++// The mode register resets to 0 (BrTarget) and no software in the PYNQ-Z1 tutorial
++// writes it, so on that platform the predictor is 1024 x 2 bits of flops and a
++// 1024:1 mux whose output reaches nothing.  With `enable = false` TacitEncoder does
++// not instantiate it at all and hard-wires itself to BrTarget; with `enable = true`
++// (the default, so every existing call site is unchanged) BrPredict still works.
++case class TacitBPParams(xlen: Int, n_entries: Int, enable: Boolean = true)
+ 
+ class DSCBranchPredictor(params: TacitBPParams) extends Module {
+   val io = IO(new Bundle {
+--- a/generators/tacit/src/main/scala/TacitEncoder.scala
++++ b/generators/tacit/src/main/scala/TacitEncoder.scala
+@@ -202,8 +202,18 @@
+   // 1: branch prediction and skip jump
+   // 2: branch prediction and don't skip jump
+ 
+-  def is_bt_mode = io.control.bp_mode === 0.U
+-  def is_bp_mode = io.control.bp_mode === 2.U 
++  // Is the DSC branch predictor elaborated at all?  See TacitBPParams.
++  //
++  // When it is not, the encoder is hard-wired to BrTarget: `is_bp_mode` becomes a
++  // Scala `false.B` literal, so every consumer of the predictor's response folds
++  // away, and `is_bt_mode` becomes `true.B`, so the bp_mode register is ignored
++  // rather than being able to select a mode this encoder can no longer implement.
++  // That is what lets a trace from a no-predictor encoder decode with the decoder's
++  // own defaults (`--br-mode 0`) with no extra flag on either side.
++  val useBP = outer.bpParams.enable
++
++  def is_bt_mode = if (useBP) io.control.bp_mode === 0.U else true.B
++  def is_bp_mode = if (useBP) io.control.bp_mode === 2.U else false.B
+ 
+   // states
+   val sIdle :: sSync :: sData :: Nil = Enum(3)
+@@ -260,15 +270,22 @@
+   val comp_header   = Wire(UInt(CompressedHeaderType.getWidth.W)) // compressed header
+   
+   // branch predictor
+-  val bp = Module(new DSCBranchPredictor(outer.bpParams))
++  //
++  // `bp` is an Option so that with useBP = false the module is not instantiated --
++  // the 1024 x 2-bit counter file, its 1024:1 read mux and its write decoder are
++  // never emitted, rather than being emitted and left unread.  bp_hit_count and
++  // bp_miss_flag exist only to carry the predictor's running hit run-length into a
++  // BrPredict packet, so they are constants in that case and fold away with it.
++  val bp = if (useBP) Some(Module(new DSCBranchPredictor(outer.bpParams))) else None
++  val bp_resp = bp.map(_.io.resp).getOrElse(false.B)
+   val bp_hit_count_next = Wire(UInt(32.W))
+   val bp_inference_valid = Wire(Bool())
+   val bp_hit_count_en = Wire(Bool())
+-  val bp_hit_count = RegEnable(bp_hit_count_next, 0.U, bp_hit_count_en)
++  val bp_hit_count = if (useBP) RegEnable(bp_hit_count_next, 0.U, bp_hit_count_en) else 0.U(32.W)
+   bp_hit_count_next := bp_hit_count // default behavior is to hold the value
+   val bp_miss_flag_next = Wire(Bool())
+   val bp_miss_flag_en = Wire(Bool())
+-  val bp_miss_flag = RegEnable(bp_miss_flag_next, false.B, bp_miss_flag_en)
++  val bp_miss_flag = if (useBP) RegEnable(bp_miss_flag_next, false.B, bp_miss_flag_en) else false.B
+   bp_miss_flag_next := false.B // default behavior is to set to false
+   val bp_flush_hit = Wire(Bool())
+   bp_flush_hit := false.B
+@@ -350,12 +367,14 @@
+                             (ingress_1.group(ingress_1_msg_idx).iaddr ^ ingress_1.group(ingress_1_msg_idx + 1.U).iaddr) >> 1.U)
+ 
+   // driving branch predictor signals
+-  bp.io.req_pc := ingress_0.group(ingress_0_msg_idx).iaddr
+   bp_inference_valid := ingress_0.group(ingress_0_msg_idx).iretire === 1.U && 
+                         (ingress_0.group(ingress_0_msg_idx).itype === TraceItype.ITBrTaken || ingress_0.group(ingress_0_msg_idx).itype === TraceItype.ITBrNTaken) &&
+                         pipeline_advance && io.control.enable
+-  bp.io.update_valid := bp_inference_valid
+-  bp.io.update_taken := ingress_0.group(ingress_0_msg_idx).itype === TraceItype.ITBrTaken
++  bp.foreach { p =>
++    p.io.req_pc := ingress_0.group(ingress_0_msg_idx).iaddr
++    p.io.update_valid := bp_inference_valid
++    p.io.update_taken := ingress_0.group(ingress_0_msg_idx).itype === TraceItype.ITBrTaken
++  }
+   bp_hit_count_en := pipeline_advance && io.control.enable
+   bp_miss_flag_en := pipeline_advance && io.control.enable
+ 
+@@ -392,11 +411,11 @@
+         // ingress0 logic - branch resolution
+         when (ingress_0_has_branch) {
+           val taken = ingress_0.group(ingress_0_msg_idx).itype === TraceItype.ITBrTaken
+-          bp_hit_count_next := Mux((bp.io.resp === taken) && is_bp_mode, 
++          bp_hit_count_next := Mux((bp_resp === taken) && is_bp_mode, 
+                               bp_hit_count + 1.U, 
+                               0.U) // reset if responded with miss
+-          bp_miss_flag_next := (bp.io.resp =/= taken) && is_bp_mode 
+-          bp_flush_hit := (bp.io.resp =/= taken) && is_bp_mode && bp_hit_count > 0.U 
++          bp_miss_flag_next := (bp_resp =/= taken) && is_bp_mode 
++          bp_flush_hit := (bp_resp =/= taken) && is_bp_mode && bp_hit_count > 0.U 
+         }
+         .elsewhen (ingress_0_has_flush) { // these two conditions are mutually exclusive
+           bp_flush_hit := is_bp_mode && bp_hit_count > 0.U
+--- a/generators/tacit/chipyard/TacitConfigs.scala
++++ b/generators/tacit/chipyard/TacitConfigs.scala
+@@ -10,8 +10,15 @@
+ import shuttle.common.ShuttleTileAttachParams
+ import tacit.{TacitEncoder, TacitBPParams}
+ 
+-// Add a Tacit encoder to each tile
+-class WithTacitEncoder extends Config((site, here, up) => {
++// Add a Tacit encoder to each tile.
++//
++// `useBP` elaborates the DSC branch predictor, which the encoder only uses in
++// BrPredict mode (bp_mode === 2).  The mode register resets to 0 (BrTarget) and the
++// PYNQ-Z1 tutorial never writes it, so on that platform the predictor was 1024 x 2
++// bits of flops plus a 1024:1 mux driving nothing: measured post-route at 3,045 LUT
++// and 2,048 FF per encoder, 75% of the encoder.  Default it off; pass `true` to get
++// BrPredict back (and then pass `--br-mode 2` to the decoder to match).
++class WithTacitEncoder(useBP: Boolean = false) extends Config((site, here, up) => {
+   case TilesLocated(InSubsystem) => up(TilesLocated(InSubsystem), site) map {
+     case tp: RocketTileAttachParams => tp.copy(tileParams = tp.tileParams.copy(
+       traceParams = Some(TraceEncoderParams(
+@@ -23,7 +30,7 @@
+         ),
+         bufferDepth = 16,
+         coreStages = 5,
+-        bpParams = TacitBPParams(xlen = tp.tileParams.core.xLen, n_entries = 1024))(p)),
++        bpParams = TacitBPParams(xlen = tp.tileParams.core.xLen, n_entries = 1024, enable = useBP))(p)),
+         useArbiterMonitor = false
+       )),
+       core = tp.tileParams.core.copy(enableTraceCoreIngress = true)))
+@@ -37,7 +44,7 @@
+         ),
+         bufferDepth = 16,
+         coreStages = 7,
+-        bpParams = TacitBPParams(xlen = tp.tileParams.core.xLen, n_entries = 1024))(p)),
++        bpParams = TacitBPParams(xlen = tp.tileParams.core.xLen, n_entries = 1024, enable = useBP))(p)),
+         useArbiterMonitor = false
+       )),
+       core = tp.tileParams.core.copy(enableTraceCoreIngress = true)))

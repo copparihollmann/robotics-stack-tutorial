@@ -1,0 +1,167 @@
+From 9af78027e8eb0aec71a344ab71e7464203b5484a Mon Sep 17 00:00:00 2001
+From: Dima Nikiforov <vnikiforov@berkeley.edu>
+Date: Wed, 29 Jul 2026 20:18:14 -0700
+Subject: [PATCH] tacit: re-map legacy L-Trace encoder MMIO block; default
+ br_mode
+
+The --trace CLI refactor dropped the memory-mapped trace-encoder register
+block at 0x3000000 that the Zephyr driver / real HW use, so guest writes to
+TR_TE_CTRL/TARGET/BRANCH_MODE took a store access fault (boot hang) and the
+encoder's enable was never set (nothing recorded). Add a trace_encoder_mmio_t
+device that re-maps the per-hart block: TR_TE_CTRL bit1 -> encoder enable,
+TR_TE_BRANCH_MODE -> branch mode, rest absorbed; loads return last-written
+(so the guest's RMW on CTRL works). Also default trace_encoder_l br_mode to
+BR_TARG (was uninitialized).
+---
+ riscv/sim.cc               |  7 +++
+ riscv/trace_encoder_l.cc   |  1 +
+ riscv/trace_encoder_l.h    |  1 +
+ riscv/trace_encoder_mmio.h | 87 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 96 insertions(+)
+ create mode 100644 riscv/trace_encoder_mmio.h
+
+diff --git a/riscv/sim.cc b/riscv/sim.cc
+index 3a3ab4e6..8f444d1a 100644
+--- a/riscv/sim.cc
++++ b/riscv/sim.cc
+@@ -9,6 +9,7 @@
+ #include "platform.h"
+ #include "libfdt.h"
+ #include "socketif.h"
++#include "trace_encoder_mmio.h"
+ #include <fstream>
+ #include <map>
+ #include <iostream>
+@@ -266,6 +267,12 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
+       }
+     }
+   }
++
++  // Re-map the legacy TACIT / L-Trace encoder MMIO register block so the
++  // Zephyr guest driver (writes to 0x3000000) controls the per-hart encoder
++  // instead of taking a store access fault. See trace_encoder_mmio.h.
++  add_device(TRACE_ENCODER_MMIO_BASE,
++             std::make_shared<trace_encoder_mmio_t>(this, TRACE_ENCODER_MMIO_BASE));
+ }
+ 
+ sim_t::~sim_t()
+diff --git a/riscv/trace_encoder_l.cc b/riscv/trace_encoder_l.cc
+index 883b0bc7..b9433f2d 100644
+--- a/riscv/trace_encoder_l.cc
++++ b/riscv/trace_encoder_l.cc
+@@ -4,6 +4,7 @@ void trace_encoder_l::reset() {
+   this->state = TRACE_ENCODER_L_IDLE;
+   this->active = true;
+   this->enabled = false;
++  this->runtime_cfg.br_mode = BR_TARG; // default to target (branch) mode
+   this->ingress_0 = hart_to_encoder_ingress_t(); // create empty packet
+   this->ingress_1 = hart_to_encoder_ingress_t(); // create empty packet
+   this->bp->reset();
+diff --git a/riscv/trace_encoder_l.h b/riscv/trace_encoder_l.h
+index 7b6279c8..f9ae176c 100644
+--- a/riscv/trace_encoder_l.h
++++ b/riscv/trace_encoder_l.h
+@@ -90,6 +90,7 @@ public:
+     this->ingress_0 = hart_to_encoder_ingress_t();
+     this->ingress_1 = hart_to_encoder_ingress_t();
+     this->state = TRACE_ENCODER_L_IDLE;
++    this->runtime_cfg.br_mode = BR_TARG; // default to target (branch) mode
+     this->bp = new bp_double_saturating_counter_t(1024);
+   }
+   
+diff --git a/riscv/trace_encoder_mmio.h b/riscv/trace_encoder_mmio.h
+new file mode 100644
+index 00000000..e47ee448
+--- /dev/null
++++ b/riscv/trace_encoder_mmio.h
+@@ -0,0 +1,87 @@
++// Legacy TACIT / L-Trace encoder MMIO register block.
++//
++// Real hardware (chipyard tacit generator) and the Zephyr driver
++// (soc/rocketchip/virt_riscv/common/tacit/tacit.h) control the trace encoder
++// through a memory-mapped register block at 0x3000000 (one 0x1000-strided
++// window per hart), plus a sink-DMA block at 0x3010000. The command-line
++// `--trace=<l|e>` refactor of this simulator dropped that MMIO interface, so
++// guest writes to those registers now take a store access fault (boot hang),
++// and the encoder's internal `enabled` flag is never set (nothing recorded).
++//
++// This device re-maps that block so the legacy guest interface works on spike:
++//   * TR_TE_CTRL   (offset 0x00): bit 1 -> encoder enable/disable (start/stop)
++//   * TR_TE_BRANCH_MODE (0x24): -> encoder branch mode
++//   * everything else in the block (TR_TE_INFO/BUBBLE/TARGET, sink DMA): absorbed
++// Loads return the last value written (so the guest's read-modify-write on
++// TR_TE_CTRL behaves). Actual trace capture is done by the per-hart commit
++// hook when `--trace` is set; this gates it via the encoder's enable, exactly
++// as the hardware register does.
++//
++// NOTE: spike's bus_t hands device-relative offsets to load()/store() (base
++// already subtracted), so `addr` here IS the offset into this block.
++#ifndef _RISCV_TRACE_ENCODER_MMIO_H
++#define _RISCV_TRACE_ENCODER_MMIO_H
++
++#include "abstract_device.h"
++#include "abstract_trace_encoder.h"
++#include "sim.h"
++#include "processor.h"
++#include <cstring>
++#include <map>
++
++// Base + layout must match soc/rocketchip/virt_riscv/common/tacit/tacit.h.
++#define TRACE_ENCODER_MMIO_BASE   0x3000000
++#define TRACE_ENCODER_MMIO_SIZE   0x20000     // covers encoders + sink DMA
++#define TRACE_ENCODER_HART_STRIDE 0x1000
++#define TR_TE_CTRL_OFFSET         0x00
++#define TR_TE_BRANCH_MODE_OFFSET  0x24
++#define TR_TE_CTRL_ENABLE_BIT     (0x1u << 1) // matches Zephyr l_trace_encoder_start/stop
++
++class trace_encoder_mmio_t : public abstract_device_t {
++ public:
++  trace_encoder_mmio_t(sim_t* sim, reg_t base) : sim_(sim), base_(base) {}
++
++  // `off` is already device-relative (spike bus subtracts the base).
++  bool load(reg_t off, size_t len, uint8_t* bytes) override {
++    uint64_t val = 0;
++    auto it = shadow_.find(off);
++    if (it != shadow_.end()) val = it->second;
++    memset(bytes, 0, len);
++    memcpy(bytes, &val, std::min(len, sizeof(val)));
++    return true;
++  }
++
++  bool store(reg_t off, size_t len, const uint8_t* bytes) override {
++    uint64_t val = 0;
++    memcpy(&val, bytes, std::min(len, sizeof(val)));
++    shadow_[off] = val;
++
++    // Only the per-hart encoder register windows carry control semantics;
++    // the sink-DMA block (>= 0x10000) is absorbed.
++    if (off < 0x10000) {
++      size_t hart = off / TRACE_ENCODER_HART_STRIDE;
++      size_t reg  = off % TRACE_ENCODER_HART_STRIDE;
++      abstract_trace_encoder_t* enc = nullptr;
++      try { enc = sim_->get_core(hart)->get_trace_encoder(); }
++      catch (...) { return true; }        // hart out of range -> absorb
++      if (enc) {
++        if (reg == TR_TE_CTRL_OFFSET)
++          enc->set_enable((val & TR_TE_CTRL_ENABLE_BIT) != 0);
++        else if (reg == TR_TE_BRANCH_MODE_OFFSET)
++          enc->set_br_mode(static_cast<br_mode_t>(val & 0x3));
++        // TR_TE_INFO / TR_TE_BUBBLE / TR_TE_TARGET: absorbed (PRINT target
++        // is implicit on spike -- the encoder writes tacit.out).
++      }
++    }
++    return true;
++  }
++
++  reg_t size() override { return TRACE_ENCODER_MMIO_SIZE; }
++
++ private:
++  sim_t* sim_;
++  reg_t base_;
++  std::map<reg_t, uint64_t> shadow_;
++};
++
++#endif /* _RISCV_TRACE_ENCODER_MMIO_H */
+-- 
+2.43.0
+

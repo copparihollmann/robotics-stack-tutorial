@@ -1,0 +1,35 @@
+ModelBlaster: softmax_s8 `pext_int_memo2` -- pext_int_memo with its multiplies priced for Rocket.
+
+iiswc-tutorial ROCC_DECOUPLED.md section 8.14 (T1 lever 1, refined after pext_int_memo measured
+101.7 cycles/element on the board against an estimate of 30).  The curated kernel is
+fpga/pynq-z2/modelblaster/kernels/pext_nl/pext_nl_softmax_s8_pext_int_memo2.c.  Registered after
+pext_int_memo, so no existing build changes its pick; scripts/50's *_smx2 variants select it.
+
+Applies on top of patches/0009, 0060, 0100, 0102, 0104 and 0105.
+--- a/pipeline/reference_kernels.py
++++ b/pipeline/reference_kernels.py
+@@ -11163,6 +11163,24 @@
+                 "pext_nl/pext_nl_softmax_s8_pext_int_memo.c)"
+             ),
+         ),
++        # patches/0106.  pext_int_memo with its per-element multiplies priced for an iterative
++        # multiplier (Rocket big core: mulUnroll = 8): 32-bit-operand products, a 64-bit
++        # rescale, and a per-row zero cutoff (outputs are monotone in x - max) with a per-row
++        # output cache.  BIT-EXACT with pext_int_row (host: exhaustive monotonicity over
++        # 1.02 B (scale, sum, scale_out, d) points; 186 M elements of random and corner rows).
++        AlgorithmCandidate(
++            name="pext_int_memo2",
++            target_affinity=("pext_nl",),
++            accuracy_class=AccuracyClass.NUMERIC_DRIFT,
++            description=(
++                "pext_int_memo, bit-exact, with 32-bit-operand multiplies and a "
++                "per-row monotone zero cutoff plus output cache."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext_nl/pext_nl_softmax_s8_pext_int_memo2.c)"
++            ),
++        ),
+         # This op carried only the synthesized `direct` candidate, so the
+         # curated probe had no named (op, algorithm) pair to look for and
+         # softmax ran the scalar reference inside builds labelled rvv_x60 --

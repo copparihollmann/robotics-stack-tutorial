@@ -1,0 +1,64 @@
+--- a/pipeline/reference_kernels.py
++++ b/pipeline/reference_kernels.py
+@@ -7958,6 +7958,28 @@
+     ],
+     argtypes_factory=_silu_s8_argtypes,
+     algorithms=[
++        # Lab B28's decoder profile: silu_s8 is 30.19 % of a Moonshine decoder at 2,800.23
++        # cycles/element, because the reference evaluates expf and a float divide PER ELEMENT
++        # on a core with no FPU.  With zero_point 0 it is a 256-entry pointwise map, the same
++        # shape gelu_s8 is, and the table is the reference memoised -- so bit_exact.
++        AlgorithmCandidate(
++            name="pext_memo_lut",
++            target_affinity=("pext_nl", "pext"),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            description=(
++                "SiLU via the reference's own expression memoised into a 256-entry int8 "
++                "table, filled only for the input bytes that occur.  Bit-exact by "
++                "construction: every entry is the reference float32 expression, and the "
++                "kernel contains no other arithmetic.  The rate is a function of the "
++                "dispatch size AND of the distinct-byte count D -- fill is D*E with E the "
++                "reference's own per-evaluation cost, so it does NOT amortise at a "
++                "decoder's n = 1,152 the way it does at an encoder's 190,080."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext_nl/pext_nl_silu_s8_pext_memo_lut.c)"
++            ),
++        ),
+         AlgorithmCandidate(
+             name="rvv_lut_gather",
+             target_affinity=("rvv_opu",),
+@@ -8804,7 +8826,31 @@
+         {"N": 1, "H": 8, "W": 8, "C_inputs": [16, 32],  "C_total": 48},
+     ],
+     argtypes_factory=_cat2_c1_s8_argtypes,
+-    algorithms=[_cat_gemmini_mvin_scale_algorithm(2)],
++    algorithms=[
++        # Lab B28: 26.42 % of a Moonshine decoder at 393.44 cycles/element for what looks
++        # like a byte copy.  It is not one -- the reference dequantises each input by its own
++        # scale and requantises to scale_out, per element, in soft float.  Per input that is
++        # a 256-entry pointwise map.
++        AlgorithmCandidate(
++            name="pext_memo_lut",
++            target_affinity=("pext_nl", "pext"),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            description=(
++                "One 256-entry int8 table per input, each entry the reference's own "
++                "float32 expression, filled only for the bytes that input contains; the "
++                "copy loop has no arithmetic.  memcpy when an input's scale equals "
++                "scale_out (the map is then the identity).  Does NOT address the larger "
++                "cost: the decoder's shapes are C_inputs = [t, 1], a KV-cache append that "
++                "re-copies the whole cache every token -- O(T^2) where an append is O(1), "
++                "which is a lowering change."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext_nl/pext_nl_cat2_c1_s8_pext_memo_lut.c)"
++            ),
++        ),
++        _cat_gemmini_mvin_scale_algorithm(2),
++    ],
+ )
+ 
+ CAT3_C1_S8 = KernelSpec(

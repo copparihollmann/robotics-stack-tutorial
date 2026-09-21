@@ -1,0 +1,150 @@
+DRAFT -- NOT APPLIED, AND NOT TO BE APPLIED WITHOUT THE COORDINATOR'S GO.
+
+The filename ends in .draft on purpose: scripts/06_patch_zephyr.sh applies every
+patches/*-zephyr-*.patch it finds, and this one is not approved. Rename it to
+0120-zephyr-i2c-sifive-msg-concat.patch only when it is.
+
+i2c: sifive: one address phase per transfer, not per message
+
+<zephyr/drivers/i2c.h> says adjacent message fragments without I2C_MSG_RESTART belong to
+one transaction. i2c_sifive.c sends START + address for EVERY message, so i2c_burst_write()
+-- one message for the register byte, one for the payload -- puts a repeated START in the
+middle. drivers/display/ssd1306.c uses i2c_burst_write_dt() for every command and every
+framebuffer write, and an SSD1306 reads the first byte after a (repeated) START as its
+control byte. The result is a garbled screen, not an error: every byte is ACKed.
+
+MEASURED, on the generated TLI2C in Verilator with this driver compiled unmodified
+(samples/oled_status/sim/tli2c, scripts/55_oled_rtl_sim.sh --tli2c; the RTL is a copy of
+PynqZ2RocketBigLittlePextTacitMicRgbRoccMoonCamConfig's TLI2C.sv, which is byte-identical
+to PynqZ2RocketTacitCamConfig's but for the monitor's instance name):
+
+  stock driver    a 128x64 screen puts 10 repeated STARTs on the wire, 11 control bytes
+                  are misparsed, 9 of 1,024 framebuffer bytes reach the GDDRAM, and the
+                  rendered image does not match the host golden. Every transfer returns 0.
+  with this patch one START per transfer, 0 repeated STARTs, 1,024 data bytes, and the
+                  image matches the host golden at both 100 kHz and 400 kHz.
+
+WHY THE ARTY-200T STACK NEVER HIT THIS. Nothing in the software that drove I2C there calls
+a burst API: the riskybird samples (ads7128, vl53l5cx, sensor_bringup, tof, i2c_expander),
+the in-tree BMI08x and VL53L1X drivers and the HM01B0 camera driver all use single-buffer
+i2c_write() or i2c_write_read(), which this driver already handles correctly. The SSD1306
+driver is the first user of i2c_burst_write() on this controller.
+
+The rule implemented here is the one drivers/i2c/i2c_bitbang.c and drivers/i2c/i2c_dw.c
+follow: address phase on the first message, after a STOP, on I2C_MSG_RESTART, or on a
+change of direction. The read path's last-byte NACK moves with it, so a read continued by
+a following fragment is still acknowledged.
+
+Nothing else changes: single-message writes and write-then-read (the camera's two shapes)
+produce exactly the same bytes as before.
+--- a/drivers/i2c/i2c_sifive.c
++++ b/drivers/i2c/i2c_sifive.c
+@@ -105,16 +105,19 @@
+ 
+ static int i2c_sifive_write_msg(const struct device *dev,
+ 				struct i2c_msg *msg,
+-				uint16_t addr)
++				uint16_t addr,
++				bool send_addr)
+ {
+ 	const struct i2c_sifive_cfg *config = dev->config;
+ 	int rc = 0;
+ 	uint8_t command = 0U;
+ 
+-	rc = i2c_sifive_send_addr(dev, addr, SF_TX_WRITE);
+-	if (rc != 0) {
+-		LOG_ERR("I2C failed to write message\n");
+-		return rc;
++	if (send_addr) {
++		rc = i2c_sifive_send_addr(dev, addr, SF_TX_WRITE);
++		if (rc != 0) {
++			LOG_ERR("I2C failed to write message\n");
++			return rc;
++		}
+ 	}
+ 
+ 	for (uint32_t i = 0; i < msg->len; i++) {
+@@ -154,17 +157,21 @@
+ 
+ static int i2c_sifive_read_msg(const struct device *dev,
+ 			       struct i2c_msg *msg,
+-			       uint16_t addr)
++			       uint16_t addr,
++			       bool send_addr,
++			       bool last_of_read)
+ {
+ 	const struct i2c_sifive_cfg *config = dev->config;
+ 	uint8_t command = 0U;
+ 	int rc = 0;
+ 
+-	/* Send address with read flag and check for NACK */
+-	rc = i2c_sifive_send_addr(dev, addr, SF_TX_READ);
+-	if (rc != 0) {
+-		LOG_ERR("I2C read failed to send address");
+-		return rc;
++	if (send_addr) {
++		/* Send address with read flag and check for NACK */
++		rc = i2c_sifive_send_addr(dev, addr, SF_TX_READ);
++		if (rc != 0) {
++			LOG_ERR("I2C read failed to send address");
++			return rc;
++		}
+ 	}
+ 
+ 	while (i2c_sifive_busy(dev)) {
+@@ -176,8 +183,14 @@
+ 
+ 		/* On the last byte of the message */
+ 		if (i == (msg->len - 1)) {
+-			/* Set NACK to end read */
+-			command |= SF_CMD_ACK;
++			/*
++			 * NACK only where the read really ends. A following message that
++			 * continues the same read (no I2C_MSG_RESTART, same direction) must
++			 * still be acknowledged, or the target stops driving data.
++			 */
++			if (last_of_read) {
++				command |= SF_CMD_ACK;
++			}
+ 
+ 			/* If the stop bit is requested, set it */
+ 			if (msg->flags & I2C_MSG_STOP) {
+@@ -286,11 +299,36 @@
+ 		return -EINVAL;
+ 	}
+ 
++	/*
++	 * One address phase per TRANSFER, not per message.
++	 *
++	 * <zephyr/drivers/i2c.h>: adjacent fragments without I2C_MSG_RESTART are one
++	 * transaction. i2c_burst_write() -- which drivers/display/ssd1306.c uses for every
++	 * command and every framebuffer write -- passes the register byte and the payload as
++	 * two such fragments. Sending START + address again between them puts a repeated START
++	 * in the middle of the payload: the SSD1306 then reads the first payload byte as a
++	 * control byte and the screen is garbage. Measured on the generated TLI2C in Verilator
++	 * (samples/oled_status/sim/tli2c, fpga/pynq-z2/docs/OLED_SSD1306.md P2).
++	 *
++	 * So the address phase is emitted only when the bus needs one: the first message, after
++	 * a STOP, on an explicit I2C_MSG_RESTART, or when the direction changes (the rule
++	 * drivers/i2c/i2c_bitbang.c and i2c_dw.c follow).
++	 */
+ 	for (int i = 0; i < num_msgs; i++) {
++		bool send_addr = (i == 0) ||
++				 (msgs[i].flags & I2C_MSG_RESTART) ||
++				 (msgs[i - 1].flags & I2C_MSG_STOP) ||
++				 ((msgs[i].flags ^ msgs[i - 1].flags) & I2C_MSG_RW_MASK);
++
+ 		if (msgs[i].flags & I2C_MSG_READ) {
+-			rc = i2c_sifive_read_msg(dev, &(msgs[i]), addr);
++			bool last = (i == num_msgs - 1) ||
++				    (msgs[i].flags & I2C_MSG_STOP) ||
++				    (msgs[i + 1].flags & I2C_MSG_RESTART) ||
++				    ((msgs[i + 1].flags ^ msgs[i].flags) & I2C_MSG_RW_MASK);
++
++			rc = i2c_sifive_read_msg(dev, &(msgs[i]), addr, send_addr, last);
+ 		} else {
+-			rc = i2c_sifive_write_msg(dev, &(msgs[i]), addr);
++			rc = i2c_sifive_write_msg(dev, &(msgs[i]), addr, send_addr);
+ 		}
+ 
+ 		if (rc != 0) {

@@ -1,0 +1,238 @@
+Subject: [PATCH] modelblaster: a `pext` hardware target for the MBP extension
+
+Two edits, both at pipeline's own documented extension points, so ModelBlaster can
+target the four MBP packed-integer instructions of fpga/pynq-z2/docs/PEXT_SPEC.md on
+hart 0 of the PYNQ-Z1 big.LITTLE Rocket.  Nothing else in the submodule changes, and the
+curated kernels themselves live OUTSIDE it, in the iiswc-tutorial repo at
+fpga/pynq-z2/modelblaster/kernels/pext/, reached with --global-curated-dir.
+
+1. pipeline/backends.py -- one Backend named "pext".
+
+   kernel_cflags is exactly one flag, -DMB_PEXT_HW=1, and there is no new -march.  That
+   is not an oversight: no assembler knows these mnemonics, so pext.h emits every op with
+   GAS's `.insn r` directive, which assembles under the board's own
+   -march=rv64imac_zicsr_zifencei with no extension string at all -- the same arrangement
+   the ime_x60 backend already documents for smt.vmadot, and what keeps the exact
+   rv64imac_zicsr_zifencei/lp64/medany multilib the Zephyr SDK selects.
+
+   It deliberately does NOT hardcode a path to pext.h.  That header belongs to the SoC,
+   not to ModelBlaster; the app that builds for the target supplies the -I, and the
+   host-ctypes verify finds it through CPATH.  Nothing here points at a sibling repo.
+
+   verify_method = host_ctypes, which is the strong choice rather than a compromise:
+   pext.h compiles both ways and MB_PEXT_HW defaults to 0 off-target, so the host builds
+   the bit-identical SOFTWARE MODEL of all four instructions and runs it against the
+   reference oracle at x86 speed.  Contrast rvv_x60, which declares cross_compile because
+   the host cannot compile `vint32m4_t` at all -- an inline-asm `.insn` has no such
+   problem, and neither does a C model.
+
+2. pipeline/reference_kernels.py -- three AlgorithmCandidates, target_affinity=("pext",),
+   accuracy_class=BIT_EXACT: pext_patch_dot8 (conv2d_s8), pext_row_dot8 (linear_s8) and
+   pext_max8_rows (maxpool2d_s8).  kernels/README.md requires an algorithm to be
+   registered here for the pipeline to probe for its file, and target_affinity is also
+   what drops the universal `direct` entry from the queue so a pext build cannot silently
+   measure the scalar reference -- the failure mode backends.py's own comments record
+   twice (rvv_x60's 195 ms vs 113 ms on DroNet, and the ime curated_aliases note).
+
+   conv2d_s8's candidate declares weight_layout="oihw", which is what
+   generate_skeleton._conv_weight_layout_for_backend reads: the reduction axis
+   (ic, kh, kw) is already contiguous per output channel in PyTorch's own packing, and
+   that is exactly the order the kernel's gathered patch is built in.
+
+Measured with these in place: LeNet int8 is bit-exact against the scalar reference at
+every dispatch (max_abs_err = 0) and runs in 419,490 dynamic instructions against
+6,247,648 -- 14.89x.  See fpga/pynq-z2/docs/PEXT_KERNELS.md.
+
+Applied by scripts/28_rocket_modelblaster_pext.sh.  NOT upstream.
+
+diff --git a/pipeline/backends.py b/pipeline/backends.py
+index 26acb34..a8d0d75 100644
+--- a/pipeline/backends.py
++++ b/pipeline/backends.py
+@@ -586,6 +586,55 @@ GEMMINI_Q31_RVV = Backend(
+ # doesn't have V (the GemminiAndOPUShuttleConfig case). Used to test
+ # Dima's qrb-image kernel set on the existing OPU FireSim bitstream
+ # without rebuilding the bitstream.
++# MBP -- the four-instruction packed-integer extension on hart 0 of the PYNQ-Z1
++# big.LITTLE Rocket SoC.  Spec: fpga/pynq-z2/docs/PEXT_SPEC.md in the iiswc-tutorial
++# repo; contract header: fpga/pynq-z2/sw/pext.h there.  Four R-type ops in custom-0
++# (0x0b), funct7=0: DOT8 (f3=0), MAX8 (f3=1), QMUL (f3=2), CLIP8 (f3=3).
++#
++# NO NEW -march, FOR THE SAME REASON AS ime_x60.  No assembler knows these mnemonics,
++# so pext.h emits every op with GAS's `.insn r` directive.  That assembles under the
++# board's own -march=rv64imac_zicsr_zifencei with no extension string at all, which is
++# also what keeps the exact multilib match the Zephyr SDK selects
++# (rv64imac_zicsr_zifencei/lp64/medany).  So this backend's kernel_cflags carry ONE
++# flag: the switch that turns the header's software model into real encodings.
++#
++# THE HEADER LIVES OUTSIDE THIS TREE.  pext.h belongs to the SoC, not to ModelBlaster,
++# and the app that builds for this target supplies the -I.  Nothing here hardcodes a
++# path into a sibling repo.  For the host-ctypes verify below, put the header's
++# directory on CPATH.
++#
++# verify_method=HOST_CTYPES, and that is not a compromise: pext.h compiles both ways
++# and MB_PEXT_HW defaults to 0 off-target, so the host builds the bit-identical
++# SOFTWARE MODEL of all four instructions and runs it against the reference oracle at
++# x86 speed.  That is the check PEXT_SPEC.md section 4 relies on, and it is stronger
++# than cross_compile_verify (which only proves the file builds).  Contrast rvv_x60,
++# which declares cross_compile because the host cannot compile `vint32m4_t` at all --
++# an inline-asm `.insn` has no such problem, and neither does the C model.
++#
++# HETEROGENEITY.  The unit exists ONLY on hart 0.  A kernel built with MB_PEXT_HW=1
++# takes an illegal-instruction trap on hart 1, so any thread running one must be pinned
++# with k_thread_cpu_pin(tid, 0).  That is the same "must be pinned or it traps" contract
++# cores/chipyard_quad_hetero_gemmini_q31.json already states for RVV and Gemmini; the
++# registry entry for this SoC is chipyard_pynqz1_biglittle_pext.json.
++PEXT = Backend(
++    name="pext",
++    description=(
++        "rv64imac + MBP packed-integer extension (DOT8/MAX8/QMUL/CLIP8 in "
++        "custom-0, emitted as .insn) on hart 0 of the PYNQ-Z1 big.LITTLE "
++        "Rocket. Hart 1 does not implement it; kernels must be pinned."
++    ),
++    kernel_cflags=("-DMB_PEXT_HW=1",),
++    optimization_guide="optimization_guide_scalar.md",
++    verify_method=VERIFY_HOST_CTYPES,
++    # Every curated kernel for this target is bit-exact by construction: the
++    # accelerated path recomputes the reference expression in the same rounding
++    # mode, and every shape it cannot accelerate falls through to the reference
++    # expression verbatim. A drifting kernel here would be a bug, not a trade.
++    atol_override=0.0,
++    rtol_override=0.0,
++)
++
++
+ RVV_HETERO = Backend(
+     name="rvv_hetero",
+     description=(
+@@ -614,6 +663,7 @@ BACKENDS: dict[str, Backend] = {
+     GEMMINI.name: GEMMINI,
+     GEMMINI_Q31.name: GEMMINI_Q31,
+     GEMMINI_Q31_RVV.name: GEMMINI_Q31_RVV,
++    PEXT.name: PEXT,
+ }
+ 
+ 
+diff --git a/pipeline/reference_kernels.py b/pipeline/reference_kernels.py
+index 7c9ad96..4bf3e8e 100644
+--- a/pipeline/reference_kernels.py
++++ b/pipeline/reference_kernels.py
+@@ -1864,6 +1864,36 @@ void kernel_linear_s8(const int8_t *input, const int8_t *weight,
+     ],
+     argtypes_factory=_linear_s8_argtypes,
+     algorithms=[
++        # MBP (fpga/pynq-z2/docs/PEXT_SPEC.md). linear is the one op whose reduction
++        # axis is already contiguous in both operands, so DOT8 needs no gather at all --
++        # only 8-byte alignment, which Rocket enforces with a trap. The input row is
++        # copied once per m into an aligned zero-padded scratch; the weight rows are
++        # read where they are and the input copy is SHIFTED to match each row's own
++        # misalignment, because at M = 1 (every linear dispatch in these models) a
++        # repack of the [N,K] weight tensor costs more copies than the DOT8 loop saves.
++        AlgorithmCandidate(
++            name="pext_row_dot8",
++            target_affinity=("pext",),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            description=(
++                "MBP DOT8/QMUL/CLIP8/MAX8 fully-connected layer. The K axis is "
++                "contiguous in both [M,K] input and [N,K] weight, so each "
++                "output is ceil((r+K)/8) MBP.DOT8s straight off the tensors. "
++                "r is the weight row's own 8-byte misalignment; the input row "
++                "is copied once into an aligned scratch with r leading zero "
++                "bytes and trailing zeros to the next multiple of 8, so the "
++                "weight bytes belonging to the neighbouring rows are multiplied "
++                "by zero and K % 8 != 0 costs nothing. r takes only "
++                "8/gcd(K,8) distinct values, so the n loop is walked once per "
++                "residue class with one shifted copy live at a time. The last "
++                "row's final group is done with scalar MACs so nothing reads "
++                "past the weight tensor. Output stage as for conv2d_s8."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext/pext_linear_s8_pext_row_dot8.c)"
++            ),
++        ),
+         AlgorithmCandidate(
+             name="ime_vmadot_4x4x8",
+             target_affinity=("ime", "ime_x60"),
+@@ -2407,6 +2437,47 @@ void kernel_conv2d_s8(const int8_t *input, const int8_t *weight,
+     ],
+     argtypes_factory=_conv2d_s8_argtypes,
+     algorithms=[
++        # MBP (fpga/pynq-z2/docs/PEXT_SPEC.md) -- eight int8 MACs per DOT8.
++        #
++        # The spec's own kernel is NHWC, where eight consecutive input CHANNELS are
++        # contiguous in both operands. ModelBlaster emits NCHW (every algorithm here
++        # declares act_layouts=("nchw",) and buffers.c is shared by every backend), so
++        # the curated kernel takes the spec's section 6.3 answer for IC % 8 != 0 and
++        # applies it to every shape: gather one output pixel's K = IC*KH*KW reduction
++        # vector into an 8-aligned zero-padded scratch, repack the weight rows to
++        # 8-aligned rows once per dispatch, then run ceil(K/8) flat DOT8s per output
++        # channel, four channels deep. That is also what LeNet needs -- IC = 1 and
++        # IC = 6, which are not 8-wide in ANY layout.
++        #
++        # weight_layout stays "oihw": the reduction axis (ic, kh, kw) is already
++        # contiguous per output channel in PyTorch's own packing, which is exactly the
++        # order the gathered patch is built in.
++        AlgorithmCandidate(
++            name="pext_patch_dot8",
++            target_affinity=("pext",),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            weight_layout="oihw",
++            description=(
++                "MBP DOT8/QMUL/CLIP8/MAX8 direct convolution for NCHW "
++                "activations. Per output pixel, gather the K = IC*KH*KW "
++                "reduction vector into an 8-byte-aligned, zero-padded scratch "
++                "in (ic, kh, kw) order -- the order OIHW weights already have "
++                "-- and consume it with ceil(K/8) MBP.DOT8s per output "
++                "channel, unrolled four channels deep so one patch load feeds "
++                "four accumulators. Weights are repacked once per dispatch to "
++                "8-aligned rows because `weight + oc*K` is misaligned whenever "
++                "K % 8 != 0 and Rocket traps on misaligned loads. Out-of-bounds "
++                "taps and the align8 tail become zero bytes, which is exact "
++                "because input_offset and filter_offset are 0. The output "
++                "stage is MBP.QMUL, then a scalar round-half-up shift with the "
++                "rounding constant hoisted out of the loop, then MBP.CLIP8, "
++                "then MBP.MAX8 against x0 when activation_min == 0."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext/pext_conv2d_s8_pext_patch_dot8.c)"
++            ),
++        ),
+         AlgorithmCandidate(
+             name="indir_gemm",
+             target_affinity=("rvv_opu",),
+@@ -4018,6 +4089,33 @@ void kernel_maxpool2d_s8(const int8_t *input, int8_t *output,
+     ],
+     argtypes_factory=_maxpool2d_s8_argtypes,
+     algorithms=[
++        # MBP (fpga/pynq-z2/docs/PEXT_SPEC.md section 2). MAX8 is in the ISA because of
++        # pooling, not because of ReLU -- DroNet's 3x3/s2 pool over 32 channels at 56x56
++        # is 2.27 M instructions, 16% of the post-MBP frame; the SWAR ReLU kernel already
++        # does eight ReLUs in four ordinary instructions.
++        AlgorithmCandidate(
++            name="pext_max8_rows",
++            target_affinity=("pext",),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            description=(
++                "MBP.MAX8 max-pool for NCHW, in two passes because W is the "
++                "innermost axis. Pass 1 collapses the KH source rows of one "
++                "output row into a scratch row of vertical maxima, eight "
++                "columns per MBP.MAX8 with no lane interaction. Pass 2 takes "
++                "the horizontal maxima out of that row: for the common "
++                "non-overlapping KW == SW == 2 window that is also MBP.MAX8 "
++                "(max8(c, c >> 8) leaves the four pairwise maxima in lanes 0, "
++                "2, 4, 6), otherwise a scalar sweep of KW compares. Requires "
++                "PH == PW == 0, DH == DW == 1, IW % 8 == 0 and an 8-aligned "
++                "input so every row load is aligned -- Rocket traps on "
++                "misaligned rather than emulating; anything else falls through "
++                "to the reference expression."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext/pext_maxpool2d_s8_pext_max8_rows.c)"
++            ),
++        ),
+         AlgorithmCandidate(
+             name="gemmini_tiled_conv_pool",
+             target_affinity=("gemmini", "gemmini_q31"),

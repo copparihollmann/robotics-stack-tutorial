@@ -1,0 +1,56 @@
+RoCCDecode: claim only the custom opcodes the tile's accelerators declare.
+
+RoCCDecode claims all four custom opcodes (custom-0..3) whenever a tile has any RoCC, and
+reads funct3 as a register-usage code.  LazyRoCC's command router then routes by the
+accelerators' declared OpcodeSet -- and for an opcode no accelerator declared, it never
+raises ready.  So on a tile with a custom-1 accelerator, a custom-0 instruction does not
+trap as illegal: it hangs the hart.
+
+That matters on this SoC.  Hart 0 has MBP (patches/0008, custom-0) and hart 1 must TRAP on
+it -- that is the heterogeneity mechanism Lab B9 and samples/modelblaster_pext test.  The
+decoupled engine (ROCC_DECOUPLED.md 8) is a custom-1 RoCC on hart 1, so without this
+change hart 1's MBP negative test hangs instead of trapping.
+
+It is OPT-IN: a new Field, RoCCDecodeOpcodes (default None, i.e. unchanged), which only
+chipyard.roccmoon.WithRoccMoon sets, to custom-1.  The Chipyard tree this applies to is shared with other
+projects' RoCC configurations, and a fix that silently changed their decode tables would be
+a change to their silicon.  With the key unset RoCCDecode is constructed exactly as before,
+so every existing configuration elaborates to the same Verilog -- checked by re-elaborating
+a vendored config and comparing it with fpga/pynq-z2/chipyard/gensrc.
+
+It adds a Field and a filtered subclass at the END of IDecode.scala and changes one line of
+RocketCore's decode table, so its context does not overlap patches/0008's hunks and both still reverse-apply cleanly -- which is how
+scripts/08_gensrc.sh records which patches a vendored elaboration carried.
+
+Applies on top of patches/0004 and patches/0008.
+--- a/src/main/scala/rocket/IDecode.scala
++++ b/src/main/scala/rocket/IDecode.scala
+@@ -589,3 +589,17 @@
+     CUSTOM3_RD_RS1->    List(Y,N,Y,N,N,N,N,Y,A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,N,N,N,N,N,N,Y,CSR.N,N,N,N,N),
+     CUSTOM3_RD_RS1_RS2->List(Y,N,Y,N,N,N,Y,Y,A2_ZERO,A1_RS1, IMM_X, DW_XPR,FN_ADD,   N,M_X,N,N,N,N,N,N,Y,CSR.N,N,N,N,N))
+ }
++
++// patches/0101.  RoCCDecode claims all four custom opcodes whenever a tile has a RoCC, and
++// LazyRoCC's command router never raises ready for an opcode no accelerator declared -- so an
++// undeclared custom instruction HANGS the hart instead of trapping.  A configuration that sets
++// RoCCDecodeOpcodes to the 7-bit major opcodes its accelerators use gets this table instead,
++// and every other custom instruction decodes as illegal and traps.  None (the default)
++// leaves RocketCore constructing the plain RoCCDecode, exactly as before.
++case object RoCCDecodeOpcodes extends org.chipsalliance.cde.config.Field[Option[Seq[BigInt]]](None)
++
++class RoCCDecodeDeclared(opcodes: Seq[BigInt])(implicit val p: Parameters) extends DecodeConstants
++{
++  val table: Array[(BitPat, List[BitPat])] =
++    new RoCCDecode().table.filter { case (pat, _) => opcodes.contains(pat.value & 0x7f) }
++}
+--- a/src/main/scala/rocket/RocketCore.scala
++++ b/src/main/scala/rocket/RocketCore.scala
+@@ -238,7 +238,7 @@
+     (if (fLen >= 32)    new FDecode +: (xLen > 32).option(new F64Decode).toSeq else Nil) ++:
+     (if (fLen >= 64)    new DDecode +: (xLen > 32).option(new D64Decode).toSeq else Nil) ++:
+     (if (minFLen == 16) new HDecode +: (xLen > 32).option(new H64Decode).toSeq ++: (fLen >= 64).option(new HDDecode).toSeq else Nil) ++:
+-    (usingRoCC.option(new RoCCDecode)) ++:
++    (usingRoCC.option(p(RoCCDecodeOpcodes).map(o => new RoCCDecodeDeclared(o)).getOrElse(new RoCCDecode))) ++:  // patches/0101
+     (if (xLen == 32) new I32Decode else new I64Decode) +:
+     (usingVM.option(new SVMDecode)) ++:
+     (usingSupervisor.option(new SDecode)) ++:

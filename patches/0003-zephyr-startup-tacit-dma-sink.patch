@@ -1,0 +1,99 @@
+diff --git a/arch/riscv/core/reset.S b/arch/riscv/core/reset.S
+index 2bdb84e7d54..d8290434c7b 100644
+--- a/arch/riscv/core/reset.S
++++ b/arch/riscv/core/reset.S
+@@ -50,10 +50,45 @@ SECTION_FUNC(TEXT, __initialize)
+ 	li t0, CONFIG_RV_BOOT_HART
+ 
+ #ifdef CONFIG_STARTUP_TACIT
+-    # Enable trace encoder as early as possible
++    # Start the TACIT encoder as early as possible, so the trace covers the whole boot
++    # rather than starting wherever the application happens to switch it on.
++    #
++    # The sink and the target MUST be programmed before enable goes high. The encoder
++    # emits its sync packet -- the absolute PC the decoder locks onto -- on the 0->1 edge
++    # of enable, and TR_TE_TARGET is a live mux into TraceSinkArbiter rather than a
++    # latched configuration, so re-targeting a *running* encoder hands the sink a byte
++    # stream that begins in the middle of a packet. Configure, then enable.
++    #
++    # Leaving the target at its reset value of 0 is not an error and not a fallback:
++    # TraceSinkArbiter drives ready for targets it has no sink for, so every byte is
++    # accepted at full rate and silently discarded. On a design whose only sink is a DMA
++    # sink at target 1, target 0 is a bit bucket.
++    #
++    # With both new options at their defaults this assembles to exactly the five
++    # instructions it always did -- no target write, no fence -- so a guest that was
++    # already using CONFIG_STARTUP_TACIT (spike, where target 0 *is* the sink) keeps a
++    # byte-identical image and a byte-identical trace.
+     li t1, 0x3000000                # Load base address of L_TRACE_ENCODER0
+     slli t2, a0, 12                 # Offset by hart_id * 0x1000
+     add t1, t1, t2                  # Calculate address for current hart
++#if defined(CONFIG_STARTUP_TACIT_SINK_DMA_ADDR) && (CONFIG_STARTUP_TACIT_SINK_DMA_ADDR != 0)
++    li t4, 0x3010000                # Base address of L_TRACE_SINK_DMA0
++    add t4, t4, t2                  # ... for this hart
++    li t5, CONFIG_STARTUP_TACIT_SINK_DMA_ADDR
++    slli t6, a0, CONFIG_STARTUP_TACIT_SINK_DMA_SHIFT
++    add t5, t5, t6                  # one buffer per hart
++    # TraceSinkDMA only latches dma_start_addr while its write FSM is idle, and acks the
++    # write either way. Here it is idle by construction: nothing has been traced yet.
++    sr t5, 8(t4)                    # Write to TR_SK_DMA_ADDR (64-bit)
++#endif
++#if defined(CONFIG_STARTUP_TACIT_TARGET) && (CONFIG_STARTUP_TACIT_TARGET != 0)
++    li t3, CONFIG_STARTUP_TACIT_TARGET
++    sw t3, 0x20(t1)                 # Write to TR_TE_TARGET
++#endif
++#if (defined(CONFIG_STARTUP_TACIT_SINK_DMA_ADDR) && (CONFIG_STARTUP_TACIT_SINK_DMA_ADDR != 0)) || \
++    (defined(CONFIG_STARTUP_TACIT_TARGET) && (CONFIG_STARTUP_TACIT_TARGET != 0))
++    fence                           # the stores above must land before enable rises
++#endif
+     li t3, 0x2                      # Load value 0x2 (bit 1 set) to enable tracing
+     sw t3, 0(t1)                    # Write to TR_TE_CTRL
+ #endif
+diff --git a/soc/rocketchip/virt_riscv/Kconfig.soc b/soc/rocketchip/virt_riscv/Kconfig.soc
+index a1f001adf68..e59afd68dd3 100644
+--- a/soc/rocketchip/virt_riscv/Kconfig.soc
++++ b/soc/rocketchip/virt_riscv/Kconfig.soc
+@@ -13,6 +13,43 @@ config STARTUP_TACIT
+     default n
+     help
+       Enable profiling and tracing at the earliest stage of bootup.
++      arch/riscv/core/reset.S programs the trace encoder before it hands
++      control to z_prep_c, so the trace covers the whole boot.
++
++config STARTUP_TACIT_TARGET
++    int "TACIT sink target selected before the encoder is enabled"
++    depends on STARTUP_TACIT
++    default 0
++    help
++      Written to TR_TE_TARGET (trace-encoder-controller + 0x20) before enable
++      is asserted. 0 is the "print"/always-ready sink a simulator taps; a design
++      built with tacit.WithTraceSinkDMA(n) puts its DMA sink at n.
++
++      This is not a don't-care. TraceSinkArbiter drives ready for targets that
++      have no sink attached, so an unmatched target accepts every byte and drops
++      it -- the trace looks like it is running and produces nothing.
++
++config STARTUP_TACIT_SINK_DMA_ADDR
++    hex "Address the TACIT DMA sink streams the boot trace to"
++    depends on STARTUP_TACIT
++    default 0x0
++    help
++      When non-zero, reset.S also programs TR_SK_DMA_ADDR (trace-sink-dma +
++      0x08) with this physical address before enabling the encoder, so a DMA
++      sink has somewhere to put the boot trace. Leave it 0 for sinks that need
++      no address (the simulator sink, target 0).
++
++      Pick a region no part of the boot touches: reset.S, z_prep_c's BSS zeroing
++      and the interrupt stacks all run inside the traced window.
++
++config STARTUP_TACIT_SINK_DMA_SHIFT
++    int "log2 of the per-hart stride between DMA trace buffers"
++    depends on STARTUP_TACIT
++    default 24
++    help
++      Hart n's buffer starts at STARTUP_TACIT_SINK_DMA_ADDR + (n << this). Every
++      hart runs this code with its own sink, so without a stride they would all
++      DMA into the same buffer. Irrelevant on a single-hart design.
+ 
+ 
+ config RTC_CLOCK_DIVIDER_VALUE

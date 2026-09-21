@@ -1,0 +1,97 @@
+--- a/pipeline/generate_skeleton.py
++++ b/pipeline/generate_skeleton.py
+@@ -2522,7 +2522,13 @@
+     # record array). chunk2_c1 is a no-op at runtime (just sets up offset
+     # aliases at codegen time), so it doesn't contribute either.
+     _zero_cost_ops = {"view", "chunk2_c1", "chunk2_c1_f16", "chunk2_c1_s8"}
+-    op_count = sum(1 for op in ir["ops"] if op["op"] not in _zero_cost_ops)
++    # OP_COUNT SIZES THE INVOKE TABLE, so it must count the ops that produce a row in it --
++    # which is the DISPATCHED ops, not every record.  patches/0112's collapsing rewrite leaves
++    # the three SDPA records in the IR with `dispatch_id = None`; counting them made the table
++    # [135] with 117 initialisers, so 18 entries were NULL and the runtime called address 0.
++    # A zero-cost op is excluded for the same reason it always was: it emits no row either.
++    op_count = sum(1 for op in ir["ops"]
++                   if op["op"] not in _zero_cost_ops and op.get("dispatch_id") is not None)
+     used_ops = {op["op"] for op in ir["ops"] if op["op"] not in _zero_cost_ops}
+ 
+     # All exported symbols are mangled by model name (model_<mid>_*,
+@@ -2817,6 +2823,16 @@
+                 .replace("(pool, ", "(s->pool, "))
+ 
+     for op in ir["ops"]:
++        # A RECORD WITH NO DISPATCH ID IS NOT DISPATCHED.  patches/0112's collapsing rewrite
++        # leaves the three SDPA records in the IR as `attention_s8`'s specification, marked
++        # `fused_into` with `dispatch_id = None`.  Without this they still reached the emitter
++        # below and produced `dispatch_moonshine_enc_None` -- six redefinitions of one C
++        # function and `None` undeclared -- so a fused IR could not be BUILT, not merely
++        # mis-counted.  ATTENTION_UNIT.md s8.1 predicted the class ("every consumer that walks
++        # ops counts three dispatches where the build runs one") and called it a reporting
++        # defect; it is a build failure.
++        if op.get("dispatch_id") is None:
++            continue
+         # fp16 dispatch: an `_f16` op without a bespoke branch reuses its fp32
+         # branch (identical args) — normalize to the base op for matching and
+         # fold `_f16` into the mangled kernel name below.
+@@ -3993,6 +4009,28 @@
+                 f"{q.get('activation_min', -128)}, "
+                 f"{q.get('activation_max', 127)})"
+             )
++        elif op["op"] == "attention_s8":
++            # The codegen half of patches/0112.  That patch taught extract_graph to EMIT the
++            # fused op and reference_kernels to DEFINE it, but not this dispatcher to call it,
++            # so `attention_s8` reached `raise NotImplementedError` and a fused IR could not be
++            # built at all.  Found by compiling the curated kernel that drives the attention
++            # unit (ATTENTION_UNIT.md s10.4): the gate was the chain, not the kernel.
++            q_ptr = ptr_for(op["inputs"][0], "in")
++            k_ptr = ptr_for(op["inputs"][1], "in")
++            v_ptr = ptr_for(op["inputs"][2], "in")
++            sh = op["shape"]
++            q = op["quant"]
++            call = (
++                f"kernel_attention_s8({q_ptr}, {k_ptr}, {v_ptr}, {out_ptr}, "
++                f"{sh['B']}, {sh['M']}, {sh['Dk']}, {sh['S']}, {sh['Dv']}, "
++                f"{_f32(q['scale_q'])}, {_f32(q['scale_k'])}, "
++                f"{_f32(q['scale_scores'])}, "
++                f"{_f32(q.get('scale_div_sqrt_dk', 1.0))}, "
++                f"{_f32(q['scale_probs'])}, {_f32(q['scale_v'])}, "
++                f"{_f32(q['scale_out'])}, "
++                f"{q.get('activation_min', -128)}, "
++                f"{q.get('activation_max', 127)})"
++            )
+         elif op["op"] == "add_tile_s8":
+             tile_ptr = ptr_for(op["inputs"][0], "in")
+             x_ptr = ptr_for(op["inputs"][1], "in")
+--- a/pipeline/reference_kernels.py
++++ b/pipeline/reference_kernels.py
+@@ -6887,6 +6887,31 @@
+     free(probs);
+ }
+ """,
++    algorithms=[
++        # patches/0109's sibling: the ATTENTION UNIT inside the decoupled RoCC engine
++        # (mbxa_core as lane 0, mbxr_smx as lane 1).  Bit-exact because the unit computes
++        # this KernelSpec's composition term for term -- ATTENTION_UNIT.md s3: 28,453,700
++        # requantises and 210 dispatches / 441,695 bytes / 0 differ against the RTL, on four
++        # models' own activations.  Shapes the unit refuses fall back to the three curated
++        # kernels this spec is DEFINED as, so the fallback is the specification.
++        AlgorithmCandidate(
++            name="roccmoon_lane",
++            target_affinity=("roccmoon",),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            description=(
++                "One dispatch per (layer, head) to mbxa_core: a planar weight image "
++                "carrying k and v-transpose, a q activation image, and a drain straight "
++                "into the output tensor.  The two 217 kB intermediates are never "
++                "materialised -- they live in the unit's score ring.  Spins to the "
++                "computed completion before polling, because a cross-hart status read "
++                "costs 989 cycles on the board and one head is 79 of them long."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "roccmoon/roccmoon_attention_s8_roccmoon_lane.c)"
++            ),
++        ),
++    ],
+ )
+ 
+ 

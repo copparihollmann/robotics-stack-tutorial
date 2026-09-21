@@ -1,0 +1,46 @@
+ModelBlaster: permute4_s8 `pext_block` -- the reference permute without per-element multiplies, bit-exact.
+
+iiswc-tutorial ROCC_DECOUPLED.md section 8.14 (T1: the curated permute).  Lab B26 measured the
+reference at 39.7 cycles/element on Moonshine's encoder (47.2 M cycles, 7 %).  Counted on spike
+with the board's flags, the cost is a soft-float __eqsf2 call per element (28.5 M instructions:
+the reference's `scale_in == scale_out` evaluated inside the element loop, no FPU) plus 14.9 M in
+the kernel; GCC already strength-reduces the index multiplies.  pext_block: 5.3 M.  The curated kernel
+is fpga/pynq-z2/modelblaster/kernels_t1/pext_nl/pext_nl_permute4_s8_pext_block.c, outside the
+default curated tree, so no existing build changes its pick (the synthesized `direct` follows
+it); scripts/50_rocket_moonshine_enc.sh's *_perm variants add it.  Host check:
+fpga/pynq-z2/modelblaster/check/permute_block_exact.c (all 24 permutations, pure and
+requantising, 197 M bytes).
+
+Applies on top of patches/0009, 0060, 0100, 0102, 0103, 0104, 0105 and 0106.
+--- a/pipeline/reference_kernels.py
++++ b/pipeline/reference_kernels.py
+@@ -6687,6 +6687,29 @@
+          "scale_in": 0.02, "scale_out": 0.02,
+          "activation_min": -128, "activation_max": 127},
+     ],
++    algorithms=[
++        # patches/0107.  The reference with its per-element soft-float compare and index
++        # arithmetic removed: every index is a pointer advanced by a stride, and when the innermost output axis is the
++        # input's innermost axis (attention head split/merge) each output row is one
++        # contiguous run, copied a 64-bit word at a time.  BIT-EXACT (the same elements in
++        # the same order; a requantising permute keeps the reference's float expression).
++        # Its curated file lives outside the default curated tree
++        # (iiswc-tutorial fpga/pynq-z2/modelblaster/kernels_t1), so no existing build
++        # changes its pick; the synthesized `direct` candidate follows it.
++        AlgorithmCandidate(
++            name="pext_block",
++            target_affinity=("pext_nl",),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            description=(
++                "Rank-4 permute with stride pointers instead of per-element index "
++                "multiplies; contiguous innermost runs copied a 64-bit word at a time."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext_nl/pext_nl_permute4_s8_pext_block.c)"
++            ),
++        ),
++    ],
+     argtypes_factory=_pointwise2_f16_argtypes,  # placeholder; host-verify disabled
+ )
+ 

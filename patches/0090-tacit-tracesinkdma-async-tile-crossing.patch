@@ -1,0 +1,52 @@
+TraceSinkDMA: cross out of the TILE's clock domain when the tile has its own clock.
+
+WHAT WAS WRONG.  TraceSinkDMAInjector builds the sink DMA inside the tile and couples it to
+the system bus with
+
+    sbus.crossOut(s.node)(AsynchronousCrossing())
+
+A crossing helper puts the TLAsyncCrossingSource in the scope it is called ON -- here the
+sbus -- so the source half of the queue was clocked by the SBUS while its inputs came from
+logic clocked by the TILE.  While the tile is synchronous to the sbus (every config before
+this one) that is a harmless async queue between two copies of the same clock.  With
+rocket.WithAsynchronousCDCs it is an unsynchronised crossing: report_cdc on the PYNQ-Z1
+L2-on-FCLK1 build (fpga/pynq-z2/docs/MEMORY_BANDWIDTH.md section 6) found 1,790 CDC-1
+endpoints, every one of them tile_prci_domain*/.../applyOrElse_1 <-> sbus/asource*.
+
+THE FIX.  When the tile's crossingType is AsynchronousCrossing, call crossOut on the tile's
+PRCI domain instead, which is exactly how HierarchicalElementPRCIDomain.crossMasterPort
+crosses the tile's own master port.  Otherwise keep the original construction, so every
+synchronous-tile config elaborates to byte-identical Verilog (checked by re-elaborating
+PynqZ2RocketBigLittlePextTacitMicRgbBwL2Mshr12Config against its vendored bundle).
+
+Applied by scripts/03_patch_tacit.sh, alongside 0030.
+
+--- a/generators/tacit/src/main/scala/TraceSinkDMA.scala
++++ b/generators/tacit/src/main/scala/TraceSinkDMA.scala
+@@ -183,9 +183,25 @@
+   if (traceSinkDMAs.nonEmpty) {
+     val sbus = baseSubsystem.locateTLBusWrapper(SBUS)
+     traceSinkDMAs.foreach { case (t, s) =>
++      // The sink DMA is built INSIDE the tile, so the source half of its async crossing
++      // belongs in the tile's clock domain.  sbus.crossOut(s.node) puts it in the SBUS's
++      // domain, which is only equivalent while the tile is clocked by the sbus.  For a tile
++      // on its own clock (rocket.WithAsynchronousCDCs) that left every A-channel signal of
++      // the sink crossing unsynchronised -- 1,790 CDC-1 endpoints in report_cdc on the
++      // PYNQ-Z1 L2-on-FCLK1 build (iiswc-tutorial MEMORY_BANDWIDTH.md section 6).  So cross
++      // out of the tile's PRCI domain when the tile is asynchronous, and keep the original
++      // construction otherwise, which leaves every synchronous-tile config byte-identical.
++      val tileXType = q(TilesLocated(InSubsystem))
++        .find(_.tileParams.tileId == t.tileId).map(_.crossingParams.crossingType)
++      val tileDomain = hierarchicalSubsystem.tile_prci_domains.get(t.tileId)
+       t { // in the implicit clock domain of tile
+         sbus.coupleFrom(t.tileParams.baseName) { bus =>
+-          bus := sbus.crossOut(s.node)(ValName("trace_sink_dma"))(AsynchronousCrossing())
++          (tileXType, tileDomain) match {
++            case (Some(_: AsynchronousCrossing), Some(d)) =>
++              bus := d.crossOut(s.node)(ValName("trace_sink_dma"))(AsynchronousCrossing())
++            case _ =>
++              bus := sbus.crossOut(s.node)(ValName("trace_sink_dma"))(AsynchronousCrossing())
++          }
+         }
+         t.connectTLSlave(s.regnode, t.xBytes)
+       }

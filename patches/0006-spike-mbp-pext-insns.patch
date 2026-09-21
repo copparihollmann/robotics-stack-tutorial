@@ -1,0 +1,194 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dima Nikiforov <vnikiforov@berkeley.edu>
+Date: Tue, 15 Sep 2026 23:30:00 -0700
+Subject: [PATCH] mbp: the four ModelBlaster packed-SIMD instructions
+
+MBP.DOT8 / MBP.MAX8 / MBP.QMUL / MBP.CLIP8, R-type in custom-0 (opcode 0x0b)
+with funct7 = 0 and funct3 = 0/1/2/3. The ISA is frozen at
+fpga/pynq-z2/sw/pext.h in the iiswc-tutorial repo, whose mb_pext_*_sw()
+functions are the specification; the .h files added here are transcriptions of
+them and samples/pext_selftest checks the two against each other case by case.
+
+The point is kernel development without the board: the whole P-ext design was
+justified from dynamic instruction counts taken on this simulator
+(docs/PEXT_SPEC.md section 5), and re-measuring after each kernel change needs
+spike to execute the instructions rather than trap on them.
+
+NOT GATED ON AN ISA-STRING EXTENSION. custom-0 is reserved for non-standard
+use, so nothing standard can ever collide with these four encodings, and a
+gate would mean every spike invocation in the tutorial had to grow an --isa=
+flag -- including the one in scripts/10_tacit_hello.sh that reproduces a
+bit-exact golden. The masks are exact (0xfe00707f), so funct3 4..7 and every
+funct7 != 0 still fall through to illegal_instruction, which is what
+PEXT_SPEC.md section 3.0 requires.
+
+RV64 only: the semantics are eight int8 lanes in a 64-bit register, so each
+insn starts with require_rv64 and raises illegal-instruction on RV32.
+
+Rounding is the part worth reading twice. QMUL is round-half-up -- add 2^30,
+then arithmetic-shift right by 31 -- NOT round-half-away-from-zero and NOT
+round-half-to-even. On a tie with a negative product those three rules give
+three different answers, and the ModelBlaster reference expression does
+half-up.
+
+The disassembler learns the mnemonics too, so `spike -l`, spike-dasm and the
+TACIT decoder's trace.txt print `mbp.dot8 a3, a0, a1` instead of
+`.insn 4, 0x00b5068b`.
+---
+diff --git a/disasm/disasm.cc b/disasm/disasm.cc
+index 06ee9b85..8492fefd 100644
+--- a/disasm/disasm.cc
++++ b/disasm/disasm.cc
+@@ -1044,6 +1044,18 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
+   DEFINE_RTYPE(or);
+   DEFINE_RTYPE(and);
+ 
++  // MBP -- the ModelBlaster packed-SIMD extension, custom-0 (opcode 0x0b), funct7 = 0.
++  // Spelled with dots (mbp.dot8) rather than the underscores the DECLARE_INSN names use,
++  // so `spike -l`, spike-dasm and the TACIT decoder's trace.txt read like assembly
++  // instead of like `.insn 4, 0x0000000b`. RV64 only -- the semantics are 8x int8 in a
++  // 64-bit register. CLIP8 ignores rs2, so it prints as two operands.
++  if (xlen_eq(64)) {
++    add_rtype_insn(this, "mbp.dot8", match_mbp_dot8, mask_mbp_dot8);
++    add_rtype_insn(this, "mbp.max8", match_mbp_max8, mask_mbp_max8);
++    add_rtype_insn(this, "mbp.qmul", match_mbp_qmul, mask_mbp_qmul);
++    add_r1type_insn(this, "mbp.clip8", match_mbp_clip8, mask_mbp_clip8);
++  }
++
+   DEFINE_NOARG(ecall);
+   DEFINE_NOARG(ebreak);
+   DEFINE_NOARG(mret);
+diff --git a/riscv/encoding.h b/riscv/encoding.h
+index 4d41b855..7c2f3800 100644
+--- a/riscv/encoding.h
++++ b/riscv/encoding.h
+@@ -1326,6 +1326,17 @@
+ #define MASK_MAX 0xfe00707f
+ #define MATCH_MAXU 0xa007033
+ #define MASK_MAXU 0xfe00707f
++/* MBP -- the ModelBlaster packed-SIMD extension, custom-0 (opcode 0x0b), funct7 = 0.
++   Four R-type ops; see fpga/pynq-z2/sw/pext.h and docs/PEXT_SPEC.md in the
++   iiswc-tutorial repo. funct3 4..7 and every funct7 != 0 stay illegal. */
++#define MATCH_MBP_CLIP8 0x300b
++#define MASK_MBP_CLIP8 0xfe00707f
++#define MATCH_MBP_DOT8 0xb
++#define MASK_MBP_DOT8 0xfe00707f
++#define MATCH_MBP_MAX8 0x100b
++#define MASK_MBP_MAX8 0xfe00707f
++#define MATCH_MBP_QMUL 0x200b
++#define MASK_MBP_QMUL 0xfe00707f
+ #define MATCH_MIN 0xa004033
+ #define MASK_MIN 0xfe00707f
+ #define MATCH_MINU 0xa005033
+@@ -3494,6 +3505,10 @@ DECLARE_INSN(lw_aq, MATCH_LW_AQ, MASK_LW_AQ)
+ DECLARE_INSN(lwu, MATCH_LWU, MASK_LWU)
+ DECLARE_INSN(max, MATCH_MAX, MASK_MAX)
+ DECLARE_INSN(maxu, MATCH_MAXU, MASK_MAXU)
++DECLARE_INSN(mbp_clip8, MATCH_MBP_CLIP8, MASK_MBP_CLIP8)
++DECLARE_INSN(mbp_dot8, MATCH_MBP_DOT8, MASK_MBP_DOT8)
++DECLARE_INSN(mbp_max8, MATCH_MBP_MAX8, MASK_MBP_MAX8)
++DECLARE_INSN(mbp_qmul, MATCH_MBP_QMUL, MASK_MBP_QMUL)
+ DECLARE_INSN(min, MATCH_MIN, MASK_MIN)
+ DECLARE_INSN(minu, MATCH_MINU, MASK_MINU)
+ DECLARE_INSN(mnret, MATCH_MNRET, MASK_MNRET)
+diff --git a/riscv/insns/mbp_clip8.h b/riscv/insns/mbp_clip8.h
+new file mode 100644
+index 00000000..e74dfa29
+--- /dev/null
++++ b/riscv/insns/mbp_clip8.h
+@@ -0,0 +1,9 @@
++// MBP.CLIP8 rd, rs1 -- saturate to the int8 range, sign-extended to 64 bits.
++//   rd = sext64(clamp(rs1, -128, +127))
++// rs2 is ignored (the intrinsic encodes x0). Bit-for-bit mb_pext_clip8_sw() from
++// fpga/pynq-z2/sw/pext.h.
++require_rv64;
++sreg_t mbp_q = (sreg_t)RS1;
++if (mbp_q < -128) mbp_q = -128;
++if (mbp_q > 127) mbp_q = 127;
++WRITE_RD(mbp_q);
+diff --git a/riscv/insns/mbp_dot8.h b/riscv/insns/mbp_dot8.h
+new file mode 100644
+index 00000000..9b830ec6
+--- /dev/null
++++ b/riscv/insns/mbp_dot8.h
+@@ -0,0 +1,13 @@
++// MBP.DOT8 rd, rs1, rs2 -- 8-way signed int8 dot product, exact, non-accumulating.
++//   rd = sum_{i=0..7} sext(rs1.byte[i]) * sext(rs2.byte[i])
++// |rd| <= 8 * 128 * 128 = 131072, so the 64-bit destination cannot overflow and
++// there is no saturation to specify. Bit-for-bit mb_pext_dot8_sw() from
++// fpga/pynq-z2/sw/pext.h.
++require_rv64;
++sreg_t mbp_sum = 0;
++for (int mbp_i = 0; mbp_i < 8; mbp_i++) {
++  int32_t mbp_x = (int8_t)(((reg_t)RS1) >> (8 * mbp_i));
++  int32_t mbp_y = (int8_t)(((reg_t)RS2) >> (8 * mbp_i));
++  mbp_sum += (sreg_t)mbp_x * (sreg_t)mbp_y;
++}
++WRITE_RD(mbp_sum);
+diff --git a/riscv/insns/mbp_max8.h b/riscv/insns/mbp_max8.h
+new file mode 100644
+index 00000000..0bd6379f
+--- /dev/null
++++ b/riscv/insns/mbp_max8.h
+@@ -0,0 +1,12 @@
++// MBP.MAX8 rd, rs1, rs2 -- eight independent signed byte maxima.
++//   rd.byte[i] = max_signed(rs1.byte[i], rs2.byte[i])
++// ReLU is `MBP.MAX8 rd, rs1, x0`. Bit-for-bit mb_pext_max8_sw() from
++// fpga/pynq-z2/sw/pext.h.
++require_rv64;
++reg_t mbp_a = RS1, mbp_b = RS2, mbp_r = 0;
++for (int mbp_i = 0; mbp_i < 8; mbp_i++) {
++  int8_t mbp_x = (int8_t)(mbp_a >> (8 * mbp_i));
++  int8_t mbp_y = (int8_t)(mbp_b >> (8 * mbp_i));
++  mbp_r |= (reg_t)(uint8_t)(mbp_x > mbp_y ? mbp_x : mbp_y) << (8 * mbp_i);
++}
++WRITE_RD((sreg_t)mbp_r);
+diff --git a/riscv/insns/mbp_qmul.h b/riscv/insns/mbp_qmul.h
+new file mode 100644
+index 00000000..69e19f6b
+--- /dev/null
++++ b/riscv/insns/mbp_qmul.h
+@@ -0,0 +1,10 @@
++// MBP.QMUL rd, rs1, rs2 -- Q0.31 rounding multiply, high part.
++//   rd = (sext32(rs1) * sext32(rs2) + 2^30) >> 31
++// ROUND-HALF-UP: the rounding constant is *added* and the shift is arithmetic, so a
++// tie on a negative product rounds towards +inf, NOT away from zero and NOT to even.
++// That is what the ModelBlaster reference expression does; matching it is the whole
++// point. Bit-for-bit mb_pext_qmul_sw() from fpga/pynq-z2/sw/pext.h.
++require_rv64;
++int32_t mbp_acc = (int32_t)RS1;
++int32_t mbp_mul = (int32_t)RS2;
++WRITE_RD(((int64_t)mbp_acc * (int64_t)mbp_mul + ((int64_t)1 << 30)) >> 31);
+diff --git a/riscv/riscv.mk.in b/riscv/riscv.mk.in
+index 4db50701..ca4ee8e3 100644
+--- a/riscv/riscv.mk.in
++++ b/riscv/riscv.mk.in
+@@ -1132,6 +1132,17 @@ riscv_insn_ext_zvk = \
+ 	$(riscv_insn_ext_zvksed) \
+ 	$(riscv_insn_ext_zvksh) \
+ 
++# MBP -- the ModelBlaster packed-SIMD extension (custom-0, opcode 0x0b, funct7 = 0).
++# Not gated on an ISA-string extension: custom-0 is reserved for non-standard use, so
++# nothing can collide with it, and gating would mean every spike invocation in the
++# tutorial had to grow an --isa= flag. funct3 4..7 and funct7 != 0 remain illegal
++# because the four MATCH/MASK pairs are exact.
++riscv_insn_ext_mbp = \
++	mbp_dot8 \
++	mbp_max8 \
++	mbp_qmul \
++	mbp_clip8 \
++
+ riscv_insn_list = \
+ 	$(riscv_insn_ext_i) \
+ 	$(riscv_insn_ext_c) \
+@@ -1160,6 +1171,7 @@ riscv_insn_list = \
+ 	$(riscv_insn_ext_zvk) \
+ 	$(riscv_insn_ext_zvbdot) \
+ 	$(riscv_insn_ext_zvldot) \
++	$(riscv_insn_ext_mbp) \
+ 	$(riscv_insn_priv) \
+ 	$(riscv_insn_smrnmi) \
+ 	$(riscv_insn_svinval) \
+-- 
+2.43.0
+

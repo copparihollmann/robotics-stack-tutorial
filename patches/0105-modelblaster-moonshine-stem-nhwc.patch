@@ -1,0 +1,84 @@
+ModelBlaster: an NHWC island for Moonshine's stem on the roccmoon backend.
+
+iiswc-tutorial ROCC_DECOUPLED.md section 8.14, T1 lever 2 (TODO.md item 5).  Adds two
+candidates that are chosen only for tensors assign_layouts.py marks nhwc:
+  conv2d_s8    roccmoon_engine_nhwc  (kernels/roccmoon/roccmoon_conv2d_s8_roccmoon_engine_nhwc.c)
+  groupnorm_s8 pext_int_rsqrt_nhwc   (kernels/pext_nl/pext_nl_groupnorm_s8_pext_int_rsqrt_nhwc.c)
+and lets assign_layouts put groupnorm_s8 (NHWC_CAPABLE) and tanh_s8 (LAYOUT_AGNOSTIC, as
+act_layout.py already had it) inside an island.  Every existing graph is NCHW, so no existing
+build changes: the candidates are filtered out by act_layout_candidate_ok.
+
+Applies on top of patches/0009, 0060, 0100, 0102 and 0104.
+--- a/pipeline/assign_layouts.py
++++ b/pipeline/assign_layouts.py
+@@ -51,12 +51,14 @@
+ #: kernel behind it -- though the codegen gate is deny-by-default and will refuse
+ #: anything whose declared act_layouts do not cover what this pass assigned, so
+ #: a stale entry here is caught rather than shipped.
+-NHWC_CAPABLE: set[str] = {"conv2d_s8", "maxpool2d_s8", "batchnorm2d_s8"}
++NHWC_CAPABLE: set[str] = {"conv2d_s8", "maxpool2d_s8", "batchnorm2d_s8",
++                          "groupnorm_s8"}   # patches/0105: pext_int_rsqrt_nhwc
+ 
+ #: Layout-agnostic: pure elementwise, same bytes in any order, so they never
+ #: force a conversion and never need a variant. They join an island for free.
+ LAYOUT_AGNOSTIC = {"add_s8", "relu_s8", "mul_s8", "sigmoid_s8", "silu_s8",
+-                   "relu6_s8", "gelu_s8", "add_f16", "relu_f16", "mul_f16"}
++                   "relu6_s8", "gelu_s8", "add_f16", "relu_f16", "mul_f16",
++                   "tanh_s8"}   # patches/0105: already agnostic in act_layout.py
+ 
+ #: Ops that must never be inside an island even though they look harmless.
+ #: `view` is a codegen alias and stays layout-preserving -- but the thing it
+--- a/pipeline/reference_kernels.py
++++ b/pipeline/reference_kernels.py
+@@ -2485,6 +2485,25 @@
+                 "roccmoon/roccmoon_conv2d_s8_roccmoon_engine.c)"
+             ),
+         ),
++        # patches/0105.  roccmoon_engine on NHWC activations: the engine strides an
++        # NHWC-contiguous window and writes [OW, OC], so on an NHWC island the gather and
++        # the transpose disappear (Moonshine's stem: 35 M of 983 M cycles, measured).
++        AlgorithmCandidate(
++            name="roccmoon_engine_nhwc",
++            target_affinity=("roccmoon",),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            weight_layout="oihw",
++            act_layouts=("nhwc",),
++            description=(
++                "1-D conv2d_s8 on the decoupled RoCC engine with NHWC input and output: "
++                "no staging (one copy only for a misaligned input). Anything the engine "
++                "does not take is relaid to NCHW for pext_patch_dot8."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "roccmoon/roccmoon_conv2d_s8_roccmoon_engine_nhwc.c)"
++            ),
++        ),
+         AlgorithmCandidate(
+             name="pext_patch_dot8",
+             target_affinity=("pext", "pext_nl"),
+@@ -9241,6 +9260,25 @@
+                 "pext_nl/pext_nl_groupnorm_s8_pext_int_rsqrt.c)"
+             ),
+         ),
++        # patches/0105.  The same kernel on NHWC activations: GroupNorm(1, C) sums over
++        # every element, so only the per-channel affine's index changes -- the output is
++        # pext_int_rsqrt's bytes permuted.  Selected only when assign_layouts puts this op
++        # in an NHWC island (Moonshine's stem, iiswc-tutorial ROCC_DECOUPLED.md 8.14 T1).
++        # Affined to roccmoon too, so act_layout.native_layouts sees an NHWC kernel there.
++        AlgorithmCandidate(
++            name="pext_int_rsqrt_nhwc",
++            target_affinity=("pext_nl", "roccmoon"),
++            act_layouts=("nhwc",),
++            accuracy_class=AccuracyClass.NUMERIC_DRIFT,
++            description=(
++                "pext_int_rsqrt reading and writing [N, H, W, C]: identical integer "
++                "arithmetic per element, per-channel affine indexed innermost."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext_nl/pext_nl_groupnorm_s8_pext_int_rsqrt_nhwc.c)"
++            ),
++        ),
+     ],
+ )
+ 

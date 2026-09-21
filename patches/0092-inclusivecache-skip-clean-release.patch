@@ -1,0 +1,93 @@
+InclusiveCache: an opt-in to skip the outer Release for a clean victim (last-level caches only).
+
+Tree: generators/rocket-chip-inclusive-cache (base 8e157c8).  Apply with
+  git -C $CHIPYARD_DIR/generators/rocket-chip-inclusive-cache apply <this patch>
+
+WHY.  In a full last-level cache every miss evicts.  A clean victim's Release reaches the
+TLCacheCork, which answers it with a locally generated ReleaseAck on the same inner D channel
+as the refill's GrantData: nine D messages per 64-byte block.  A cycle-accurate model of this
+SoC's generated L2 + cork (iiswc-tutorial fpga/pynq-z2/rtl_study/l2tb) attributes the measured
+DRAM plateau to that ReleaseAck and predicts that removing it takes a saturated miss stream
+from 6.13 to 7.9997 B/cycle -- the 64-bit link -- with no latency stall under a concurrent
+writer (unlike reordering the cork's arbiter, patches/0091, which the same model shows can
+stall a Put for 6,640 cycles).
+
+WHAT.  A CDE Field, InclusiveCacheSkipCleanRelease, default false.  When true, MSHR still
+schedules the Directory invalidate for the victim exactly as before, but requests the C
+channel only when the victim is dirty, and marks w_releaseack itself in the cycle that
+schedule fires.  Scala-level `if`, so with the Field false the elaborated Chisel -- and the
+Verilog -- are unchanged.
+
+LEGALITY.  A Release informs a manager that tracks capabilities.  A last-level cache's outer
+managers are all at most UNCACHED (InclusiveCacheParameters.lastLevel), so nothing downstream
+tracks one; the outer node is a TLCacheCork, which ties off B and keeps no per-address state.
+MSHR requires lastLevel when the Field is set, so the option cannot be switched on for a cache
+whose outer side could track capabilities.
+
+--- a/design/craft/inclusivecache/src/Parameters.scala
++++ b/design/craft/inclusivecache/src/Parameters.scala
+@@ -27,6 +27,23 @@
+ import freechips.rocketchip.util.property.cover
+ import scala.math.{min,max}
+ 
++/** Skip the outer Release for a CLEAN victim.  Default false: the generated Verilog is unchanged.
++  *
++  * Every miss in a full cache evicts, and the eviction of a clean block sends a Release that a
++  * last-level cache's outer side answers with a ReleaseAck on the same D channel as the refill's
++  * GrantData -- nine D messages per 64-byte block where eight would do.  With this set, a clean
++  * victim is invalidated in the Directory exactly as before but no C-channel Release is issued;
++  * a dirty victim still sends ReleaseData.
++  *
++  * PRECONDITION, enforced by a require in MSHR: the cache is LAST-level, i.e. every outer
++  * manager is at most RegionType.UNCACHED, so nothing downstream can hold or track a cache
++  * capability that a Release would update.  In practice the outer node is a TLCacheCork, which
++  * ties off B, keeps no per-address permission state and generates the ReleaseAck locally.
++  * Do NOT enable it for a cache whose outer side is another capability-tracking manager.
++  *
++  * Measured and modelled in iiswc-tutorial fpga/pynq-z2/docs/MEMORY_BANDWIDTH.md section 6. */
++case object InclusiveCacheSkipCleanRelease extends Field[Boolean](false)
++
+ case class CacheParameters(
+   level:       Int,
+   ways:        Int,
+--- a/design/craft/inclusivecache/src/MSHR.scala
++++ b/design/craft/inclusivecache/src/MSHR.scala
+@@ -94,6 +94,11 @@
+     val nestedwb  = Flipped(new NestedWriteback(params))
+   })
+ 
++  private val skipCleanRelease = params.p(InclusiveCacheSkipCleanRelease)
++  require(!skipCleanRelease || params.lastLevel,
++    "InclusiveCacheSkipCleanRelease needs a last-level cache: every outer manager at most UNCACHED, " +
++    "so no downstream manager tracks the capability a clean Release would give up")
++
+   val request_valid = RegInit(false.B)
+   val request = Reg(new FullRequest(params))
+   val meta_valid = RegInit(false.B)
+@@ -183,7 +188,13 @@
+   val no_wait = w_rprobeacklast && w_releaseack && w_grantlast && w_pprobeacklast && w_grantack
+   io.schedule.bits.a.valid := !s_acquire && s_release && s_pprobe
+   io.schedule.bits.b.valid := !s_rprobe || !s_pprobe
+-  io.schedule.bits.c.valid := (!s_release && w_rprobeackfirst) || (!s_probeack && w_pprobeackfirst)
++  // InclusiveCacheSkipCleanRelease: a clean victim gets its Directory invalidate (dir.valid below
++  // is unchanged) but no outer Release; w_releaseack is set when that schedule fires.
++  if (skipCleanRelease) {
++    io.schedule.bits.c.valid := (!s_release && w_rprobeackfirst && meta.dirty) || (!s_probeack && w_pprobeackfirst)
++  } else {
++    io.schedule.bits.c.valid := (!s_release && w_rprobeackfirst) || (!s_probeack && w_pprobeackfirst)
++  }
+   io.schedule.bits.d.valid := !s_execute && w_pprobeack && w_grant
+   io.schedule.bits.e.valid := !s_grantack && w_grantfirst
+   io.schedule.bits.x.valid := !s_flush && w_releaseack
+@@ -211,6 +222,11 @@
+     }
+   }
+ 
++  if (skipCleanRelease) {
++    // The Release a clean victim would have sent is never sent, so nothing will ack it.
++    when (io.schedule.ready && !s_release && w_rprobeackfirst && !meta.dirty) { w_releaseack := true.B }
++  }
++
+   // Resulting meta-data
+   val final_meta_writeback = WireInit(meta)
+ 

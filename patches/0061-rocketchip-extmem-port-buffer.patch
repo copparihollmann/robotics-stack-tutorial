@@ -1,0 +1,66 @@
+ExtMem memory port: an opt-in TLBuffer between the memory bus and each channel's TLToAXI4.
+
+WHY.  With several TileLink clients on the memory bus -- the L2's outer port plus the lanes
+of an MBUS requester that bypasses the L2 -- the A path from a client through the mbus
+crossbar, TLToAXI4's per-source stall lookup and the AXI4UserYanker queues is combinational,
+and so is the ready that fans back across every crossbar input.  It grows with clients and
+sources.  In iiswc-tutorial's bypass fusion (four lanes of 16 sources on four channels) it was
+15 logic levels and 13.9 ns against a 10 ns memory clock.
+fpga/pynq-z2/docs/MEMORY_BANDWIDTH.md section 8.
+
+WHAT.  A CDE Field, ExtMemPortBuffer, default false.  When true, a TLBuffer (default params:
+one registered slice per channel) sits between mem_bypass_xbar and TLWidthWidget, costing one
+cycle each way per transaction.  When false, the original coupleTo block is kept textually, so
+every config that does not set it elaborates byte-identically -- checked against a vendored
+bundle in the iiswc-tutorial repo before use.
+
+Applied with `git -C $CHIPYARD_DIR/generators/rocket-chip apply` alongside the other
+*-rocketchip-* patches (scripts/07_patch_rocketchip.sh).
+
+--- a/src/main/scala/subsystem/Ports.scala
++++ b/src/main/scala/subsystem/Ports.scala
+@@ -44,6 +44,17 @@
+ // if incohBase is set, creates an incoherent alias for the region that hangs off the sbus
+ case class MemoryPortParams(master: MasterPortParams, nMemoryChannels: Int, incohBase: Option[BigInt] = None)
+ 
++/** A TLBuffer between the memory bus and each ExtMem channel's TLToAXI4.  Opt-in.
++  *
++  * With several clients on the memory bus, the path from a client's A channel through the
++  * mbus crossbar, TLToAXI4's per-source stall lookup and the AXI4UserYanker queues -- and
++  * the ready that fans back across every crossbar input -- is combinational, and it grows
++  * with the number of clients and sources (iiswc-tutorial fpga/pynq-z2/docs/MEMORY_BANDWIDTH.md
++  * section 8: 15 logic levels, 13.9 ns, with four clients).  This cuts it at one cycle of
++  * latency each way.  False leaves the chain textually, and the generated Verilog exactly,
++  * as it was. */
++case object ExtMemPortBuffer extends Field[Boolean](false)
++
+ case object ExtMem extends Field[Option[MemoryPortParams]](None)
+ case object ExtBus extends Field[Option[MasterPortParams]](None)
+ case object ExtIn extends Field[Option[SlavePortParams]](None)
+@@ -104,6 +115,18 @@
+       })
+     })
+ 
++    if (p(ExtMemPortBuffer)) {
++      mbus.coupleTo(s"memory_controller_port_named_$portName") {
++        (DisableMonitors { implicit p => memAXI4Node := AXI4UserYanker() }
++          := AXI4IdIndexer(idBits)
++          := TLToAXI4()
++          := TLWidthWidget(mbus.beatBytes)
++          := TLBuffer()
++          := mem_bypass_xbar
++          := _
++        )
++      }
++    } else {
+     mbus.coupleTo(s"memory_controller_port_named_$portName") {
+       // Disable monitors on this connection since the class with this trait (i.e. DigitalTop) doesn't provide an
+       // implicit clock for the monitor.
+@@ -115,6 +138,7 @@
+         := _
+       )
+     }
++    }
+   }
+ 
+   val mem_axi4 = InModuleBody { memAXI4Node.makeIOs() }

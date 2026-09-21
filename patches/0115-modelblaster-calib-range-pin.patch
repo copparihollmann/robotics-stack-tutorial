@@ -1,0 +1,38 @@
+diff --git a/pipeline/extract_graph.py b/pipeline/extract_graph.py
+index 5d3ea7f..c03758c 100644
+--- a/pipeline/extract_graph.py
++++ b/pipeline/extract_graph.py
+@@ -1889,6 +1889,33 @@ def extract_int8(
+     if range_overrides:
+         max_abs.update({k: float(v) for k, v in range_overrides.items()})
+ 
++    # patches/0115 (Lab B132).  MB_INT8_RANGE_PIN names a JSON file of {tensor: range} that is
++    # applied LAST -- after calibration, after the percentile policy, after any frozen plan.
++    #
++    # WHY A RECALIBRATION NEEDS IT.  Two of this model's tensors are not free parameters:
++    #   * the ENCODER'S INPUT scale is the microphone's physically calibrated int8 grid.
++    #     b119_resamp.py pins SCALE_X = 0.003431909275806016 and B119 derived the PDM gain
++    #     (gain_m / 2^gain_s) so the capture path lands on exactly that grid; moving it means
++    #     re-tuning the microphone and re-capturing every utterance.
++    #   * the ENCODER'S OUTPUT scale is refused by ir_concat.py unless it equals the decoder
++    #     graph's `enc` field to the bit, and the twelve prologue pk*/pv* scales were derived
++    #     from it.
++    # So an activation-range study that wants to move the INTERIOR ranges and leave the two
++    # interfaces where the hardware and the decoder put them has to say so explicitly.
++    #
++    # UNSET = STOCK: every extraction made before B132 is byte-identical with this applied.
++    _range_pin = os.environ.get("MB_INT8_RANGE_PIN", "")
++    if _range_pin:
++        with open(_range_pin) as _pf:
++            _pins = json.load(_pf)
++        _absent = sorted(k for k in _pins if k not in max_abs)
++        if _absent:
++            raise SystemExit(f"MB_INT8_RANGE_PIN={_range_pin!r}: calibration measured no "
++                             f"range for {_absent}")
++        max_abs.update({k: float(v) for k, v in _pins.items()})
++        print(f"[extract_int8] MB_INT8_RANGE_PIN: {len(_pins)} tensor range(s) pinned from "
++              f"{_range_pin}", flush=True)
++
+     scales: dict[str, float] = {
+         k: max(v, 1e-8) / _INT8_RANGE for k, v in max_abs.items()
+     }

@@ -1,0 +1,18 @@
+--- a/pipeline/extract_graph.py
++++ b/pipeline/extract_graph.py
+@@ -1549,7 +1549,14 @@
+         if v.numel() == 0:
+             return
+         if v.numel() > _CALIB_POOL_PER_SAMPLE:
+-            idx = torch.randint(0, v.numel(), (_CALIB_POOL_PER_SAMPLE,), device=v.device)
++            # DETERMINISTIC subsample.  This was torch.randint on the global RNG, which made
++            # every pNN extraction irreproducible: the percentile moved run to run, so every
++            # activation scale moved, so the quantised input and the baked golden moved too.
++            # An evenly spaced stride is as unbiased for a percentile as a random draw and it
++            # makes the IR a function of the model and the calibration set alone.
++            step = v.numel() / float(_CALIB_POOL_PER_SAMPLE)
++            idx = (torch.arange(_CALIB_POOL_PER_SAMPLE, device=v.device).double()
++                   * step).long().clamp_(max=v.numel() - 1)
+             v = v[idx]
+         _calib_pool.setdefault(nname, []).append(v.cpu())
+ 

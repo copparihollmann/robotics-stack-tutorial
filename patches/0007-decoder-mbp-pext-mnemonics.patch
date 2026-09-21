@@ -1,0 +1,220 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dima Nikiforov <vnikiforov@berkeley.edu>
+Date: Tue, 16 Sep 2026 00:05:00 -0700
+Subject: [PATCH] mbp: name the custom-0 packed-SIMD ops in the decoded trace
+
+WHAT WAS NOT BROKEN, measured before touching anything. Control-flow
+reconstruction already handled MBP correctly. rvdasm does not know opcode 0x0b,
+so disassemble_all() inserts a placeholder Insn named "unknown"; the placeholder
+takes its length from the raw word's low two bits (0b11 -> 4 bytes) and its
+kind_mask from the name (no match in the branch/jump tables -> 0). The four MBP
+ops are plain non-branching ALU ops, so "four bytes, not a branch" is exactly
+right and step_bb() walks straight through them.
+
+On a 1,320,030-instruction trace of samples/pext_selftest (all four ops, 5296
+dynamic executions across 25 static sites), the decoded PC sequence is IDENTICAL
+to spike's own tacit.debug ground truth for every instruction, and the Perfetto
+output is byte-identical before and after this patch. The 5 unclosed Perfetto
+slices at the end of that trace are the frames that were live when tracing
+stopped; scripts/10_tacit_hello.sh's golden hello trace has the same 5.
+
+WHAT THIS FIXES is the name and nothing else. trace.txt printed
+
+    0x800003a4: unknown
+
+for all 5296 of them, which in a tutorial about reading traces is a dead end:
+the reader cannot tell a packed dot product from a data word that was
+disassembled by accident. After this it prints
+
+    0x800003a4: mbp.dot8 x13, x10, x11
+
+Only "unknown" placeholders are rewritten, and only the four exact encodings
+(mask 0xfe00707f): funct3 4..7 and every funct7 != 0 stay "unknown", because
+the hardware traps those as illegal and naming them would describe something
+that cannot execute. CLIP8 prints two operands because the spec says rs2 is
+ignored.
+
+The encoding is frozen in fpga/pynq-z2/sw/pext.h in the iiswc-tutorial repo;
+see fpga/pynq-z2/docs/PEXT_SPEC.md section 3.0. `cargo test` covers the four
+encodings, the two rejection cases and the straight-line classification.
+---
+diff --git a/src/backend/stack_unwinder.rs b/src/backend/stack_unwinder.rs
+index e144e8b..58046b7 100644
+--- a/src/backend/stack_unwinder.rs
++++ b/src/backend/stack_unwinder.rs
+@@ -72,12 +72,14 @@ impl StackUnwinder {
+                 if sh_flags & (SHF_EXECINSTR as u64) != 0 {
+                     let addr = section.address();
+                     let data = section.data()?;
+-                    let sec_map = das.disassemble_all(&data, addr);
++                    let mut sec_map = das.disassemble_all(&data, addr);
++                    let named = crate::mbp::annotate(&mut sec_map);
+                     debug!(
+-                        "section `{}` @ {:#x}: {} insns",
++                        "section `{}` @ {:#x}: {} insns ({} MBP)",
+                         section.name().unwrap_or("<unnamed>"),
+                         addr,
+-                        sec_map.len()
++                        sec_map.len(),
++                        named
+                     );
+                     insn_map.extend(sec_map);
+                 }
+diff --git a/src/main.rs b/src/main.rs
+index 3696637..f590907 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -13,6 +13,9 @@ mod frontend {
+     pub mod trap_type;
+     pub mod bp_double_saturating_counter;
+ }
++// MBP -- the custom-0 packed-SIMD extension. Naming only; see src/mbp.rs for why
++// control-flow reconstruction never needed it.
++mod mbp;
+ mod backend {
+     pub mod abstract_receiver;
+     pub mod event;
+@@ -215,12 +218,14 @@ fn trace_decoder(args: &Args, mut bus: Bus<Entry>) -> Result<()> {
+             if sh_flags & (SHF_EXECINSTR as u64) != 0 {
+                 let addr = section.address();
+                 let data = section.data()?;
+-                let sec_map = dasm.disassemble_all(&data, addr);
++                let mut sec_map = dasm.disassemble_all(&data, addr);
++                let named = mbp::annotate(&mut sec_map);
+                 debug!(
+-                    "section `{}` @ {:#x}: {} insns",
++                    "section `{}` @ {:#x}: {} insns ({} MBP)",
+                     section.name().unwrap_or("<unnamed>"),
+                     addr,
+-                    sec_map.len()
++                    sec_map.len(),
++                    named
+                 );
+                 insn_map.extend(sec_map);
+             }
+diff --git a/src/mbp.rs b/src/mbp.rs
+new file mode 100644
+index 0000000..f121902
+--- /dev/null
++++ b/src/mbp.rs
+@@ -0,0 +1,117 @@
++//! MBP -- the ModelBlaster packed-SIMD extension, custom-0 (opcode 0x0b), funct7 = 0.
++//!
++//! WHAT WAS ALREADY FINE, AND IS NOT CHANGED HERE.  Control-flow reconstruction never
++//! had a problem with these instructions. `rvdasm` does not know opcode 0x0b, so
++//! `disassemble_all` inserts a placeholder `Insn` named "unknown"; that placeholder gets
++//! `len = 4` (from the low two bits of the raw word, which are 0b11) and `kind_mask = 0`,
++//! so `is_branch()`, `is_direct_jump()` and `is_indirect_jump()` are all false. The four
++//! MBP ops ARE plain non-branching ALU ops, so "not a branch, four bytes long" is exactly
++//! right, and `step_bb` walks straight through them. Nothing about the decoded arcs, the
++//! stack model or the Perfetto slice nesting depends on knowing their names.
++//!
++//! WHAT THIS FIXES.  The name. `trace.txt` printed `0x800003a4: unknown` for every one of
++//! them, which in a tutorial about reading traces is a dead end: the reader cannot tell a
++//! packed dot product from a data word that got disassembled by accident. Rewriting the
++//! placeholder into a properly-named `Insn` makes it print
++//!
++//!     0x800003a4: mbp.dot8 x13, x10, x11
++//!
++//! Only placeholders are rewritten, and only the four exact encodings: funct3 4..7 and
++//! every funct7 != 0 stay "unknown", because the hardware traps them as illegal and a
++//! decoder that named them would be describing something that cannot execute.
++//!
++//! The encoding is frozen in fpga/pynq-z2/sw/pext.h in the iiswc-tutorial repo; see
++//! fpga/pynq-z2/docs/PEXT_SPEC.md section 3.0.
++
++use std::collections::HashMap;
++
++use rvdasm::args::{rd, rs1, rs2};
++use rvdasm::insn::Insn;
++
++/// funct7 (31:25), funct3 (14:12) and opcode (6:0) -- the whole of the MBP decode.
++const MBP_MASK: u32 = 0xfe00_707f;
++
++const MBP_DOT8: u32 = 0x0000_000b;
++const MBP_MAX8: u32 = 0x0000_100b;
++const MBP_QMUL: u32 = 0x0000_200b;
++const MBP_CLIP8: u32 = 0x0000_300b;
++
++/// Build a named `Insn` for a raw MBP word, or `None` if it is not one.
++pub fn decode(raw: u32) -> Option<Insn> {
++    let name = match raw & MBP_MASK {
++        MBP_DOT8 => "mbp.dot8",
++        MBP_MAX8 => "mbp.max8",
++        MBP_QMUL => "mbp.qmul",
++        MBP_CLIP8 => "mbp.clip8",
++        _ => return None,
++    };
++
++    let mut dst = HashMap::new();
++    let (arg, tag) = rd(raw);
++    dst.insert(tag, arg);
++
++    let mut src = HashMap::new();
++    let (arg, tag) = rs1(raw);
++    src.insert(tag, arg);
++    // CLIP8 reads one register; the spec says rs2 is ignored and the intrinsic encodes
++    // x0 there. Printing a second source would invent an operand.
++    if name != "mbp.clip8" {
++        let (arg, tag) = rs2(raw);
++        src.insert(tag, arg);
++    }
++
++    // Insn::new takes the length from the raw word and the branch/jump kind from the
++    // name; none of these four names is in rvdasm's branch or jump tables, so the
++    // resulting kind_mask is 0 -- the same straight-line classification the "unknown"
++    // placeholder already had.
++    Some(Insn::new(raw, name, src, None, dst, HashMap::new(), None))
++}
++
++/// Rewrite every "unknown" placeholder in a disassembled section map that is in fact an
++/// MBP instruction. Returns how many were named, for the debug log.
++pub fn annotate(insn_map: &mut HashMap<u64, Insn>) -> usize {
++    let mut named = 0;
++    for insn in insn_map.values_mut() {
++        if insn.get_name() == "unknown" {
++            if let Some(better) = decode(insn.get_raw()) {
++                *insn = better;
++                named += 1;
++            }
++        }
++    }
++    named
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn names_the_four_and_nothing_else() {
++        // mbp.dot8 x13, x10, x11 -- funct7 0, funct3 0, opcode 0x0b
++        assert_eq!(decode(0x00b5_068b).unwrap().get_name(), "mbp.dot8");
++        assert_eq!(decode(0x00b5_168b).unwrap().get_name(), "mbp.max8");
++        assert_eq!(decode(0x00b5_268b).unwrap().get_name(), "mbp.qmul");
++        assert_eq!(decode(0x0005_368b).unwrap().get_name(), "mbp.clip8");
++        // reserved funct3 and a non-zero funct7 must stay unnamed
++        assert!(decode(0x00b5_468b).is_none());
++        assert!(decode(0xfeb5_068b).is_none());
++        // and an ordinary add is not ours
++        assert!(decode(0x00b5_0533).is_none());
++    }
++
++    #[test]
++    fn straight_line_and_four_bytes() {
++        let insn = decode(0x00b5_068b).unwrap();
++        assert_eq!(insn.get_len(), 4);
++        assert!(!insn.is_branch());
++        assert!(!insn.is_direct_jump());
++        assert!(!insn.is_indirect_jump());
++    }
++
++    #[test]
++    fn clip8_prints_two_operands() {
++        assert_eq!(decode(0x0005_368b).unwrap().to_string(), "mbp.clip8 x13, x10");
++        assert_eq!(decode(0x00b5_068b).unwrap().to_string(), "mbp.dot8 x13, x10, x11");
++    }
++}
+-- 
+2.43.0
+

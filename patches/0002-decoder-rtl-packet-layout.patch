@@ -1,0 +1,158 @@
+diff --git a/src/frontend/packet.rs b/src/frontend/packet.rs
+index 1bdf74a..41b8c7d 100644
+--- a/src/frontend/packet.rs
++++ b/src/frontend/packet.rs
+@@ -7,6 +7,32 @@ use crate::frontend::c_header::*;
+ use crate::frontend::f_header::*;
+ use crate::frontend::trap_type::*;
+ 
++/// Which TACIT encoder produced the stream.
++///
++/// The RTL encoder (generators/tacit, TacitEncoder.scala) and Spike's software encoder
++/// (riscv-isa-sim, trace_encoder_l.cc) do not emit the same sync and trap packets. Spike
++/// added a privilege byte, a context varint and a runtime-config byte; the RTL encoder's
++/// packetizer emits only [header][trap_addr][target_addr][timestamp], with trap_addr
++/// present only on traps. Every other packet type is identical, so one flag covers it.
++#[derive(Debug, Clone, Copy, PartialEq, Eq)]
++pub enum Encoder {
++    /// riscv-isa-sim trace_encoder_l: sync/trap carry prv (+ ctx, +runtime_cfg).
++    Spike,
++    /// generators/tacit TacitEncoder.scala: no prv, no ctx, no runtime_cfg.
++    Rtl,
++}
++
++impl Encoder {
++    pub fn parse(s: &str) -> Result<Encoder> {
++        match s {
++            "spike" | "sim" => Ok(Encoder::Spike),
++            "rtl" | "hw" | "fpga" => Ok(Encoder::Rtl),
++            other => Err(anyhow::anyhow!(
++                "unknown --encoder `{}` (expected `spike` or `rtl`)", other)),
++        }
++    }
++}
++
+ #[derive(Debug)]
+ pub struct Packet {
+     pub is_compressed: bool,
+@@ -57,7 +83,7 @@ fn read_varint(stream: &mut BufReader<File>) -> Result<u64> {
+     Ok(result.iter().rev().fold(0, |acc, &x| (acc << VAR_OFFSET) | (x & VAR_VAL_MASK) as u64))
+ } 
+ 
+-pub fn read_packet(stream: &mut BufReader<File>) -> Result<Packet> {
++pub fn read_packet(stream: &mut BufReader<File>, encoder: Encoder) -> Result<Packet> {
+     let mut packet = Packet::new();
+     let first_byte = read_u8(stream)?;
+     trace!("first_byte: {:08b}", first_byte);
+@@ -86,15 +112,22 @@ pub fn read_packet(stream: &mut BufReader<File>) -> Result<Packet> {
+                     packet.c_header = CHeader::CNa;
+                 }
+                 FHeader::FSync => {
+-                    // Encoder layout (trace_encoder_l.cc::_generate_sync_packet):
++                    // Spike layout (trace_encoder_l.cc::_generate_sync_packet):
+                     //   header byte, prv byte, ctx (varlen),
+                     //   runtime_cfg byte (S_START only), target (varlen), timestamp (varlen).
+                     // The top 3 bits of the header carry the sync_type.
+-                    let sync_type = (first_byte & TRAP_TYPE_MASK) >> TRAP_TYPE_OFFSET;
+-                    let _prv = read_u8(stream)?;              // prv: from | to<<3 | 0b10<<6
+-                    packet.ctx = read_varint(stream)?;
+-                    if sync_type == 0b001 {                   // S_START carries runtime cfg
+-                        let _runtime_cfg = read_u8(stream)?;  // br_mode | (bp_size/64)<<2
++                    //
++                    // RTL layout (TacitEncoder.scala, state sSync): header byte, target
++                    // (varlen), timestamp (varlen). The hardware encoder has no notion of
++                    // prv/ctx and re-enters sSync on disable, so the trailing sync looks
++                    // exactly like the leading one.
++                    if encoder == Encoder::Spike {
++                        let sync_type = (first_byte & TRAP_TYPE_MASK) >> TRAP_TYPE_OFFSET;
++                        let _prv = read_u8(stream)?;          // prv: from | to<<3 | 0b10<<6
++                        packet.ctx = read_varint(stream)?;
++                        if sync_type == 0b001 {               // S_START carries runtime cfg
++                            let _runtime_cfg = read_u8(stream)?; // br_mode | (bp_size/64)<<2
++                        }
+                     }
+                     packet.target_address = read_varint(stream)?;
+                     packet.timestamp = read_varint(stream)?;
+@@ -102,16 +135,28 @@ pub fn read_packet(stream: &mut BufReader<File>) -> Result<Packet> {
+                     packet.c_header = CHeader::CNa;
+                 }
+                 FHeader::FTrap => {
+-                    // Encoder layout (trace_encoder_l.cc::_generate_trap_packet):
++                    // Spike layout (trace_encoder_l.cc::_generate_trap_packet):
+                     //   header byte, prv byte, ctx (varlen -- ONLY when returning to
+                     //   U mode on a trap-return), from_address, target, timestamp.
++                    //
++                    // RTL layout (TracePacketizer): header byte, from_address, target,
++                    // timestamp -- no prv, no ctx.
+                     let trap_type_raw = (first_byte & TRAP_TYPE_MASK) >> TRAP_TYPE_OFFSET;
+-                    let prv = read_u8(stream)?;
+-                    let to_priv = (prv >> 3) & 0x7;           // ingress_0.priv (destination)
+-                    if to_priv == 0 && trap_type_raw == 0b100 { // P_U && T_TRAP_RETURN
+-                        packet.ctx = read_varint(stream)?;
++                    if encoder == Encoder::Spike {
++                        let prv = read_u8(stream)?;
++                        let to_priv = (prv >> 3) & 0x7;       // ingress_0.priv (destination)
++                        if to_priv == 0 && trap_type_raw == 0b100 { // P_U && T_TRAP_RETURN
++                            packet.ctx = read_varint(stream)?;
++                        }
+                     }
+-                    packet.from_address = read_varint(stream)?;
++                    // Spike encodes from_address pre-shifted (i_addr >> 1); the RTL
++                    // encoder feeds trap_addr_encoder the raw iaddr and only shifts the
++                    // XOR-compressed target. Normalise here so the decoder's refund_addr()
++                    // means the same thing for both.
++                    packet.from_address = match encoder {
++                        Encoder::Spike => read_varint(stream)?,
++                        Encoder::Rtl => read_varint(stream)? >> 1,
++                    };
+                     packet.target_address = read_varint(stream)?;
+                     packet.timestamp = read_varint(stream)?;
+                     packet.trap_type = TrapType::from(trap_type_raw);
+@@ -127,9 +172,9 @@ pub fn read_packet(stream: &mut BufReader<File>) -> Result<Packet> {
+     Ok(packet)
+ }
+ 
+-pub fn read_first_packet(stream: &mut BufReader<File>) -> Result<Packet> {
++pub fn read_first_packet(stream: &mut BufReader<File>, encoder: Encoder) -> Result<Packet> {
+     // call read_packet
+-    let packet = read_packet(stream)?;
++    let packet = read_packet(stream, encoder)?;
+     assert!(packet.f_header == FHeader::FSync);
+     assert!(packet.c_header == CHeader::CNa);
+     Ok(packet)
+diff --git a/src/main.rs b/src/main.rs
+index bce3186..3696637 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -88,6 +88,11 @@ struct Args {
+     // path to the decoded trace file
+     #[arg(short, long, default_value_t = String::from("trace.dump"))]
+     decoded_trace: String,
++    // which encoder produced the stream: `spike` (riscv-isa-sim trace_encoder_l, the
++    // default) or `rtl` (generators/tacit TacitEncoder.scala, i.e. a trace captured off
++    // real hardware). They differ only in the sync and trap packet layouts.
++    #[arg(long, default_value_t = String::from("spike"))]
++    encoder: String,
+     // branch mode
+     #[arg(long, default_value_t = 0)]
+     br_mode: u64,
+@@ -234,7 +239,9 @@ fn trace_decoder(args: &Args, mut bus: Bus<Entry>) -> Result<()> {
+     let br_mode = BrMode::from(args.br_mode);
+     let mode_is_predict = br_mode == BrMode::BrPredict || br_mode == BrMode::BrHistory;
+ 
+-    let packet = frontend::packet::read_first_packet(&mut encoded_trace_reader)?;
++    let encoder = frontend::packet::Encoder::parse(&args.encoder)?;
++    debug!("[main] encoder flavor: {:?}", encoder);
++    let packet = frontend::packet::read_first_packet(&mut encoded_trace_reader, encoder)?;
+     let mut packet_count = 0;
+ 
+     trace!("packet: {:?}", packet);
+@@ -242,7 +249,7 @@ fn trace_decoder(args: &Args, mut bus: Bus<Entry>) -> Result<()> {
+     let mut timestamp = packet.timestamp;
+     bus.broadcast(Entry::new_timed_event(Event::Start, packet.timestamp, pc, 0));
+ 
+-    while let Ok(packet) = frontend::packet::read_packet(&mut encoded_trace_reader) {
++    while let Ok(packet) = frontend::packet::read_packet(&mut encoded_trace_reader, encoder) {
+         packet_count += 1;
+         // special handling for the last packet, should be unlikely hinted
+         trace!("[{}]: packet: {:?}", packet_count, packet);

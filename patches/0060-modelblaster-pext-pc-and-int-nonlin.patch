@@ -1,0 +1,366 @@
+Subject: [PATCH] modelblaster: per-channel MBP kernels, and the integer nonlinearities
+
+Four things, all at pipeline's own documented extension points, so that what
+fpga/pynq-z2/sw/int_nonlin.c measures becomes a property of a model ModelBlaster can
+emit rather than a property of a benchmark.  Curated kernels themselves live OUTSIDE the
+submodule, at fpga/pynq-z2/modelblaster/kernels/{pext,pext_nl}/, reached with
+--global-curated-dir, exactly as patches/0009 arranged.
+
+1. pipeline/backends.py -- one Backend named "pext_nl": MBP plus the integer softmax,
+   layer norm, GELU and matmul-requantise kernels.
+
+   It is a SEPARATE backend rather than a flag on `pext` because `pext` declares
+   atol_override = rtol_override = 0.0 and means it.  The integer replacements cannot be
+   bit-exact against a reference written in expf, double and roundf, and shipping them
+   under `pext` would mean widening that backend's tolerance for every op it has --
+   retiring the strongest claim in this project to buy a convenience.  pext_nl's
+   tolerance is 2.0, which is the MEASURED worst int8 output difference (Lab B20) and
+   not a round number, and `--max-accuracy-class bit_exact` still tightens the
+   convolution and fully-connected kernels back to atol 0 on it.
+
+   curated_aliases = ("pext",), so pext_nl inherits every pext kernel rather than
+   needing a second copy -- and, per backend_lineage's own docstring, inherits the conv
+   weight-layout decision with them.  The three existing pext candidates gain "pext_nl"
+   in their target_affinity, because the algorithm-queue filter matches the backend name
+   exactly and would otherwise drop them.
+
+2. conv2d_s8_pc and linear_s8_pc get MBP candidates.  SPEECH_ON_ROCKET.md 3.4 measured
+   per-channel weight scales at +3.62 accuracy points on kws_cnn over all 5,274 held-out
+   clips, and recorded that they could not be used at all, because --per-channel renames
+   the ops and the curated kernels were registered for the per-tensor names only: the
+   choice on offer was 3.6 points of accuracy OR 25x of speed, with nothing in between.
+   Both new kernels are the per-tensor ones with the requantise descriptor turned into
+   an array indexed by output channel; everything expensive is untouched.  Bit-exact,
+   checked over 24,006 conv and 4,272 linear output elements against the _pc reference.
+
+3. gelu_s8 gets two candidates, and the bit-exact one is the surprise: with per-tensor
+   symmetric quantisation gelu_s8 is a pointwise map from 256 input bytes to 256 output
+   bytes, so evaluating erff once per ELEMENT is never necessary whatever arithmetic it
+   is evaluated in.  Lab B19 measured the reference at 3,093 cycles/element on a
+   131,072-element ffn_block activation -- 405 million cycles to evaluate a 256-entry
+   function.  pext_memo_lut is 31 cycles/element, bit-exact.  pext_int_lut removes the
+   remaining 256 erff calls too: 20 cycles/element, 1 int8 LSB, and input-independent.
+
+4. softmax_s8, layernorm_s8 and matmul_s8 get the integer kernels int_nonlin.c already
+   measured at 32.9x, 16.6x and 4.6x on the silicon.  matmul_s8 is the one nobody had
+   looked at, because it LOOKS integer: its reduction is int32 and its tail is one
+   roundf((float)acc * total) per output element, measured at 244 cycles on this
+   WithoutFPU core (37 in integer, 6.6x), paid heads*T*T times per attention layer.
+
+Applied by scripts/39_rocket_xformer_cost.sh --target pext_nl and by
+scripts/40_rocket_int_nonlin.sh.  Depends on patches/0009 being applied first.  NOT
+upstream.
+
+diff --git a/pipeline/backends.py b/pipeline/backends.py
+--- a/pipeline/backends.py	2026-09-16 16:52:41.833526640 -0700
++++ b/pipeline/backends.py	2026-09-16 17:21:56.809206162 -0700
+@@ -635,6 +635,55 @@
+ )
+ 
+ 
++# MBP plus the INTEGER nonlinearities of fpga/pynq-z2/sw/int_nonlin.c.
++#
++# WHY IT IS A SEPARATE BACKEND AND NOT A FLAG ON `pext`.  The pext backend declares
++# atol_override = rtol_override = 0.0, and it means it: every curated kernel for it
++# recomputes the reference expression in the same rounding mode and every shape it
++# cannot accelerate falls through to the reference verbatim.  The integer softmax,
++# layer norm, GELU and matmul requantise CANNOT be bit-exact against a reference
++# written in `expf`, `double` and `roundf`, and they do not claim to be.  Shipping them
++# under `pext` would mean widening that backend's tolerance for every op it has, which
++# would retire the strongest claim in this project.  So they get their own name, its
++# tolerance is the MEASURED worst int8 output difference rather than a round number,
++# and `pext` is unchanged.
++#
++# WHAT THE TOLERANCE IS AND WHERE IT COMES FROM.  Lab B20 (scripts/40_rocket_int_nonlin.sh)
++# measures each replacement on the silicon against the reference expression compiled into
++# the same image, and reports the worst int8 OUTPUT difference, because that is all a
++# downstream layer can see:
++#
++#     softmax_s8    32.9x   2 LSB  (1 LSB for the reference's own p/scale_out encoding)
++#     layernorm_s8  16.6x   1 LSB
++#     gelu_s8      262x     1 LSB, and its ENTIRE 256-value input domain enumerated
++#     matmul_s8 requantise tail   6.6x   1 LSB
++#
++# 2 LSB on a 255-level encoding is 0.8% of full scale, on a quantity the next layer
++# immediately requantises.  `--max-accuracy-class bit_exact` still tightens the
++# convolution and fully-connected kernels back to atol 0 on this backend, because that
++# filter only ever tightens.
++#
++# curated_aliases = ("pext",) so this backend inherits every pext kernel rather than
++# needing a second copy of them -- and, per backend_lineage's own docstring, inherits
++# the conv weight layout decision with them.  Without it every op would silently fall
++# back to the scalar reference and the build would still report success.
++PEXT_NL = Backend(
++    name="pext_nl",
++    description=(
++        "rv64imac + MBP (as `pext`) plus the integer softmax / layer norm / GELU / "
++        "matmul-requantise kernels of fpga/pynq-z2/sw/int_nonlin.c. Same hart-0 "
++        "pinning contract as pext; numeric_drift on the four nonlinear ops, bounded "
++        "and measured at 1-2 int8 LSB."
++    ),
++    kernel_cflags=("-DMB_PEXT_HW=1",),
++    optimization_guide="optimization_guide_scalar.md",
++    verify_method=VERIFY_HOST_CTYPES,
++    curated_aliases=("pext",),
++    atol_override=2.0,
++    rtol_override=0.0,
++)
++
++
+ RVV_HETERO = Backend(
+     name="rvv_hetero",
+     description=(
+@@ -664,6 +713,7 @@
+     GEMMINI_Q31.name: GEMMINI_Q31,
+     GEMMINI_Q31_RVV.name: GEMMINI_Q31_RVV,
+     PEXT.name: PEXT,
++    PEXT_NL.name: PEXT_NL,
+ }
+ 
+ 
+diff --git a/pipeline/reference_kernels.py b/pipeline/reference_kernels.py
+--- a/pipeline/reference_kernels.py	2026-09-16 16:52:41.833526640 -0700
++++ b/pipeline/reference_kernels.py	2026-09-16 16:54:52.066372642 -0700
+@@ -1873,7 +1873,7 @@
+         # repack of the [N,K] weight tensor costs more copies than the DOT8 loop saves.
+         AlgorithmCandidate(
+             name="pext_row_dot8",
+-            target_affinity=("pext",),
++            target_affinity=("pext", "pext_nl"),
+             accuracy_class=AccuracyClass.BIT_EXACT,
+             description=(
+                 "MBP DOT8/QMUL/CLIP8/MAX8 fully-connected layer. The K axis is "
+@@ -2454,7 +2454,7 @@
+         # order the gathered patch is built in.
+         AlgorithmCandidate(
+             name="pext_patch_dot8",
+-            target_affinity=("pext",),
++            target_affinity=("pext", "pext_nl"),
+             accuracy_class=AccuracyClass.BIT_EXACT,
+             weight_layout="oihw",
+             description=(
+@@ -4095,7 +4095,7 @@
+         # does eight ReLUs in four ordinary instructions.
+         AlgorithmCandidate(
+             name="pext_max8_rows",
+-            target_affinity=("pext",),
++            target_affinity=("pext", "pext_nl"),
+             accuracy_class=AccuracyClass.BIT_EXACT,
+             description=(
+                 "MBP.MAX8 max-pool for NCHW, in two passes because W is the "
+@@ -8874,6 +8874,56 @@
+     extra_shapes=[{"n": 1}, {"n": 32}, {"n": 2048}],
+     argtypes_factory=_gelu_s8_argtypes,
+     algorithms=[
++        # MBP.  The interesting thing about this one is that it uses no MBP
++        # instruction: with per-tensor symmetric quantisation gelu_s8 is a pointwise map
++        # from 256 input bytes to 256 output bytes, so evaluating erff once per ELEMENT
++        # is never necessary whatever arithmetic it is evaluated in.  Lab B19 measured
++        # the reference at 3,093 cycles/element on a 131,072-element ffn_block
++        # activation -- 405 million cycles to evaluate a 256-entry function.  Measured
++        # on the board at that same dispatch: 5,320 -> 31 cycles/element, max_abs_err 0.
++        AlgorithmCandidate(
++            name="pext_memo_lut",
++            target_affinity=("pext", "pext_nl"),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            description=(
++                "One marking pass over the input, erff for each of the at most "
++                "256 DISTINCT byte values that actually occur, then a byte "
++                "gather.  Bit-exact by construction: every table entry is the "
++                "reference's own expression in float32 with the same "
++                "kInvSqrt2, the same casts and the same roundf, and there is "
++                "no arithmetic anywhere else in the kernel.  Below a small-n "
++                "guard the reference expression runs per element instead."
++            ),
++            reference_impl=(
++                "(use the curated kernel pext/pext_gelu_s8_pext_memo_lut.c)"
++            ),
++        ),
++        # The same table with no float in it at all.  Worth a further 1.55x over the
++        # erff-filled table and, more usefully, INPUT-INDEPENDENT: picolibc's erff takes
++        # a rational polynomial below |x| = 0.84 and an expf above it, so the float
++        # kernel measured 3,093 cycles/element on one activation and 6,605 on another.
++        AlgorithmCandidate(
++            name="pext_int_lut",
++            target_affinity=("pext_nl",),
++            accuracy_class=AccuracyClass.NUMERIC_DRIFT,
++            description=(
++                "int_nonlin.c's int_gelu_s8: the same 256-entry table, filled "
++                "by a fixed-point erf (Abramowitz & Stegun 7.1.26 over the "
++                "exp2 table int_softmax_s8 already carries) instead of erff. "
++                "No floating-point instruction executes; scale_in and "
++                "scale_out are decoded from their IEEE-754 bit patterns. "
++                "Measured 5,320 -> 20 cycles/element at n = 131,072.  The "
++                "input domain is 256 values, so accuracy is ENUMERATED rather "
++                "than sampled: over 144 (scale_in, scale_out) pairs x 256 "
++                "inputs, 99 of 36,864 differ, every one by 1 LSB, and every "
++                "one sits within 0.014 LSB of an exact half-integer rounding "
++                "boundary."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext_nl/pext_nl_gelu_s8_pext_int_lut.c)"
++            ),
++        ),
+         # This op had no AlgorithmCandidate, so gelu ran the scalar reference
+         # inside builds labelled rvv_x60 and ime_x60 -- 29.7% of ffn_block on
+         # the vector unit and 42.2% of it on the MAC unit, the largest single
+@@ -9240,6 +9290,32 @@
+     ],
+     argtypes_factory=_matmul_s8_argtypes,
+     algorithms=[
++        # MBP + int_nonlin.c.  matmul_s8 LOOKS integer -- its reduction is int32 -- and
++        # its tail is one `roundf((float)acc * total)` per OUTPUT element, measured at
++        # 244 cycles on this WithoutFPU core.  For an encoder that population is
++        # heads*T*T per layer, 1.59 M elements per second of audio on Squeezeformer-XS,
++        # which makes it the largest float cost in a transformer after GELU, hiding
++        # inside an op every table calls integer.
++        AlgorithmCandidate(
++            name="pext_int_requant",
++            target_affinity=("pext_nl",),
++            accuracy_class=AccuracyClass.NUMERIC_DRIFT,
++            description=(
++                "The requantise tail becomes the same Q0.31 rescale every "
++                "curated convolution kernel already does, with `total` decoded "
++                "from its IEEE-754 bits; and MBP.DOT8 takes the reduction when "
++                "transpose_b makes the K axis contiguous in both operands and "
++                "both rows are 8-aligned, which is exactly the Q.K^T shape. "
++                "Anything else falls through to the scalar reduction rather "
++                "than pretending.  Not bit-exact and does not claim to be: "
++                "float32 has a 24-bit mantissa and this does not, so above "
++                "2^24 this kernel is the more accurate of the two."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext_nl/pext_nl_matmul_s8_pext_int_requant.c)"
++            ),
++        ),
+         AlgorithmCandidate(
+             name="ime_vmadot_4x4x8",
+             target_affinity=("ime", "ime_x60"),
+@@ -9680,6 +9756,38 @@
+     ],
+     argtypes_factory=_conv2d_s8_pc_argtypes,
+     algorithms=[
++        # MBP, per-channel.  SPEECH_ON_ROCKET.md 3.4 measured per-channel weight
++        # scales at +3.62 accuracy points on kws_cnn (89.93% -> 93.55%, against 93.61%
++        # fp32) and then recorded that they could not be used at all: `--per-channel`
++        # renames the op to conv2d_s8_pc and the curated MBP kernels were registered for
++        # conv2d_s8 only, so the choice on offer was 3.6 points OR 25x, with nothing in
++        # between.  For a transcription model that is a correctness item.
++        #
++        # The kernel is the per-tensor one with the requantise descriptor turned into an
++        # array indexed by output channel; the patch gather, the weight repack, the
++        # four-deep DOT8 loop and the OIHW layout are untouched, so it is bit-exact for
++        # the same reason and at the same speed.
++        AlgorithmCandidate(
++            name="pext_patch_dot8_pc",
++            target_affinity=("pext", "pext_nl"),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            weight_layout="oihw",
++            description=(
++                "conv2d_s8's pext_patch_dot8 with per-output-channel "
++                "(output_multiplier, output_shift).  One requantise descriptor "
++                "per output channel, built once per dispatch and indexed by "
++                "the channel the four-deep DOT8 loop is already iterating "
++                "over.  `simple` stays a per-DISPATCH property because the "
++                "output offset and the clamp are per-tensor even under "
++                "per-channel quantisation, and it is decided over ALL channels "
++                "so one channel with a non-positive shift demotes the dispatch "
++                "rather than being miscomputed."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext/pext_conv2d_s8_pc_pext_patch_dot8_pc.c)"
++            ),
++        ),
+         AlgorithmCandidate(
+             name="gemmini_im2col_full_C",
+             target_affinity=("gemmini", "gemmini_q31", "gemmini_q31_rvv"),
+@@ -9977,6 +10085,24 @@
+     ],
+     argtypes_factory=_linear_s8_pc_argtypes,
+     algorithms=[
++        # MBP, per-channel.  See conv2d_s8_pc's candidate for the 3.62 points.
++        AlgorithmCandidate(
++            name="pext_row_dot8_pc",
++            target_affinity=("pext", "pext_nl"),
++            accuracy_class=AccuracyClass.BIT_EXACT,
++            description=(
++                "linear_s8's pext_row_dot8 with per-output-feature "
++                "(output_multiplier, output_shift).  One requantise descriptor "
++                "per output feature, built once per dispatch and indexed by "
++                "the n the residue-class walk already carries.  The DOT8 "
++                "reduction, the shifted aligned input copy and the K mod 8 "
++                "tail are unchanged."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext/pext_linear_s8_pc_pext_row_dot8_pc.c)"
++            ),
++        ),
+         AlgorithmCandidate(
+             name="gemmini_tiled_matmul",
+             target_affinity=("gemmini", "gemmini_q31", "gemmini_q31_rvv"),
+@@ -10593,6 +10719,30 @@
+     ],
+     argtypes_factory=_softmax_s8_argtypes,
+     algorithms=[
++        # MBP + int_nonlin.c.  Measured on the board: 5,550 -> 168 cycles/element at
++        # K = 512, 32.9x, worst int8 output difference 1 LSB against THIS reference.
++        AlgorithmCandidate(
++            name="pext_int_row",
++            target_affinity=("pext_nl",),
++            accuracy_class=AccuracyClass.NUMERIC_DRIFT,
++            description=(
++                "2^x from a 33-entry table with linear interpolation, one "
++                "integer divide per ROW for the reciprocal and none per "
++                "element, and the output stage written as round(p / "
++                "scale_out) to match this reference -- int_nonlin.c's own "
++                "int_softmax_s8 uses a 0 -> -128, 1 -> +127 encoding, which is "
++                "a DIFFERENT TENSOR and would verify against the benchmark "
++                "while being wrong in every model.  scale_in and scale_out are "
++                "decoded from their IEEE-754 bits, so no float instruction "
++                "executes.  The row reciprocal is one plain 128-bit divide "
++                "rather than a Newton iteration: the first version used Newton "
++                "in Q0.62 and was wrong by 255 of a 255-wide output."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext_nl/pext_nl_softmax_s8_pext_int_row.c)"
++            ),
++        ),
+         # This op carried only the synthesized `direct` candidate, so the
+         # curated probe had no named (op, algorithm) pair to look for and
+         # softmax ran the scalar reference inside builds labelled rvv_x60 --
+@@ -11131,6 +11281,30 @@
+     extra_shapes=[{"M": 1, "K": 16}, {"M": 1, "K": 64}, {"M": 4, "K": 128}],
+     argtypes_factory=_layernorm_s8_argtypes,
+     algorithms=[
++        # MBP + int_nonlin.c.  Measured on the board: 1,152 -> 69 cycles/element at
++        # K = 512, 16.6x, worst int8 output difference 1 LSB.
++        AlgorithmCandidate(
++            name="pext_int_rsqrt",
++            target_affinity=("pext_nl",),
++            accuracy_class=AccuracyClass.NUMERIC_DRIFT,
++            description=(
++                "One integer divide and one integer reciprocal square root "
++                "(Newton in Q0.31 from a linear seed) per ROW, and a "
++                "multiply-shift per element.  scale_in cancels out of the "
++                "whole row pass -- normalisation divides by its own standard "
++                "deviation -- and enters only as eps/scale_in^2, computed from "
++                "the two floats' bit patterns with one integer divide. "
++                "Dropping eps is the tempting simplification and is wrong for "
++                "a near-constant row.  gamma and beta stay float32 in the "
++                "signature and are decoded from their bits into (mantissa, "
++                "exponent, sign) and folded with 1/scale_out by integer "
++                "multiply; no float instruction executes."
++            ),
++            reference_impl=(
++                "(use the curated kernel "
++                "pext_nl/pext_nl_layernorm_s8_pext_int_rsqrt.c)"
++            ),
++        ),
+         # Only the synthesized `direct` candidate existed, so the curated
+         # probe had no named (op, algorithm) pair and layernorm ran the scalar
+         # reference inside builds labelled rvv_x60 -- 13.9% of attn_block, and

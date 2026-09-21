@@ -1,0 +1,249 @@
+--- a/pipeline/extract_graph.py
++++ b/pipeline/extract_graph.py
+@@ -41,6 +41,95 @@
+ from torch.fx.passes.shape_prop import ShapeProp
+ 
+ 
++
++# ---------------------------------------------------------------------------------------
++# Fused attention: a COLLAPSING REWRITE, not a fused emitter.
++# ---------------------------------------------------------------------------------------
++_FUSE_ATTENTION = os.environ.get("MB_INT8_FUSE_ATTENTION", "0") == "1"
++
++
++def _collapse_attention(ops: list[dict]) -> list[int]:
++    """Collapse each SDPA triple into one `attention_s8` dispatch, KEEPING the three records.
++
++    WHY A REWRITE AND NOT AN EMITTER.  The three records the SDPA branches emit -- `.qk`
++    matmul_b_s8, `.softmax` softmax_s8, `.av` matmul_b_s8 -- are already measured bit-exact on
++    the board.  Collapsing rather than replacing leaves them in the IR as the SPECIFICATION of
++    what the fused kernel must compute, so the fused kernel is checked against three references
++    nobody wrote for this purpose.  A fused emitter would replace them with a new golden and a
++    new reference written together from one reading of the semantics and checked only against
++    each other -- the shape of three defects this campaign has already had to correct.
++
++    PROVENANCE, NOT A SHAPE HEURISTIC.  Both emitters give the triple a common prefix that is the
++    SDPA node's own name -- `extract_graph` uses a dot (`x.qk`) and `extract_graph_export` an
++    underscore (`x_qk`).  Matching on that is exact; matching on "a matmul, a softmax and a
++    matmul that happen to be adjacent" is a guess, and this pass does not make it.
++
++    THE THREE RECORDS MUST NOT LOOK LIVE.  They keep their fields but get `fused_into`, and
++    `_annotate_dispatches` gives them `dispatch_id = None` -- so a per-kind table does not report
++    three dispatches that never ran.  Anything downstream that wants the specification still has
++    it; anything that walks dispatches does not see it.
++
++    Off unless MB_INT8_FUSE_ATTENTION=1, so the default IR is byte-identical.
++    Returns the number of triples collapsed.
++    """
++    if not _FUSE_ATTENTION:
++        return 0
++    by_name = {o["name"]: o for o in ops}
++    reads: dict[str, int] = {}
++    for o in ops:
++        for t in o.get("inputs", []) or []:
++            reads[t] = reads.get(t, 0) + 1
++    fused = 0
++    out: list[dict] = []
++    for op in ops:
++        out.append(op)
++        if op.get("op") != "matmul_b_s8" or op.get("fused_into"):
++            continue
++        for sep in (".", "_"):
++            tail = sep + "av"
++            if not op["name"].endswith(tail):
++                continue
++            base = op["name"][: -len(tail)]
++            qk, sm = by_name.get(base + sep + "qk"), by_name.get(base + sep + "softmax")
++            if qk is None or sm is None:
++                break
++            if qk.get("op") != "matmul_b_s8" or sm.get("op") != "softmax_s8":
++                break
++            scores = (qk.get("outputs") or [None])[0]
++            probs = (sm.get("outputs") or [None])[0]
++            # the dataflow must be exactly qk -> softmax -> av, and the two intermediates must
++            # have no other reader: a fused unit materialises neither, so a second consumer
++            # would silently lose its input.
++            if (sm.get("inputs") != [scores] or not op.get("inputs")
++                    or op["inputs"][0] != probs
++                    or reads.get(scores) != 1 or reads.get(probs) != 1):
++                break
++            q_n, k_n = qk["inputs"][0], qk["inputs"][1]
++            v_n = op["inputs"][1]
++            qs, aq = qk["shape"], qk["quant"]
++            vs, av = op["shape"], op["quant"]
++            out.append({
++                "name": base + sep + "attn", "op": "attention_s8",
++                "inputs": [q_n, k_n, v_n], "outputs": list(op["outputs"]),
++                "shape": {"B": qs["B"], "M": qs["M"], "Dk": qs["K"], "S": qs["N"],
++                          "Dv": vs["N"]},
++                "quant": {"scale_q": aq["scale_a"], "scale_k": aq["scale_b"],
++                          "scale_scores": aq["scale_out"],
++                          "scale_div_sqrt_dk": aq["scale_div_sqrt_dk"],
++                          "scale_probs": av["scale_a"], "scale_v": av["scale_b"],
++                          "scale_out": av["scale_out"],
++                          "activation_min": -128, "activation_max": 127},
++                "fused_from": [qk["name"], sm["name"], op["name"]],
++            })
++            for spec in (qk, sm, op):
++                spec["fused_into"] = base + sep + "attn"
++            fused += 1
++            break
++    if fused:
++        ops[:] = out
++    return fused
++
++
+ def _annotate_dispatches(ops: list[dict]) -> list[int]:
+     """Promote each non-view op to a first-class dispatch.
+ 
+@@ -59,6 +148,12 @@
+     next_id = 0
+     dispatches: list[int] = []
+     for op in ops:
++        if op.get("fused_into"):
++            # kept as the fused op's specification; never executed, so never a dispatch.
++            op["dispatch_id"] = None
++            op["hardware_target"] = "any"
++            op["depends_on"] = []
++            continue
+         if op["op"] == "view":
+             # view aliases input tensor; propagate producer info so
+             # downstream ops see the real upstream dispatch.
+@@ -3397,6 +3492,7 @@
+                       if output_names_multi is not None
+                       else [output_name])
+ 
++    _collapse_attention(ops)
+     dispatches = _annotate_dispatches(ops)
+ 
+     # Quantize each input with its own scale and surface dtype. int8 inputs are
+@@ -3471,6 +3567,13 @@
+         nm: q for nm, q in zip(input_node_names, inputs_q)
+     }
+     for op in ops:
++        if op["op"] == "attention_s8":
++            # The fused op is SPECIFIED by the three records it collapsed, which are still in
++            # `ops` marked `fused_into` and which this simulator already knows how to execute.
++            # Skipping it here means the golden is produced BY the specification, so the fused
++            # kernel is checked against three references written for another purpose rather
++            # than against a second reading of its own semantics.
++            continue
+         in_name = op["inputs"][0]
+         out_name = op["outputs"][0]
+         in_arr = activations[in_name]
+@@ -5992,6 +6095,7 @@
+             if tmeta.get("dtype") == "f32":
+                 tmeta["dtype"] = "f16"
+ 
++    _collapse_attention(ops)
+     dispatches = _annotate_dispatches(ops)
+     # Build the input IR field. For single-input models the legacy
+     # `tensor` key is sufficient. For multi-input (matmul A+B, bmm)
+--- a/pipeline/reference_kernels.py
++++ b/pipeline/reference_kernels.py
+@@ -6799,6 +6799,97 @@
+ )
+ 
+ 
++ATTENTION_S8 = KernelSpec(
++    op="attention_s8",
++    signature=(
++        "void kernel_attention_s8(const int8_t *q, const int8_t *k, const int8_t *v, "
++        "int8_t *output, int B, int M, int Dk, int S, int Dv, "
++        "float scale_q, float scale_k, float scale_scores, float scale_div_sqrt_dk, "
++        "float scale_probs, float scale_v, float scale_out, "
++        "int activation_min, int activation_max)"
++    ),
++    semantics=(
++        "Fused int8 scaled-dot-product attention -- exactly the composition of the\n"
++        "three dispatches the SDPA branches emit, and defined as that composition\n"
++        "rather than independently:\n"
++        "  scores = matmul_b_s8(q, k, transpose_b=1, scale_div=scale_div_sqrt_dk)\n"
++        "  probs  = softmax_s8(scores)\n"
++        "  out    = matmul_b_s8(probs, v, transpose_b=0)\n"
++        "with the intermediates at scale_scores and scale_probs respectively.\n\n"
++        "THE POINT IS THAT THE INTERMEDIATES ARE NEVER MATERIALISED.  The three-op\n"
++        "form writes and re-reads two [B, M, S] buffers -- 217 kB each at Moonshine's\n"
++        "encoder shapes -- which is the traffic a fused unit exists to remove.  The\n"
++        "reference below still materialises them, because a reference is for being\n"
++        "obviously correct, not fast; a curated kernel that drives the attention unit\n"
++        "is checked against it.\n\n"
++        "Emitted only by the collapsing rewrite in extract_graph._collapse_attention\n"
++        "(MB_INT8_FUSE_ATTENTION=1), which LEAVES the three original records in the IR\n"
++        "marked `fused_into`, so this kernel's specification is three references that\n"
++        "were written and measured for another purpose."
++    ),
++    reference_impl="""\
++#include <stdint.h>
++#include <math.h>
++#include <stdlib.h>
++
++void kernel_attention_s8(const int8_t *q, const int8_t *k, const int8_t *v,
++                         int8_t *output, int B, int M, int Dk, int S, int Dv,
++                         float scale_q, float scale_k, float scale_scores,
++                         float scale_div_sqrt_dk, float scale_probs, float scale_v,
++                         float scale_out, int activation_min, int activation_max) {
++    /* Composed exactly as the three dispatches compose, in the same order and at the
++       same intermediate scales, so that any disagreement is this kernel's. */
++    int8_t *scores = (int8_t *)malloc((size_t)B * M * S);
++    int8_t *probs  = (int8_t *)malloc((size_t)B * M * S);
++    if (!scores || !probs) { free(scores); free(probs); return; }
++
++    float qk_total = (scale_q * scale_k) / (scale_scores * scale_div_sqrt_dk);
++    for (int b = 0; b < B; b++)
++        for (int i = 0; i < M; i++)
++            for (int j = 0; j < S; j++) {
++                int32_t acc = 0;
++                for (int d = 0; d < Dk; d++)
++                    acc += (int32_t)q[(b*M + i)*Dk + d] * (int32_t)k[(b*S + j)*Dk + d];
++                float r = roundf((float)acc * qk_total);
++                if (r < (float)activation_min) r = (float)activation_min;
++                if (r > (float)activation_max) r = (float)activation_max;
++                scores[(b*M + i)*S + j] = (int8_t)r;
++            }
++
++    for (int row = 0; row < B * M; row++) {
++        const int8_t *sr = scores + (size_t)row * S;
++        int8_t mx = sr[0];
++        for (int j = 1; j < S; j++) if (sr[j] > mx) mx = sr[j];
++        float sum = 0.0f;
++        for (int j = 0; j < S; j++) sum += expf(((float)sr[j] - (float)mx) * scale_scores);
++        for (int j = 0; j < S; j++) {
++            float p = expf(((float)sr[j] - (float)mx) * scale_scores) / sum;
++            float r = roundf(p / scale_probs);
++            if (r < 0.0f) r = 0.0f;
++            if (r > 127.0f) r = 127.0f;
++            probs[(size_t)row * S + j] = (int8_t)r;
++        }
++    }
++
++    float av_total = (scale_probs * scale_v) / scale_out;
++    for (int b = 0; b < B; b++)
++        for (int i = 0; i < M; i++)
++            for (int j = 0; j < Dv; j++) {
++                int32_t acc = 0;
++                for (int t = 0; t < S; t++)
++                    acc += (int32_t)probs[(b*M + i)*S + t] * (int32_t)v[(b*S + t)*Dv + j];
++                float r = roundf((float)acc * av_total);
++                if (r < (float)activation_min) r = (float)activation_min;
++                if (r > (float)activation_max) r = (float)activation_max;
++                output[(b*M + i)*Dv + j] = (int8_t)r;
++            }
++    free(scores);
++    free(probs);
++}
++""",
++)
++
++
+ ADD_TILE_S8 = KernelSpec(
+     op="add_tile_s8",
+     signature=(
+@@ -15003,6 +15094,7 @@
+     'add_tile_s8': ADD_TILE_S8,
+     'permute4_s8': PERMUTE4_S8,
+     'matmul_b_s8': MATMUL_B_S8,
++    'attention_s8': ATTENTION_S8,
+     'adaptive_avg_pool2d_f16': ADAPTIVE_AVG_POOL2D_F16,
+     'slice_c_f16': SLICE_C_F16,
+     'cat2_c1_f16': CAT2_C1_F16,

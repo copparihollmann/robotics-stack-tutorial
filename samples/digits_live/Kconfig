@@ -1,0 +1,11 @@
+# The app-level switch pext.h reads. It is NOT a board symbol -- boards/chipyard/*
+# deliberately do not set it, because the same board definition has to build images that
+# must not carry custom-0 encodings (every scalar baseline in this repo).
+config MB_PEXT
+	bool "Emit the MBP custom-0 encodings"
+	help
+	  Builds fpga/pynq-z2/sw/pext.h and the curated ModelBlaster kernels against the
+	  real MBP.DOT8 / MBP.MAX8 / MBP.QMUL / MBP.CLIP8 instructions. Only hart 0
+	  implements them; anything built with this MUST be pinned to CPU 0.
+
+source "Kconfig.zephyr"

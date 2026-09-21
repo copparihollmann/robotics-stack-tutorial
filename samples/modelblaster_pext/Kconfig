@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# PEXT_SPEC.md section 7.2's build-time layer of the heterogeneity contract, spelled
+# the way it asks for: one Kconfig symbol, one image, both behaviours.
+#
+# CONFIG_MB_PEXT=y makes fpga/pynq-z2/sw/pext.h emit the real custom-0 encodings; with
+# it off, the identical sources compile against the header's bit-identical software
+# model and run anywhere, including the LITTLE hart, spike and the build host.  The
+# header reads CONFIG_MB_PEXT directly (Zephyr puts autoconf.h in front of every
+# translation unit), so nothing else has to be wired up for this to take effect in the
+# generated kernels.c.
+
+mainmenu "ModelBlaster + MBP packed-integer extension"
+
+config MB_PEXT
+	bool "Build the ModelBlaster kernels against the MBP extension"
+	default y
+	help
+	  Emit the real MBP.DOT8 / MBP.MAX8 / MBP.QMUL / MBP.CLIP8 encodings
+	  (custom-0, opcode 0x0b) instead of pext.h's software model.
+
+	  THE EXTENSION EXISTS ON HART 0 ONLY.  With this enabled, any thread
+	  that reaches a curated pext kernel MUST be pinned to CPU 0 with
+	  k_thread_cpu_pin(), or it takes an illegal-instruction trap.  That is
+	  the intended behaviour and this sample tests for it deliberately;
+	  see PEXT_SPEC.md section 7.
+
+	  Turn this off to build the same image against the software model --
+	  useful for bring-up on a bitstream that does not yet carry the
+	  extension, and far slower than the plain scalar reference kernels, so
+	  not a production configuration.
+
+source "Kconfig.zephyr"

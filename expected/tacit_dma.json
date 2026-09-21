@@ -1,0 +1,11 @@
+{
+  "_comment": "Golden values for samples/tacit_dma on chipyard_pynqz1 -- TACIT captured from Rocket on the physical PYNQ-Z1, DMA sink -> DRAM -> /dev/mem -> ltrace-decoder --encoder rtl. scripts/21_rocket_tacit.sh compares against this.",
+  "_not_checked": "tacit_out_bytes is deliberately absent. Every packet carries a delta timestamp in core cycles, so a DRAM refresh or a differently-timed mtime interrupt turns a one-byte varint into two: three consecutive runs measured 135182 / 135177 / 135180 bytes for a control-flow stream that decoded identically each time. The counts below are what is actually stable; the three that could move by a packet or two if the timer interrupt lands elsewhere carry a tolerance.",
+  "booted": true,
+  "sink_wrote_bytes": true,
+  "decoded_ok": true,
+  "packets_decoded": { "value": 105894, "within": 0.002 },
+  "instructions_decoded": { "value": 534990, "within": 0.002 },
+  "decoded_txt_lines": { "value": 640885, "within": 0.002 },
+  "perfetto_begin_slices": 9839
+}

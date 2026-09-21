@@ -1,0 +1,61 @@
+{
+  "_what": "Lab B12 -- scripts/32_rocket_tacit_mb_lenet_pext.sh. One LeNet int8 inference through the curated MBP kernels, traced on the P-ext bitstream (MAGIC 0x5A5A0004, 34.4828 MHz), decoded, and cross-checked against the same source run on the patched Spike.",
+
+  "_what_is_pinned_exactly_and_why": "Everything that is a property of the PROGRAM rather than of the run. The traced window is bracketed with irq_lock(), so no tick lands inside it and the instruction stream is deterministic: 425,903 decoded instructions and 39,022 packets are the same on every run of the same image. The MBP counts are pinned because they are derivable in closed form from the LeNet shapes in graph.json (see scratch section 0 of out/<name>/mbp_decode.txt) -- they are not an observation, they are an arithmetic identity the hardware has to satisfy.",
+
+  "_what_is_bounded_and_why": "Cycle counts and the encoded byte count. Every TACIT packet carries a delta timestamp in core cycles, so a DRAM refresh landing differently moves tacit_out_bytes by a handful -- expected/tacit_dma.json declines to check that number at all for the same reason; here it is bounded loosely rather than ignored, because a LARGE move would mean the traced window changed. sink_cost_pct is bounded rather than pinned because it is a cache-interference measurement (measured 1.69% and 1.88% in two consecutive board sessions), not a deterministic quantity.",
+
+  "_max_abs_err_is_pinned_at_zero_on_purpose": "A traced inference that computed the wrong answer would make every other number here meaningless. If this ever fails it is a hardware finding and should be reported as one, not tuned away.",
+
+  "_unknown_total_is_pinned_at_zero": "Not just at MBP sites -- in the whole 425,903-instruction trace. patches/0007 names the four custom-0 encodings; every other instruction in these kernels is ordinary rv64imac that rvdasm already knew. A non-zero count means either the patch did not apply or the decoder met something new.",
+
+  "booted": true,
+  "run_ok": true,
+  "traced_on_hart": 0,
+  "output_bitexact": true,
+  "max_abs_err": 0,
+  "all_dispatches_fast_path": true,
+
+  "mbp_decoded_total": 53122,
+  "mbp_counts_match_derivation": true,
+  "mbp_operands_match_elf": true,
+  "mbp_unknown_at_site": 0,
+  "unknown_total": 0,
+
+  "perfetto_unclosed_slices": 0,
+  "marker_slices": 2,
+  "all_curated_kernels_traced": true,
+  "dispatches_in_graph_order": true,
+  "trace_wrapped_buffer": false,
+
+  "spike_pc_mismatches": 0,
+  "spike_unknown_total": 0,
+  "spike_matches_hardware_mix": true,
+  "spike_matches_hardware_sequence": true,
+  "all_checks_passed": true,
+
+  "measured.instructions_decoded": 425903,
+  "measured.packets_decoded": 39022,
+  "measured.mbp_dynamic_counts": {
+    "dot8": 38490,
+    "max8": 5244,
+    "qmul": 4694,
+    "clip8": 4694
+  },
+  "measured.mbp_derived_counts": {
+    "dot8": 38490,
+    "max8": 5244,
+    "qmul": 4694,
+    "clip8": 4694,
+    "total": 53122
+  },
+  "measured.mbp_static_sites": 82,
+  "measured.mbp_addresses_executed": 36,
+
+  "measured.traced_cycles": { "value": 501000, "within": 0.02 },
+  "measured.warm_untraced_cycles": { "value": 492300, "within": 0.02 },
+  "measured.tacit_out_bytes": { "value": 49487, "within": 0.02 },
+  "measured.bits_per_instruction": { "value": 0.93, "within": 0.03 },
+  "measured.sink_cost_pct": { "at_most": 5.0 },
+  "measured.buffer_bytes": 67108864
+}

@@ -1,0 +1,60 @@
+{
+  "_comment": "Golden values for samples/membench on chipyard_pynqz1_smp -- the dual-core big.LITTLE Rocket + TACIT bitstream on the physical PYNQ-Z1. scripts/25_rocket_membench.sh compares against this.",
+
+  "_what_is_checked_and_why": "Raw MB/s is NOT checked. It is reproducible on this board to about 0.3% run to run, but it is a number about one DDR controller that two ARM cores are also using to run Linux, and pinning it here would make this check a tripwire for whatever else the board is doing rather than for the memory hierarchy. What is checked instead is SHAPE: where the cache boundaries fall, the ratios between the plateaus, how far the two harts fall short of 2x, and every structural fact the run establishes about itself. Those are properties of the geometry, and they came out identical across the runs used to write this file.",
+
+  "_reproducibility": "Four runs on the same board, same bitstream, 5 reps per point below 1 MiB and 3 above. Every solo bandwidth figure agreed to <=0.4%, every contention efficiency to <=1 percentage point, and every latency to <=0.05 cycles. The +/-10% tolerances below are therefore about 30x the observed spread -- wide enough that a DRAM refresh pattern or Linux-side DDR traffic cannot trip them, tight enough that a real change in the hierarchy will.",
+
+  "booted": true,
+  "completed": true,
+  "result_pass": true,
+
+  "_structure": "88 bandwidth points = 11 sizes x 2 ops x (1 + 1 + 2) harts across the three phases; 40 latency points = 10 sizes x 4. A change here means the sweep itself changed, and none of the numbers below are comparable.",
+  "bw_points": 88,
+  "lat_points": 40,
+  "harts_observed": [0, 1],
+  "phases_observed": ["both", "solo0", "solo1"],
+
+  "_geometry": "Read out of the L2's own config register at cache-controller@2010000, on the board, rather than taken from the DTS. 1 bank x 4 ways x 2^8 sets x 64 B = 64 KiB.",
+  "l2_banks": 1,
+  "l2_ways": 4,
+  "l2_lg_sets": 8,
+  "l2_block": 64,
+
+  "_clock": "rdcycle counted against the CLINT's mtime. 40 MHz is not assumed: if the PL clock ever moves, this fails here rather than silently rescaling every MB/s below.",
+  "core_clock_mhz": 40,
+  "core_clock_matches_nominal": true,
+
+  "_self_checks": "Each of these invalidates the whole run if it fails. ceiling: nothing may exceed 8 B/cycle or, through the AXI shim, 320 MB/s -- a result above the link ceiling is a broken measurement, not fast hardware. chase_cycles_valid: the pointer chase really is one cycle through every line of the working set. flush_effective: a cold pass must be >=1.5x slower than the warm pass behind it, or the sweep is measuring warm caches at every size. contention_overlapped: both harts were loading the memory system for >=90% of every timed window in the contention phase, sampled from inside the windows, with the two workers' mtime windows as an independent witness.",
+  "ceiling_violations": 0,
+  "peak_bytes_per_cycle_ok": true,
+  "dram_under_link_ceiling": true,
+  "chase_cycles_valid": true,
+  "flush_effective_l1fit": true,
+  "flush_effective_l2fit": true,
+  "contention_overlapped": true,
+  "_contention_phase_overlap_pct": "Was an exact 100 and is now a tolerance, because the exact form is a coin flip rather than a measurement. The guest computes it as the integer 100*overlap/shorter over the two harts' phase windows on mtime (25 us per tick, ~365,500 ticks long), so it reads exactly 100 only when one window strictly CONTAINS the other and 99 when they merely almost coincide -- one tick of scheduling jitter at either end decides which. Two consecutive runs on the same bitstream measured 99 then 100 (h0=[722905..1088456] h1=[722906..1088502], then h0=[722958..1088559] h1=[722959..1088517]). NOT a consequence of patches/0004-rocketchip-mcycle-free-run: these windows are timed on mtime, which that patch does not touch, and every rdcycle-derived ratio in this file was unchanged across it. The claim worth checking is 'both harts hammered memory at the same instant', and contention_overlapped above already checks exactly that, per measurement, at >= 90%.",
+  "contention_phase_overlap_pct": { "value": 100, "within": 0.02 },
+
+  "_boundaries": "The sizes at which read bandwidth falls below 75% of the previous point in the sweep. This is where the cache boundaries ARE, and it is the most direct statement of geometry the data can make. hart 0 (16 KiB L1D) falls off L1 between 16 and 32 KiB and off the 64 KiB L2 between 64 and 128 KiB. hart 1 (4 KiB L1D) falls off L1 between 4 and 8 KiB and off the same L2 in the same place. Margins are large: the ratios at the two drops are 0.42 and 0.59 on hart 0, 0.47 and 0.60 on hart 1, against a 0.75 threshold, and the non-drops sit at 0.88 and above. The WRITE curve is deliberately not checked: its L2-to-DRAM step lands at 0.76, a hair above the threshold, and would flip on noise.",
+  "read_drops_hart0": [32768, 131072],
+  "read_drops_hart1": [8192, 131072],
+
+  "_plateau_ratios": "Read bandwidth at 4 KiB (in both L1Ds) and 32 KiB (in the L2, out of hart 1's L1) over 16 MiB (DRAM). Ratios rather than absolutes, so that a board-wide shift in DDR service cancels.",
+  "ratio_l1_over_dram_hart0":  { "value": 5.06, "within": 0.10 },
+  "ratio_l2_over_dram_hart0":  { "value": 2.10, "within": 0.10 },
+  "ratio_l1_over_dram_hart1":  { "value": 3.99, "within": 0.10 },
+  "ratio_l2_over_dram_hart1":  { "value": 1.84, "within": 0.10 },
+  "ratio_dram_read_over_write_hart0": { "value": 1.24, "within": 0.10 },
+  "ratio_dram_read_over_write_hart1": { "value": 1.28, "within": 0.10 },
+
+  "_outstanding_misses": "Derived from two independent measurements: a streaming read costs (miss_latency / concurrency + 7) cycles per 64-byte line, and the pointer chase measures miss_latency on its own. Solving for concurrency gives 1.0 on both harts -- rocket-chip's blocking DCache, one line fill in flight per hart, which is why the L2's seven MSHRs are unreachable from the cores and why every DRAM number here is a latency in disguise. This is the single most load-bearing fact in fpga/pynq-z2/docs/MEMORY_HIERARCHY.md; if it ever moves, that document is wrong.",
+  "outstanding_misses_hart0": { "value": 1.01, "within": 0.15 },
+  "outstanding_misses_hart1": { "value": 1.00, "within": 0.15 },
+
+  "_contention": "dram = both harts streaming 16 MiB at once. The link is only a third used by one hart, so the second one is nearly free: 93% of the sum of the two solo figures, and the LITTLE hart keeps 94% of its solo bandwidth rather than being starved. l2_edge = both harts streaming 64 KiB at once, where 128 KiB of working set has to live in a 64 KiB cache: aggregate collapses to 55% and both harts fall to DRAM speed. That contrast -- a shared LINK that scales and a shared CAPACITY that does not -- is the result this sample exists to produce.",
+  "contention_dram_efficiency":      { "value": 0.924, "within": 0.08 },
+  "contention_dram_hart1_retained":  { "value": 0.931, "within": 0.08 },
+  "contention_l2_edge_efficiency":   { "value": 0.548, "within": 0.10 },
+  "contention_dram_write_efficiency": { "value": 0.954, "within": 0.08 }
+}

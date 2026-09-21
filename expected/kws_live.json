@@ -1,0 +1,81 @@
+{
+  "_comment": "Golden values for scripts/38_rocket_kws_live.sh -- a keyword spotter listening to the PYNQ-Z1's own microphone, on hart 0 of the mic+P-ext bitstream (MAGIC 0x5A5A0005, 34.4828 MHz). Everything in the measured path is on the SoC: the PDM microphone, the CIC+FIR decimator, Zephyr's DMIC driver, the fixed-point MFCC front end and an int8 CNN executed with the MBP instructions. The host loads a bitstream, loads an image and reads a console.",
+  "_what_is_exact_and_why": "The structural fields are the ones the HARDWARE fixes and the room cannot change: mic_rate_hz is 15994 because FCLK0 is 1000/29 MHz and a 16 kHz divisor would be 2155.17 (MICROPHONE.md 3.2); hart is 0 because the MBP encodings trap on hart 1 and the thread is pinned; mb_pext_hw is 1 because an image that fell back to pext.h's software model would still run and would report a completely different duty cycle; selftest_ok is the front end checked on this silicon before a single word is spotted, because a fast wrong front end feeds a model trained on a different one.",
+  "_what_is_ranged_and_why": "permille_busy is the measurement this lab exists for and it is ranged, not pinned: it moves with the compiler, with the model, and slightly with how much the console had to print. The window is wide enough to survive all of that and narrow enough to fail if the thing it names stopped being true -- below 100 would mean the model was not running, above 900 would mean the pipeline is about to fall behind. realtime_ratio must be ~1.00 because the microphone sets the pace: materially above 1 means the pipeline fell behind and the DMIC FIFO absorbed or dropped audio, which is the failure this lab has to be able to see. rms_dbfs is 'a live microphone in a room' -- a quiet room measures -60.9 dBFS on this part and -6 would be clipping. detections is NOT checked at all: whether anyone said a keyword to the board is not a property of the hardware.",
+  "_measured": {
+    "_comment": "Not checked -- recorded so a future run has something to compare against. Filled in from the first clean run; see out/rocket_kws_live_cnn/run.json for the full manifest.",
+    "arch": "cnn_tiny",
+    "infer_every_frames": 10,
+    "inferences_per_second": 5,
+    "_expected_from_lab_B17": "front end 0.104 RTF + 5 x 3,557,826 cycles/s / 34,482,759 = 0.516, i.e. RTF 0.620 of work in real time. The measured busy fraction should land near that; anything materially ABOVE it is the DMIC driver, the block copies and the console, which is exactly what this lab adds to Lab B17 and why it is a separate lab.",
+    "_the_constraint_is_latency_not_duty_cycle": "The first run of this lab used kws_cnn and FAILED on realtime_ratio at 1.211 with the hart only 48.5% busy. One kws_cnn inference is 103.2 ms = 1,632 samples of audio and the PDM FIFO holds 1,024 = 64.0 ms, so the FIFO overran on every inference however rarely it ran. That is a constraint on LATENCY, not on duty cycle, and no RTF table predicts it. realtime_ratio is what caught it and the window stays tight for that reason. See SPEECH_ON_ROCKET.md section 4.4.",
+    "blocks": 624,
+    "frames": 994,
+    "inferences": 94,
+    "frame_cycles": 74438,
+    "infer_cycles": 967327,
+    "permille_frontend": 107,
+    "permille_model": 131,
+    "permille_busy": 238,
+    "realtime_ratio": 1.0029,
+    "audio_seconds": 19.975,
+    "rms_dbfs": -56.3,
+    "peak_dbfs": -21.8,
+    "mic_rate_hz": 15994,
+    "image_bytes": 123040,
+    "_the_run_that_failed": {
+      "arch": "cnn",
+      "permille_busy": 485,
+      "realtime_ratio": 1.2106,
+      "note": "kws_cnn, RTF 0.620 by arithmetic, overran the FIFO on every inference with the hart 48.5% idle: one inference is 103.2 ms = 1,632 samples and the FIFO holds 1,024 = 64.0 ms. 94 inferences x 39.2 ms of overrun predicts 3.68 s dropped; 4.21 s went missing. Reproduce with --arch cnn."
+    }
+  },
+  "done": true,
+  "selftest_ok": true,
+  "mic_rate_hz": 15994,
+  "hart": 0,
+  "mb_pext_hw": 1,
+  "macs": 679616,
+  "_range_comment": "Wide by design. The point of a golden here is to catch a regression in KIND -- the model not running, the front end not running, the pipeline falling behind, the microphone dead -- not to pin a number that moves with the room and the compiler.",
+  "permille_busy": {
+    "min": 100,
+    "max": 900
+  },
+  "permille_model": {
+    "min": 50,
+    "max": 800
+  },
+  "permille_frontend": {
+    "min": 20,
+    "max": 400
+  },
+  "realtime_ratio": {
+    "min": 0.9,
+    "max": 1.15
+  },
+  "frame_cycles": {
+    "min": 40000,
+    "max": 140000
+  },
+  "infer_cycles": {
+    "min": 500000,
+    "max": 2000000
+  },
+  "rms_dbfs": {
+    "min": -85.0,
+    "max": -6.0
+  },
+  "audio_seconds": {
+    "min": 15.0,
+    "max": 25.0
+  },
+  "frames": {
+    "min": 700,
+    "max": 1100
+  },
+  "inferences": {
+    "min": 60,
+    "max": 120
+  },
+  "model_max_abs_err": 0
+}

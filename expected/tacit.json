@@ -1,0 +1,7 @@
+{
+  "_comment": "Golden values for samples/tacit (hello-world + FOC, CONFIG_STARTUP_TACIT=y, full-boot trace) on the pins in deps.lock. scripts/10_tacit_hello.sh compares against this and reports PASS/FAIL. elf_bytes is deliberately not checked: the build path is embedded in the ELF, so it shifts by a few bytes between checkouts.",
+  "instructions_traced": 541930,
+  "tacit_out_bytes": 258319,
+  "decoded_txt_lines": 793201,
+  "perfetto_begin_slices": 2372
+}

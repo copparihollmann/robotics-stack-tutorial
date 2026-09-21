@@ -1,0 +1,16 @@
+{
+  "_comment": "Golden values for samples/pext_hart_proof on chipyard_pynqz1_pext -- the dual-core big.LITTLE Rocket + TACIT bitstream with the MBP packed-SIMD extension on hart 0 only (MAGIC 0x5A5A0004, 34.4828 MHz). scripts/29_rocket_pext_run.sh compares against this. Three halves, and all three are mandatory. POSITIVE: hart 0 computed all four MBP ops bit-exactly against fpga/pynq-z2/sw/pext.h, which is the frozen contract. NEGATIVE: hart 1 raised an illegal-instruction exception (mcause = 2) on each of the same four ENCODINGS and never wrote rd -- that is the whole heterogeneity claim, and without it a build that mapped the extension over both tiles would satisfy everything else here. IDENTITY: the two harts report the same ISA letters in misa and DIFFERENT privilege bits -- hart 0 has S and U, hart 1 has neither, because WithNSmallCores sets useVM = false. The second half of that is an independent witness that the two workers really landed on different cores; if the pinning had put both on hart 0 they would agree. mcycle_per_mtime is the hardware clock divider, a pure integer independent of the PL frequency, and is what makes the derived core clock meaningful. No md5 and no line count: the build path is embedded in the image and shifts between checkouts.",
+  "booted": true,
+  "arch_num_cpus": 2,
+  "pext_ops": true,
+  "hart0_ops_executed": 4,
+  "hart0_legal": true,
+  "hart1_traps": true,
+  "hart1_trap_count": 4,
+  "hart1_all_illegal": true,
+  "hart1_rd_unwritten": true,
+  "isa_match": true,
+  "priv_split": true,
+  "mcycle_per_mtime": 1000,
+  "result_pass": true
+}

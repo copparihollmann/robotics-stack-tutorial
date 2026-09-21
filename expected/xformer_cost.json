@@ -1,0 +1,27 @@
+{
+  "_comment": "Golden values for scripts/39_rocket_xformer_cost.sh -- three of ModelBlaster's own transformer blocks (models/{norm,attn,ffn}_block.py), code-generated for the pext target and run on hart 0 of the mic+P-ext bitstream at 34.4828 MHz.",
+
+  "_what_this_lab_establishes": "SPEECH_ON_ROCKET.md section 6 prices every open-vocabulary model by its multiply-accumulates and says those rows are a lower bound on the work rather than an estimate of the time, because 28 of ModelBlaster's 43 _s8 reference kernels dequantize to float and this SoC is WithoutFPU. This lab turns that caveat into a number. The headline is ffn_gemm_share_pct: at seq=128, d_model=256, d_ff=1024 -- a REAL transformer MLP at a real size -- the two 33.5 MMAC matrix multiplies are ~100% of the arithmetic and 15.6% of the time. GELU alone is 69.7%.",
+
+  "_measured": {
+    "_comment": "Not checked -- recorded so a future run has something to compare against. rdcycle on hart 0, 3 timed iterations, hart 1 idle.",
+    "cycles_per_element": {
+      "softmax_s8": 4206, "gelu_s8": 3093, "cos_s8": 2906, "sin_s8": 2460,
+      "layernorm_s8": 1891, "rmsnorm_s8": 1330, "add_s8": 722, "mul_s8": 694,
+      "matmul_s8": 476, "linear_s8": 550
+    },
+    "block_totals_cycles": {"norm_block": 416345, "attn_block": 2932892,
+                            "ffn_block": 581638946},
+    "gemm_share_pct": {"norm_block": 1.6, "attn_block": 3.0, "ffn_block": 15.6},
+    "ffn_block_seconds": 16.868,
+    "_matmul_is_float_too": "matmul_s8's reduction is int32 but its requantise is roundf((float)acc * total) PER OUTPUT ELEMENT, which is why attention's two matmuls measure 24 and 50 cycles per MAC while the MBP linear_s8 beside them measures 1.34.",
+    "_linear_s8_is_the_control": "linear_s8 is the only op here on the curated MBP path, and at 1.34 cycles/MAC it reproduces section 1.2's measured rate. If it ever does not, the pext kernels stopped being selected and every other number in this lab is being compared against the wrong baseline."
+  },
+
+  "models": ["norm_block", "attn_block", "ffn_block"],
+  "clock_hz": 34482759,
+
+  "_range_comment": "Wide windows. These move with the compiler and with picolibc's libm; what they have to catch is the float kernels silently becoming integer (the shares would collapse) or the MBP kernels silently not being selected (ffn_gemm_share_pct would rise toward 100).",
+  "ffn_gemm_share_pct": {"min": 5.0, "max": 40.0},
+  "ffn_float_share_pct": {"min": 60.0, "max": 95.0}
+}

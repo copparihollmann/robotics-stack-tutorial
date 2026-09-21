@@ -1,0 +1,24 @@
+{
+  "_comment": "Golden values for scripts/40_rocket_int_nonlin.sh -- softmax and layer norm in integer fixed point (fpga/pynq-z2/sw/int_nonlin.c) against ModelBlaster's own float reference expressions, on hart 0 of the mic+P-ext bitstream at 34.4828 MHz.",
+
+  "_what_this_lab_is_for": "Lab B19 measured the float-tainted kernels at 1,158 to 5,561 cycles per element and found them to be 84-98% of a transformer block's time. The obvious next move is a floating-point accelerator. This lab asks the cheaper question first -- does the operation need float AT ALL -- and the answer decides whether SPEECH_ON_ROCKET.md section 12 recommends building anything. max_abs_err is therefore the load-bearing field, not the speedup: a faster kernel that computes something else is not a result.",
+
+  "_why_max_abs_err_is_ranged_and_not_pinned_at_zero": "Unlike the MBP kernels, this is NOT bit-exact against the reference and is not meant to be. The reference computes exp and 1/sqrt in float and double; int_nonlin.c computes them from 33-entry tables with linear interpolation. The acceptance criterion is the int8 OUTPUT, because that is all a downstream layer can see, and 2 LSB on a 255-level probability encoding is 0.8% of full scale on a quantity the next layer immediately requantises. If this ever exceeds 2, the table or the interpolation regressed.",
+
+  "_measured": {
+    "_comment": "Not checked -- recorded so a future run has something to compare against. Best of 3 windows, interrupts locked, hart 1 idle, four rows of K.",
+    "softmax":   {"8": {"float": 5003, "int": 176}, "512": {"float": 5561, "int": 171}},
+    "layernorm": {"8": {"float": 1439, "int": 148}, "512": {"float": 1158, "int": 73}},
+    "_units": "cycles per output element",
+    "_host_sweep": "Off the board, over 503,200 softmax and 483,200 layernorm elements swept across five widths and random input scales, the worst int8 output difference is the same 2 and 1 LSB. 17.9% of softmax outputs and 2.1% of layernorm outputs differ at all, always by 1 or 2.",
+    "_three_bugs_this_caught": "The first Newton reciprocal in int_softmax_s8 was wrong -- max_abs_err 255 of a 255-wide output -- and is now one plain integer divide per ROW. int_layernorm_s8 applied its rsqrt exponent with the wrong sign, which produces an output that scales WITH the variance instead of against it and still looks like a normalised tensor. And int_exp2_q31's relative error runs to 33% below 2^-30, which is not a bug but the bottom of Q0.31 and is why the softmax sum is accumulated in 64 bits."
+  },
+
+  "done": true,
+  "selftest_fails": 0,
+
+  "_range_comment": "The speedups move with the compiler and with picolibc's expf; the windows are wide enough to survive that and narrow enough to fail if the integer path stopped being taken (it would read 1.0) or if the float reference were optimised away (it would read very much larger).",
+  "max_abs_err": {"min": 0, "max": 2},
+  "softmax_best_speedup": {"min": 15.0, "max": 60.0},
+  "layernorm_best_speedup": {"min": 8.0, "max": 30.0}
+}

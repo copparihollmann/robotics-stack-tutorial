@@ -1,0 +1,22 @@
+{
+  "_comment": "Golden values for samples/tacit_smp on chipyard_pynqz1_smp -- BOTH harts of the dual-core big.LITTLE Rocket traced simultaneously, each into its own DMA-sink buffer, both decoded, and the SAME cross-hart barrier located in both traces. scripts/26_rocket_tacit_smp.sh compares against this. Requires a bitstream built with patches/0004-rocketchip-mcycle-free-run.patch applied; against the unpatched RTL trace_skew_cycles is ~-8.9e6 and this check fails on the two skew bounds.",
+  "_not_checked": "Absolute timestamps, packet counts and byte counts are deliberately absent. Every packet carries a DELTA timestamp in core cycles, so where the encoder was enabled, and how long the barrier took to release, move all three between otherwise identical runs. What is checked is structural (both harts traced, the marker found exactly once in each, the three independent readings of the skew agreeing) plus a BOUND on the skew itself.",
+  "_skew_bound": "Measured on hardware: trace 72 cycles, software 26 cycles. The residual is not counter drift -- both mcycles are on one clock and left one reset together, and each tracks mtime*1000 to within a few hundred cycles over 8 M cycles. It is how tightly the software EVENT is defined: one hart leaves the barrier a coherence round trip before the other, and the little core takes 71 cycles to reach the marker where the big core takes 9. 2000 is ~30x the observed value and still 4400x below what the unpatched RTL produces, so this bound distinguishes the two without being brittle.",
+  "_merged": "The merged Perfetto timeline (patches/0010). One decoder run now writes trace.merged.perfetto.json alongside the per-hart files: both harts in one file, each on its own pid/tid, each track NAMED by a `ph:M` process_name/thread_name pair carrying the label the lab supplies (hart 0 = big, hart 1 = LITTLE, from PynqZ2RocketBigLittleTacitConfig). merged_matches_per_hart re-reads that file and requires every hart's marker to sit at the same cycle it does in that hart's own trace.perfetto.json -- nothing is rescaled or re-based, so a merged view is only meaningful on a patches/0004 bitstream, and on an unpatched one the two tracks are ~8.9e6 cycles apart and the skew bounds above fail first. Measured on the capture in out/rocket_tacit_smp: 16 events, 2 tracks, markers at 9,846,012 and 9,846,084, one axis 3,277 cycles wide.",
+
+  "booted": true,
+  "run_ok": true,
+  "both_harts_traced": true,
+  "harts_traced": [0, 1],
+  "marker_found_once_in_both": true,
+  "perfetto_matches_txt": true,
+  "trace_matches_software": true,
+  "synchronized": true,
+  "trace_skew_cycles": { "abs_max": 2000 },
+  "sw_skew_cycles": { "abs_max": 2000 },
+
+  "merged_trace_written": true,
+  "merged_harts": [0, 1],
+  "merged_tracks_named": true,
+  "merged_matches_per_hart": true
+}

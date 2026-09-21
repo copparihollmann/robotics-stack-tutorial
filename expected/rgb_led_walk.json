@@ -1,0 +1,35 @@
+{
+  "_comment": "Golden values for samples/rgb_led_walk on chipyard_pynqz1_micrgb -- the dual-core big.LITTLE Rocket + TACIT + MBP + PDM microphone bitstream WITH the two RGB LEDs on a sifive GPIO controller at 0x1001_0000 (MAGIC 0x5A5A0006, 34.4828 MHz). scripts/35_rocket_rgb_leds.sh compares against this. READ fpga/pynq-z2/docs/RGB_LEDS.md SECTION 6 BEFORE TRUSTING A PASS HERE: an output pin has no readback, so nothing in this file establishes that the LED marked LD4 turned red. What it establishes is that the six-bit vector survives intact from Zephyr to the package balls, and that two different bus masters agree about it. The colour is a fact about a PCB and the instrument for it is a person.",
+  "_masks": "Bit order is the vendor's: 0=LD4.blue(L15) 1=LD4.green(G17) 2=LD4.red(N15) 3=LD5.blue(G14) 4=LD5.green(L14) 5=LD5.red(M15). guest_distinct_masks is therefore [0 dark, 1 LD4 blue, 2 LD4 green, 4 LD4 red, 8 LD5 blue, 16 LD5 green, 32 LD5 red, 63 all six]. park 12 = 4|8 = LD4 red + LD5 blue, which is asymmetric on purpose -- see RGB_LEDS.md section 6 for the table of what each wrong appearance would mean.",
+  "_counts": "readbacks_ok is 24 = 1 quiescent + 2 cycles x 11 steps + 1 park. steps_logged is 22. host_samples is ranged because it depends on how long the console reader stayed up and on scheduling on the ARM, but it must be well above zero or host_saw_every_guest_mask would be vacuously true -- which is why both are checked.",
+
+  "board": "chipyard_pynqz1_micrgb",
+  "sample": "rgb_led_walk",
+  "step_ms": 1000,
+  "cycles": 2,
+
+  "booted": true,
+  "done": true,
+  "controller_ready": true,
+
+  "steps_logged": 22,
+  "steps_expected": 22,
+  "readbacks_ok": 24,
+  "readbacks_bad": 0,
+  "quiescent_zero": true,
+
+  "guest_distinct_masks": [0, 1, 2, 4, 8, 16, 32, 63],
+
+  "park_drive": 12,
+  "park_read": 12,
+  "park_ok": true,
+
+  "host_samples": [40, 400],
+  "host_missed_masks": [],
+  "host_saw_every_guest_mask": true,
+  "host_park": 12,
+  "host_agrees_on_park": true,
+
+  "timing_ok": true,
+  "result_pass": true
+}

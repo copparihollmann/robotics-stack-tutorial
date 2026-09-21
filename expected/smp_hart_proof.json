@@ -1,0 +1,11 @@
+{
+  "_comment": "Golden values for samples/smp_hart_proof on chipyard_pynqz1_smp -- the dual-core big.LITTLE Rocket + TACIT bitstream on the PYNQ-Z1. scripts/22_rocket_smp_run.sh compares against this. These are deliberately per-hart facts rather than a line count: 'it booted' is satisfied by a single-core run, so the check is that the hardware itself reported two distinct mhartids, that both harts cleared a shared barrier (which cannot happen unless they run at the same instant), that their execution windows on the shared mtime counter overlapped, and that they completed a ping-pong through one shared word. No md5 or byte count: the build path is embedded in the image and shifts between checkouts.",
+  "booted": true,
+  "arch_num_cpus": 2,
+  "harts_observed": [0, 1],
+  "distinct_harts": true,
+  "barrier": true,
+  "overlap": true,
+  "pingpong": true,
+  "result_pass": true
+}

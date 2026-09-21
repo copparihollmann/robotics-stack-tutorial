@@ -1,0 +1,22 @@
+{
+  "_comment": "Golden values for samples/oled_status. pgm_sha256 is the sha256 of a binary PGM (P5, 128x64, 0/255) of the SSD1306 GDDRAM after the screen is drawn: 'status' is src/oled_golden.h rendered by oled_status_render(), 'pattern' is oled_test_pattern(). Page 0 is the top row and column 0 the left, which is what a viewer sees on the usual module orientation with the driver's A1/C8. The images are not committed; scripts/54_oled_host_tests.sh regenerates them into out/oled_host/ and scripts/55_oled_rtl_sim.sh must reproduce the same hashes from the RTL. init_wire is the SSD1306 model's view of the probe plus ssd1306_init_device() under the Zephyr I2C API contract ('+' ACK). Regenerate with scripts/54_oled_host_tests.sh --update after deliberately changing the screen, the font or the driver, and say why in the commit.",
+  "_negative_control": "must_differ_from_status lists images that must NOT hash to the status golden: stock_status is the same screen sent through a wire model of the stock i2c_sifive reading (repeated START before every payload). If it ever matches, the golden comparison can no longer detect that failure.",
+  "must_differ_from_status": [
+    "stock_status"
+  ],
+  "pgm_sha256": {
+    "pattern": "c4c3182ff99d1609a4400944a49df3f3b4b883cd9d2b3c12327d8e9ad25b07c4",
+    "status": "310205095ce35f0af8ab2ce6f1d4ade95ad3bb20dea1e188c2360879fdc0dff1"
+  },
+  "init_wire": [
+    "S 78+ 00+ E3+ P",
+    "S 78+ 00+ AE+ P",
+    "S 78+ 00+ D5+ 80+ D9+ 22+ DB+ 20+ P",
+    "S 78+ 00+ 40+ D3+ 00+ DA+ 12+ A8+ 3F+ P",
+    "S 78+ 00+ A1+ C8+ P",
+    "S 78+ 00+ 8D+ 14+ 33+ P",
+    "S 78+ 00+ A4+ A6+ P",
+    "S 78+ 00+ 81+ 80+ P",
+    "S 78+ 00+ AF+ P"
+  ]
+}

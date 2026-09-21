@@ -1,0 +1,99 @@
+{
+  "_comment": "Golden values for scripts/42_rocket_vision_board.sh -- five MLPerf Tiny Visual Wake Words classifiers, code-generated twice each (scalar and MBP) from one extract_graph run, and run on hart 0 of the FULL-FEATURE bitstream (PynqZ2RocketBigLittlePextTacitMicRgbConfig, MAGIC 0x5A5A0006, 34.4828 MHz). Same split as every golden here: exact for anything structural, a window for anything measured, and nothing at all for a raw cycle count.",
+
+  "_bit_exactness": "all_bit_exact is max_abs_err == 0 for EVERY architecture, between the int8 output the MBP kernels produced on the board and the baked golden the SCALAR codegen emitted from byte-identical IR. Pinned to true rather than ranged, for the reason expected/modelblaster_lenet_int8_pext.json gives: fpga/pynq-z2/sw/pext.h is the frozen contract, the curated kernels are bit-exact against it on the host, and the routed ALU is bit-exact against it for 3,041 instruction-level cases. A non-zero value means one of those three is wrong, and the response is to find out which, not to widen this.",
+
+  "_the_headline": "mbnet_over_cnn_cycles_x100 is what this lab exists for. vww_mbnet is the MLPerf Tiny VWW reference shape -- MobileNetV1 alpha=0.25, depthwise-separable throughout -- and vww_cnn is the SAME MAC budget in dense 3x3 convolutions (7,157,888 against 7,154,048, a difference of 0.054%). It measures 4.20x the cycles. MBP.DOT8 reduces along the INPUT-CHANNEL axis and a depthwise convolution has none, so 11.2% of mbnet's MACs take 70.0% of its cycles. The audio version of the same pair measured 3.42x (SPEECH_ON_ROCKET.md section 5); the vision version is worse because MobileNet's pointwise half also has KW = 1, which is the gather pathology section 11.4 measured at 16.93x on a different model.",
+
+  "_the_colour_result": "layer1_cycmac_mono_over_bayer_x100 and _over_rgb_x100 isolate something this repo has never separated. PEXT_KERNELS.md section 4 explains LeNet's conv1 (9.40x) against conv2 (25.56x) by the OUTPUT-channel count, because the patch gather is amortised over OC -- but those two layers differ in OC and in IC at once. cnn / cnn_rgb / cnn_bayer have IDENTICAL OC (8) and identical output counts (48x48x8) at layer 1 and differ only in IC (1 / 3 / 4), so these ratios are the input-depth effect alone: 2.41x and 2.06x better per MAC. A monochrome sensor guarantees the worst case.",
+
+  "_measured": {
+    "_comment": "Not checked -- recorded so a future run has something to compare against. rdcycle on hart 0 at 34,482,759 Hz, 11 timed MBP iterations and 3 scalar ones, the other hart idle, interrupts masked per iteration. The scalar image is samples/modelblaster_hart_latency built from the same IR with --board the only difference, so every speedup is a cycle ratio on one piece of silicon at one clock. PER-TENSOR quantisation; see _quantisation below.",
+    "pext_cycles": {
+      "cnn": 8156641,
+      "mbnet": 34250262,
+      "cnn_tiny": 2873478,
+      "cnn_rgb": 8281771,
+      "cnn_bayer": 8436622
+    },
+    "pext_ms": {
+      "cnn": 236.543,
+      "mbnet": 993.258,
+      "cnn_tiny": 83.331,
+      "cnn_rgb": 240.171,
+      "cnn_bayer": 244.662
+    },
+    "cycles_per_mac": {
+      "cnn": 1.1401,
+      "mbnet": 4.7851,
+      "cnn_tiny": 1.5589,
+      "cnn_rgb": 1.1063,
+      "cnn_bayer": 1.1026
+    },
+    "scalar_cycles_hart0": {
+      "cnn": 245633998,
+      "mbnet": 344060334,
+      "cnn_tiny": 64894254
+    },
+    "mbp_speedup": {
+      "cnn": 30.115,
+      "mbnet": 10.046,
+      "cnn_tiny": 22.583
+    },
+    "_the_speedup_is_a_property_of_the_graph": "30.11x on cnn, 22.58x on cnn_tiny and 10.05x on mbnet -- the same three curated kernels, the same instructions, the same silicon. cnn's 30.11x is the largest MBP speedup measured anywhere in this repo, against 25.01x on the dense keyword spotter and 18.09x on LeNet: a 2-D 3x3 convolution over 16-56 input channels is the shape pext_conv2d_s8_pext_patch_dot8.c was written for. Worth pinning nothing; worth saying.",
+    "layer1_cycles_per_mac": {
+      "cnn": 4.9207,
+      "mbnet": 4.9233,
+      "cnn_tiny": 4.9709,
+      "cnn_rgb": 2.3924,
+      "cnn_bayer": 2.0419
+    },
+    "_layer1_is_three_measurements_of_one_shape": "cnn, mbnet and cnn_tiny have literally the same first layer -- 1->8 channels, stride 2, 96x96 in, 165,888 MACs -- in three different images from three different graphs. They measure 816,294 / 816,728 / 824,602 cycles, a spread of 1.0%. Nothing in the report is wired to make that happen.",
+    "cycles_by_op_mbnet": {
+      "depthwise_conv2d_s8": 23971948,
+      "conv2d_s8": 10184859,
+      "avgpool2d_s8": 83794,
+      "linear_s8": 3165
+    },
+    "cycles_by_op_cnn": {
+      "conv2d_s8": 7694790,
+      "maxpool2d_s8": 398429,
+      "linear_s8": 59221
+    },
+    "fp32_test_accuracy": {
+      "cnn": 0.8237,
+      "mbnet": 0.833,
+      "cnn_tiny": 0.808,
+      "cnn_rgb": 0.8553,
+      "cnn_bayer": 0.8527
+    },
+    "int8_test_accuracy_per_tensor": {
+      "cnn": 0.526,
+      "mbnet": 0.7044,
+      "cnn_tiny": 0.5673,
+      "cnn_rgb": 0.5311,
+      "cnn_bayer": 0.5245
+    },
+    "int8_test_accuracy_per_channel": {
+      "cnn": 0.824,
+      "mbnet": 0.6972,
+      "cnn_tiny": 0.8081,
+      "cnn_rgb": 0.8561,
+      "cnn_bayer": 0.8513
+    },
+    "_quantisation": "PER-TENSOR int8 is not a usable operating point for this workload and this lab measures it anyway, because the pair is the result. Every DENSE network loses 24-33 points to per-tensor and gets all of them back from per-channel (cnn: 82.37 fp32 -> 52.60 per-tensor -> 82.40 per-channel). mbnet is the exception in both directions: it quantises far better per-tensor (70.44) and per-channel does not help it at all (69.72), because extract_graph.py's _PC_OPS_BASE is (conv2d_s8, linear_s8) and MobileNet's damage is in the depthwise layers. patches/0060 registered curated MBP kernels for the _pc ops, so per-channel no longer costs the packed-SIMD path -- run the lab with --per-channel. CAMERA_TASK.md section 6.3 has the mechanism and the per-layer numbers."
+  },
+
+  "archs": ["cnn", "mbnet", "cnn_tiny", "cnn_rgb", "cnn_bayer"],
+  "all_bit_exact": true,
+  "all_neg_trapped": true,
+  "clock_hz": 34482759,
+  "sensor_fps_324x324": 59.0,
+
+  "_range_comment": "Raw cycle counts are deliberately absent: they move with any compiler, Zephyr or codegen change and a red check there would say nothing about the hardware. What is pinned is three RATIOS, each a property of the ISA against a pair of graphs, plus the two correctness flags. The windows are wide enough to survive ordinary codegen drift and narrow enough to fail if the thing they describe stops being true -- a curated depthwise kernel would drive the first two toward 1, and an NHWC activation layout would collapse the third.",
+
+  "mbnet_over_cnn_cycles_x100": { "min": 330, "max": 520 },
+  "depthwise_over_dense_cycmac_x100": { "min": 1300, "max": 2500 },
+  "layer1_cycmac_mono_over_bayer_x100": { "min": 195, "max": 300 },
+  "layer1_cycmac_mono_over_rgb_x100": { "min": 170, "max": 260 }
+}

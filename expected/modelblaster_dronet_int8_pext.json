@@ -1,0 +1,69 @@
+{
+  "_comment": "Golden values for scripts/33_rocket_mb_dronet_pext_board.sh -- DroNet at int8 on hart 0 of the P-ext bitstream (PynqZ2RocketBigLittlePextTacitConfig, MAGIC 0x5A5A0004, 34.4828 MHz), with the three MBP kernels of PEXT_KERNELS.md plus the two INTEGER kernels of DRONET_INTEGER.md standing in for batchnorm2d_s8 and add_s8. The split between exact values and ranges is the same as expected/modelblaster_lenet_int8_pext.json's and for the same reason: exact for anything structural, a window for anything measured, and nothing at all for a raw cycle count.",
+
+  "_bit_exactness": "max_abs_err_vs_scalar_golden is the element-by-element difference between the 2-byte int8 output tensor the board produced (printed by samples/modelblaster_pext as MB_PEXT_OUT) and the baked int8 golden the SCALAR codegen emitted from the byte-identical IR. Measured [-56, 127] against [-56, 127]. It is pinned to 0 because 0 is the only acceptable value, and for DroNet it rests on one more link than LeNet's did: batchnorm2d_s8 and add_s8 run INTEGER fixed-point kernels whose general accuracy class is numeric_drift, not bit_exact. PEXT_SPEC.md section 1.5 is right that the integer rescale-add is not bit-exact in general -- over random scale triples 14.3% of them drift somewhere, always by exactly 1 LSB. integer_kernels_exhaustively_bit_exact below is the per-model proof that it does not drift HERE, and it is a proof rather than a sample: both kernels are pointwise int8 maps, so 229,376 cases is their ENTIRE input domain. Re-run it after any recalibration, because recalibration is exactly what could invalidate it. If it ever fails, the fix is to keep the float reference for the affected op -- NOT to widen this number.",
+
+  "_why_kernels_integer_only_is_absent": "24 and 30 compute and pin `kernels_integer_only`, a grep of the generated kernels.c for /float|double|roundf|.../. That flag is STRUCTURALLY UNREACHABLE for DroNet and pinning it either way would be meaningless: kernel_batchnorm2d_s8's SIGNATURE is (const int8_t *input, const float *scale, const float *bias, ...), so the word `float` is in kernels.c whatever the kernel body does. Stage 6 of the runner measures the thing that grep was a proxy for instead -- which functions actually CALL libgcc soft-float, and where. Result: conv2d_s8, linear_s8, maxpool2d_s8 and relu_s8 contain none; batchnorm2d_s8 and add_s8 contain them only in per-channel and per-dispatch setup, never in an element loop; sigmoid_s8 keeps the float reference for its single element. See DRONET_INTEGER.md section 5.",
+
+  "_measured": {
+    "_comment": "Not checked -- recorded so a future run has something to compare against. rdcycle at 34,482,759 Hz (read back from the PS SLCR, outside the SoC), 3 timed iterations, the other hart idle, interrupts masked per iteration. Built with the runner's default MB_PEXT_CONV_WBYTES=65536.",
+    "pext_hart0_median_cycles": 19936133,
+    "pext_hart0_median_ms": 578.148,
+    "pext_hart0_fps": 1.73,
+    "cycles_by_op": {
+      "conv2d_s8": 17173080,
+      "maxpool2d_s8": 1248327,
+      "batchnorm2d_s8": 1048217,
+      "add_s8": 410368,
+      "linear_s8": 30212,
+      "relu_s8": 22171,
+      "sigmoid_s8": 3268
+    },
+    "spike_instructions_scalar": 346217683,
+    "spike_instructions_pext": 14108729,
+    "spike_instruction_speedup": 24.54,
+    "cpi_from_board_over_spike": 1.413,
+    "conv_wbytes_sweep_on_board": {
+      "_comment": "All three bit-exact. Instructions fall 24.1% from 8192 to 65536 but cycles only 13.5%, because the repacked-weight block outgrows the 16 KB L1D. Spike cannot see the difference; the board can.",
+      "8192":  {"instructions": 18576059, "cycles": 23040281, "ms": 668.165, "cpi": 1.240},
+      "16384": {"instructions": 15734994, "cycles": 20981796, "ms": 608.474, "cpi": 1.334},
+      "65536": {"instructions": 14108729, "cycles": 19936133, "ms": 578.145, "cpi": 1.413}
+    },
+    "what_the_integer_kernels_bought": {
+      "_comment": "Counterfactual from the same spike harness at the shipped 8192 block: MBP convolutions with the FLOAT reference batchnorm/add. This is the number the whole exercise was about.",
+      "frame_with_float_bn_add": 39388416,
+      "frame_with_integer_bn_add": 18576059,
+      "end_to_end_speedup_with_float_bn_add": 8.79,
+      "end_to_end_speedup_with_integer_bn_add": 18.64,
+      "integer_kernels_worth": 2.12,
+      "bn_add_share_of_frame_with_float": "55.3%",
+      "bn_add_share_of_frame_with_integer": "5.2%",
+      "batchnorm_instructions_per_element": {"reference": 470, "integer": 21.6},
+      "add_instructions_per_element": {"reference": 559, "integer": 22.1}
+    }
+  },
+
+  "booted": true,
+  "model": "dronet",
+  "quant": "int8",
+  "graph_ops": ["add_s8", "batchnorm2d_s8", "conv2d_s8", "linear_s8", "maxpool2d_s8", "relu_s8", "sigmoid_s8", "view"],
+  "ir_identical_scalar_vs_pext": true,
+  "golden_identical_scalar_vs_pext": true,
+  "curated_ops": ["add_s8", "batchnorm2d_s8", "conv2d_s8", "linear_s8", "maxpool2d_s8"],
+  "reference_ops": ["relu_s8", "sigmoid_s8"],
+  "integer_kernels_exhaustively_bit_exact": true,
+  "mb_pext_hw": 1,
+  "dispatches_profiled": 21,
+  "output_len": 2,
+
+  "max_abs_err_vs_scalar_golden": 0,
+  "guest_reported_max_abs_err": 0,
+
+  "pext_ran_on_hart": 0,
+  "negative_test_trapped": true,
+  "negative_test_mcause": 2,
+  "result_pass": true,
+
+  "_range_comment": "pext_hart0_median_cycles is deliberately NOT pinned -- it moves with any compiler, Zephyr or codegen change and a red check there would say nothing about the hardware. What is pinned is a WIDE window on the frame time, whose only job is to catch the two failure modes that matter: the MBP kernels silently not being selected (which would read as ~15x this, since the scalar frame is 346 M instructions), or the image falling back to pext.h's software model (slower still). Anything inside this window is a performance change to investigate, not a correctness failure.",
+  "pext_hart0_median_ms": {"min": 400.0, "max": 900.0}
+}

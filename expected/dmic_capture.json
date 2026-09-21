@@ -1,0 +1,18 @@
+{
+  "_comment": "Golden values for samples/dmic_capture on chipyard_pynqz1_mic -- the dual-core big.LITTLE Rocket + TACIT + MBP bitstream WITH the PDM microphone at 0x1009_0000 (MAGIC 0x5A5A0005, 34.4828 MHz). scripts/34_rocket_mic_capture.sh compares against this. The hard values are the ones the HARDWARE fixes and the room cannot change: the negotiated sample rate is 15994 Hz and not 16000 (the driver rounds 15993.859 to the nearest hertz), because FCLK0 is 1000/29 MHz and 2155.17 is not an integer (MICROPHONE.md 3.2); one channel, because there is one microphone; 31744 samples, because 62 blocks of 512; and no overrun, because a 64 ms FIFO covers a 32 ms block. The ranged values are the ones a different room legitimately moves. rms_dbfs just has to be inside 'a live microphone in a room' -- 0 would be a dead pin and -6 would be clipping. tilt_db is the one that says the DECIMATOR works and not merely that samples arrived: a sigma-delta microphone's quantisation noise rises steeply with frequency, so a naive average of its bitstream comes out BRIGHTER at the top of the band (measured at -14 dB of tilt, i.e. the wrong sign, on this board's own bits) while a correct CIC+FIR chain comes out darker (+14.5 dB measured). fingerprint_corr compares the eight-band profile against the same microphone recorded through PYNQ's base overlay and decimated by this repo's RTL under Verilator -- an entirely independent path, with none of Rocket, Zephyr or the bitstream in it. Correlation rather than absolute level, so a louder or quieter day does not break it; 0.982 was measured when the reference was itself re-derived, so 0.6 is a wide floor. No md5 and no line count: the build path is embedded in the image and shifts between checkouts.",
+  "booted": true,
+  "done": true,
+  "fails": [],
+  "rate_hz": 15994,
+  "channels": 1,
+  "samples": 31744,
+  "overrun": false,
+  "not_silent": true,
+  "dc_removed": true,
+  "spectral_tilt_ok": true,
+  "fingerprint_ok": true,
+  "rms_dbfs": [-85.0, -6.0],
+  "tilt_db": [6.0, 45.0],
+  "fingerprint_corr": [0.6, 1.0],
+  "result_pass": true
+}

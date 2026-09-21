@@ -1,0 +1,78 @@
+{
+  "_comment": "Golden values for scripts/37_rocket_kws_board.sh -- three 12-class Google Speech Commands v2 keyword spotters, code-generated twice each (scalar and MBP) from one extract_graph run, and run on hart 0 of the microphone bitstream (PynqZ2RocketBigLittlePextTacitMicConfig, MAGIC 0x5A5A0005, 34.4828 MHz). The split is the one every golden here uses: exact for anything structural, a window for anything measured, and nothing at all for a raw cycle count.",
+  "_bit_exactness": "all_bit_exact is max_abs_err == 0 for EVERY architecture, between the 12-byte int8 output the MBP kernels produced on the board and the baked int8 golden the SCALAR codegen emitted from byte-identical IR. It is pinned to true rather than ranged for the same reason expected/modelblaster_lenet_int8_pext.json pins its own: fpga/pynq-z2/sw/pext.h is the frozen contract, the curated kernels are shown bit-exact against it on the host and the routed ALU is shown bit-exact against it for 3,041 instruction-level cases. A non-zero value means one of those three is wrong, and the response is to find out which, not to widen this.",
+  "_the_headline": "dscnn_over_cnn_cycles_x100 is what this lab exists for. kws_dscnn is the MLPerf Tiny DS-CNN-S shape and has 97.3% of kws_cnn's MACs; it measures 3.42x its cycles. MBP.DOT8 accelerates a reduction along the INPUT-CHANNEL axis and a depthwise convolution does not have one, so 10.8% of DS-CNN's MACs take 76.8% of its cycles -- 0.031 MAC/cycle against the accelerated convolutions' 0.878 on the same inference. The window below is wide because the ratio moves with any change to either kernel set; it is narrow enough to fail if the depthwise kernel ever became accelerated (it would fall toward 1) or if the dense convolutions stopped being (it would rise past 5).",
+  "_measured": {
+    "_comment": "Not checked -- recorded so a future run has something to compare against. rdcycle on hart 0 at 34,482,759 Hz, 11 timed MBP iterations and 3 scalar ones, the other hart idle, interrupts masked per iteration. The scalar image is samples/modelblaster_hart_latency built from the same IR, with --board the only difference, so the speedup is a cycle ratio on one piece of silicon at one clock.",
+    "pext_cycles": {
+      "cnn": 3557848,
+      "dscnn": 12176051,
+      "cnn_tiny": 987625
+    },
+    "pext_ms": {
+      "cnn": 103.178,
+      "dscnn": 353.105,
+      "cnn_tiny": 28.641
+    },
+    "macs_per_cycle": {
+      "cnn": 0.7672,
+      "dscnn": 0.2182,
+      "cnn_tiny": 0.6881
+    },
+    "scalar_cycles_hart0": {
+      "cnn": 88978823,
+      "dscnn": 122492141,
+      "cnn_tiny": 21592127
+    },
+    "cycles_by_op_dscnn": {
+      "conv2d_s8": 2695302,
+      "depthwise_conv2d_s8": 9347958,
+      "avgpool2d_s8": 130175,
+      "linear_s8": 2345
+    },
+    "cycles_by_op_cnn": {
+      "conv2d_s8": 3121122,
+      "maxpool2d_s8": 309151,
+      "linear_s8": 126524
+    },
+    "int8_test_accuracy_per_tensor": {
+      "cnn": 0.8993,
+      "dscnn": 0.9334,
+      "cnn_tiny": 0.891
+    },
+    "fp32_test_accuracy": {
+      "cnn": 0.9361,
+      "dscnn": 0.9374,
+      "cnn_tiny": 0.9145
+    },
+    "_per_channel_would_be": "kws_cnn measures 93.55% int8 with --per-channel, against 89.93% per-tensor and 93.61% fp32 -- 3.62 points. It is NOT what this lab runs, because --per-channel renames the ops to conv2d_s8_pc / linear_s8_pc and the three curated MBP kernels are registered for the un-suffixed names only. Reporting a per-channel accuracy beside these cycle counts would be reporting two configurations as one. See SPEECH_ON_ROCKET.md section 3.4.",
+    "mbp_speedup": {
+      "cnn": 25.009,
+      "dscnn": 10.06,
+      "cnn_tiny": 21.863
+    },
+    "_the_speedup_is_a_property_of_the_graph": "25.01x on cnn, 21.86x on cnn_tiny and 10.06x on dscnn -- the same three curated kernels, the same instructions, the same silicon. dscnn gets less than half the acceleration because 76.8% of the cycles those kernels compete against are in depthwise_conv2d_s8, which none of them covers. Worth pinning nothing, worth saying in a repo whose headline elsewhere is 18.09x on LeNet.",
+    "int8_test_accuracy_per_channel": {
+      "cnn": 0.9355,
+      "dscnn": 0.9357,
+      "cnn_tiny": 0.9158
+    }
+  },
+  "archs": [
+    "cnn",
+    "dscnn",
+    "cnn_tiny"
+  ],
+  "all_bit_exact": true,
+  "all_neg_trapped": true,
+  "clock_hz": 34482759,
+  "_range_comment": "Raw cycle counts are deliberately absent: they move with any compiler, Zephyr or codegen change and a red check there would say nothing about the hardware. What is pinned is the DS-CNN-over-dense ratio, which is a property of the ISA against the two architectures, and the front-end RTF this lab reads back out of Lab B16's manifest so the two labs cannot silently disagree about it.",
+  "dscnn_over_cnn_cycles_x100": {
+    "min": 250,
+    "max": 500
+  },
+  "frontend_rtf_kws_pext": {
+    "min": 0.075,
+    "max": 0.14
+  }
+}

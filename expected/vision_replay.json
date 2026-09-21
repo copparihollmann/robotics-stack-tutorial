@@ -1,0 +1,52 @@
+{
+  "_comment": "Golden values for scripts/44_rocket_vision_replay.sh -- held-out Visual Wake Words frames synthesised to 324x324, baked into .rodata, and pushed through fpga/pynq-z2/sw/frame_fe.c and a ModelBlaster network on hart 0 of the FULL-FEATURE bitstream (MAGIC 0x5A5A0006, 34.4828 MHz). Same split as every golden here: exact for anything structural, a window for anything measured, and nothing at all for a raw cycle count.",
+
+  "_what_replay_is_for": "A measurement wants the same input every time and a sensor pointed at a room does not give one. These frames sit in DDR exactly where the capture DMA would leave them, so every stage downstream of the pixel is the real one -- the crop, the box filter, the de-interleave, the demosaic, the int8 map and the model. What is NOT exercised is everything upstream of the pixel: exposure, sensor noise, lens blur, rolling shutter. CAMERA_TASK.md section 11 item 1 says so.",
+
+  "_the_headline": "frontend_rgb_over_mono_x100 is what this lab exists for. All three front ends read the SAME 104,976-byte frame -- a colour sensor in this class emits one byte per pixel through a Bayer filter array exactly as a monochrome one emits one byte of luminance -- so the DMA is held constant and the difference between the three numbers is entirely arithmetic on the hart. Bilinear demosaic costs 11.75x the monochrome front end (3.37 M cycles, 41% of a whole vww_cnn inference); de-interleaving the same mosaic into four half-resolution planes costs 1.11x. That is why CAMERA_TASK.md section 4.4 recommends a colour sensor read RAW.",
+
+  "_bit_exactness": "all_feature_bit_exact is max_abs_err == 0 between the feature the DEVICE computed and the one the HOST build of the same frame_fe.c computed, element by element, on every replayed frame -- 9,216 elements per frame, 27,648 for the colour feed. It is pinned to true and it proves two things at once: that training and inference share a preprocessing path by construction rather than by care, and -- because the device build takes FRAME_FE_PEXT=1 and the host build does not -- that the routed MBP.QMUL agrees with a plain 32-bit multiply-shift on every output of every frame.",
+
+  "_measured": {
+    "_comment": "Not checked -- recorded so a future run has something to compare against. rdcycle on hart 0 at 34,482,759 Hz, median over the replayed frames, interrupts locked around every timed window, the other hart idle. PER-CHANNEL int8 is this lab's default; the cycle counts below are from the PER-TENSOR run that first characterised it, and the model column moves with the quantisation while the front-end column does not.",
+    "frontend_cycles": {
+      "frame_fe_mono96": 313157,
+      "frame_fe_rgb96_demosaic": 3679001,
+      "frame_fe_bayer4_48": 347158
+    },
+    "frontend_ms": {
+      "frame_fe_mono96": 9.082,
+      "frame_fe_rgb96_demosaic": 106.691,
+      "frame_fe_bayer4_48": 10.068
+    },
+    "frontend_cycles_per_input_pixel": {
+      "frame_fe_mono96": 3.776,
+      "frame_fe_rgb96_demosaic": 44.355,
+      "frame_fe_bayer4_48": 4.185
+    },
+    "end_to_end_cycles_per_tensor": {
+      "cnn": 8543469,
+      "cnn_rgb": 12216343,
+      "cnn_bayer": 8783723
+    },
+    "fps_per_tensor": {
+      "cnn": 4.04,
+      "cnn_rgb": 2.82,
+      "cnn_bayer": 3.93
+    },
+    "_cross_check": "Lab B24 measures cnn_bayer's front end plus model directly at 8,783,723 cycles; composing Lab B22's model cycles with Lab B24's front-end cycles gives 8,783,780 -- 0.0007% apart, two labs, two images, one piece of silicon. The cnn row is 0.9% apart, which is the size of the difference between two Zephyr images running the same graph and is the error bar on every composed figure in CAMERA_TASK.md.",
+    "_accuracy_is_not_here": "VR_ACC counts how many of the four replayed frames were classified correctly, and four frames is not an accuracy measurement -- it is a smoke test that the pipeline produces a class at all. The accuracy numbers are Lab B22's host sweep over all 10,928 held-out frames."
+  },
+
+  "archs": ["cnn", "cnn_rgb", "cnn_bayer"],
+  "all_pass": true,
+  "all_feature_bit_exact": true,
+  "clock_hz": 34482759,
+  "frame_bytes": 104976,
+  "sensor_fps_324x324": 59.0,
+
+  "_range_comment": "Raw cycle counts are deliberately absent: they move with any compiler or Zephyr change and a red check there would say nothing about the hardware. What is pinned is the two front-end RATIOS -- properties of three algorithms against one core -- plus the correctness flags. The windows are wide enough to survive ordinary codegen drift and narrow enough to fail if the thing they describe stops being true: a cheaper demosaic would drive the first toward 1, and a packed byte-sum instruction would move both.",
+
+  "frontend_rgb_over_mono_x100": { "min": 900, "max": 1500 },
+  "frontend_bayer_over_mono_x100": { "min": 95, "max": 140 }
+}

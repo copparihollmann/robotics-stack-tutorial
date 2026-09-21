@@ -1,0 +1,57 @@
+{
+  "_comment": "Golden values for scripts/30_rocket_mb_lenet_pext_board.sh -- LeNet-5 at int8 with the three curated MBP kernels, running on hart 0 of the P-ext bitstream (PynqZ2RocketBigLittlePextTacitConfig, MAGIC 0x5A5A0004, 34.4828 MHz), and the SCALAR baseline image run on the same bitstream in the same board session. The split between exact values and ranges is the same as expected/modelblaster_lenet_int8.json's and for the same reason: exact for anything structural, a window for anything measured. The one field here that is neither is max_abs_err_vs_scalar_golden, and it is pinned to 0 because 0 is the ONLY acceptable value -- see below.",
+
+  "_bit_exactness": "max_abs_err_vs_scalar_golden is the element-by-element difference between the 10-byte int8 output tensor the MBP kernels produced ON THE BOARD (printed by samples/modelblaster_pext as MB_PEXT_OUT, one integer per element) and the baked int8 golden the SCALAR codegen emitted from the byte-identical IR. It is not a checksum and it is not a tolerance. fpga/pynq-z2/sw/pext.h is the frozen ISA contract, PEXT_KERNELS.md section 1 shows the kernels bit-exact against it on the host at every intermediate tensor, and PEXT_BITSTREAM.md section 4 shows the routed ALU bit-exact against it for 3,041 instruction-level cases. If this field is ever non-zero the correct response is to find out which of those three is wrong, not to widen this number. The scalar image's own hart0/hart1 max_abs_err are recorded alongside so the equality MBP-output == scalar-output is a chain of measured links rather than an assumption: samples/modelblaster_hart_latency does not print its tensor.",
+
+  "_measured": {
+    "_comment": "Not checked -- recorded so a future run has something to compare against. rdcycle at 34,482,759 Hz (read back from the PS SLCR, outside the SoC), 11 timed iterations, the other hart idle in wfi, interrupts masked per iteration. The scalar numbers below come from samples/modelblaster_hart_latency built for chipyard_pynqz1_pext and run on THIS bitstream minutes after the MBP image, which is what makes the speedup a same-silicon same-clock measurement rather than a comparison across two bitstreams and two clocks.",
+    "pext_hart0_median_cycles": 478743,
+    "pext_hart0_median_ms_at_34_4828mhz": 13.884,
+    "pext_hart0_median_ms_normalised_to_40mhz": 11.969,
+    "scalar_hart0_median_cycles_same_bitstream": 8660199,
+    "scalar_hart1_median_cycles_same_bitstream": 17938609,
+    "scalar_hart0_median_cycles_40mhz_baseline": 8660165,
+    "cycle_speedup_same_bitstream": 18.089,
+    "instruction_speedup_spike": 14.89,
+    "cpi_ratio_pext_over_scalar": 0.823,
+    "per_dispatch_cycle_speedup": {
+      "conv1_conv2d_s8": 11.557,
+      "pool1_maxpool2d_s8": 10.64,
+      "conv2_conv2d_s8": 31.851,
+      "pool2_maxpool2d_s8": 7.092,
+      "fc1_linear_s8": 12.864,
+      "fc2_linear_s8": 11.547,
+      "fc3_linear_s8": 4.563
+    }
+  },
+
+  "booted": true,
+  "model": "lenet",
+  "graph_ops": ["conv2d_s8", "linear_s8", "maxpool2d_s8"],
+  "ir_identical_scalar_vs_pext": true,
+  "golden_identical_scalar_vs_pext": true,
+  "pext_kernels_all_curated": true,
+  "scalar_kernels_all_reference": true,
+  "kernels_integer_only": true,
+  "pext_image_carries_mbp": true,
+  "scalar_image_carries_no_mbp": true,
+  "mb_pext_hw": 1,
+  "dispatches_profiled": 7,
+  "output_len": 10,
+
+  "max_abs_err_vs_scalar_golden": 0,
+  "guest_reported_max_abs_err": 0,
+  "scalar_hart0_max_abs_err": 0,
+  "scalar_hart1_max_abs_err": 0,
+  "scalar_outputs_identical": true,
+
+  "pext_ran_on_hart": 0,
+  "negative_test_trapped": true,
+  "negative_test_mcause": 2,
+  "negative_test_hart": 1,
+  "result_pass": true,
+  "scalar_result_pass": true,
+
+  "_range_comment": "cycle_speedup_same_bitstream measured 18.089 on the board. The window is wide enough to survive a compiler or codegen change that shifts the mix (the per-dispatch speedups span 4.6x to 31.9x, so the total is a weighted average that moves with the shapes), and narrow enough to fail if the MBP kernels stopped being selected -- which would read as 1.0 -- or if the image quietly fell back to pext.h's software model, which is SLOWER than the scalar reference and would read below 1.0. It is a CYCLE ratio and therefore clock-free: the same window applies whatever this bitstream is clocked at.",
+  "cycle_speedup_same_bitstream": {"min": 15.0, "max": 22.0}
+}

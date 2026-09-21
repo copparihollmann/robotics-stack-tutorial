@@ -1,0 +1,38 @@
+{
+  "_comment": "Golden values for scripts/24_rocket_modelblaster.sh on mlp_generic (16->32->32->10, ReLU folded into the int8 activation clamp) at int8, scalar backend, chipyard_pynqz1_smp. This model exists in the lab as a CONTROL for the LeNet measurement, not as a second demo. LeNet's per-kernel ratios split cleanly by op -- ~1.15x on maxpool2d_s8, ~2.0x on conv2d_s8, ~3.1x on linear_s8 -- which predicts that a network made of nothing BUT linear_s8 should come out near 3.1x end to end rather than LeNet's 2.07x. It measures 3.16x. Same structure of check as the LeNet golden: exact values for structural facts, ranges for measured ones.",
+  "_measured": {
+    "_comment": "Not checked -- recorded for comparison. rdcycle at 40 MHz, 11 timed iterations per hart, the other hart idle in wfi, interrupts masked per iteration. This network is small enough (1,856 MACs) that the whole inference is under a millisecond on the big core, which is also why its mtime cross-check is coarse: 31 ticks at 25 us is only 1.4% resolution, against rdcycle's 1 cycle.",
+    "hart0_big_median_cycles": 30390,
+    "hart0_big_median_ms": 0.76,
+    "hart1_little_median_cycles": 96174,
+    "hart1_little_median_ms": 2.404,
+    "hart1_spread_cycles": 0,
+    "_reproducibility": "Three separate board sessions, two after a full rebuild: 30,390 / 30,390 / 30,393 on the big core and 96,174 in ALL THREE on the LITTLE.",
+    "little_over_big": 3.16,
+    "per_op_little_over_big": {
+      "fc1_linear_s8_K16_N32": 3.08,
+      "fc2_linear_s8_K32_N32": 3.24,
+      "fc3_linear_s8_K32_N10": 3.10
+    }
+  },
+
+  "booted": true,
+  "model": "mlp_generic",
+  "quant": "int8",
+  "op_count": 3,
+  "graph_ops": ["linear_s8"],
+  "kernel_sources_all_reference": true,
+  "kernels_integer_only": true,
+  "harts_observed": [0, 1],
+  "iterations_per_hart": [11],
+  "hart0_max_abs_err": 0,
+  "hart1_max_abs_err": 0,
+  "outputs_identical": true,
+  "both_harts": true,
+  "distinct_harts": true,
+  "result_pass": true,
+
+  "_range_comment": "little_over_big_x100 measured 316. The window is centred on that with room for a codegen change to shift the ratio of multiply to non-multiply work in the linear_s8 inner loop, and is deliberately ABOVE LeNet's window -- the two must not overlap, because the whole point of running this model is that an all-linear network sits higher on the big/LITTLE scale than one with convolutions and pooling in it.",
+  "little_over_big_x100": {"min": 295, "max": 340},
+  "max_spread_pct_of_median": {"max": 2.0}
+}

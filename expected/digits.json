@@ -1,0 +1,53 @@
+{
+  "_comment": "Golden values for scripts/41_rocket_digits.sh -- offline connected-digit TRANSCRIPTION from the PYNQ-Z1's own microphone, on hart 0 of the mic+P-ext bitstream (MAGIC 0x5A5A0005, 34.4828 MHz). Record 4.01 s, then post-process: 200 MFCC frames through fpga/pynq-z2/sw/audio_fe.c, four conv2d_s8 dispatches through the curated MBP kernels, and a greedy CTC decode.",
+  "_why_this_is_transcription_and_not_classification": "The output is a variable-length digit string and the model can get its LENGTH wrong, which a twelve-way classifier cannot. That is why the score is a word error rate -- insertions, deletions and substitutions over reference length -- and not an accuracy.",
+  "_why_it_runs_at_all": "The graph is conv2d_s8 x4 and nothing else. A greedy CTC decode needs no softmax, because argmax is invariant under a monotone transform; the normalisation exists to make a probability and a greedy decoder never reads one. Without softmax, LayerNorm or attention, none of the 28 float-tainted reference kernels Lab B19 measured at 700-5,600 cycles per element is reachable from this model. The runner checks that rather than assuming it: every op in the extracted graph must be one of the fifteen float-free kernels or the lab stops.",
+  "_what_is_measured_here_and_what_is_not": "This lab measures the TIME, and that the model in the image is bit-for-bit the one whose int8 arithmetic was verified (model_max_abs_err = 0 against ModelBlaster's baked golden, on this silicon, before the microphone opens). It does NOT measure the word error rate: an empty room is not a test set, and nobody stands at the bench. The WER comes from fpga/pynq-z2/modelblaster/kws/int8_wer.py over 800 held-out utterances built from real Speech Commands digit recordings, split by SPEAKER -- 12.98% int8 against 11.52% fp32, exact-utterance 67.50%.",
+  "_measured": {
+    "_comment": "Not checked -- recorded so a future run has something to compare against. Median of 3 utterances, rdcycle on hart 0 at 34,482,759 Hz.",
+    "arch": "digit_ctc_wide",
+    "frontend_cycles": 14595838,
+    "model_cycles": 161440050,
+    "total_ms": 5105.0,
+    "rtf": 1.2727,
+    "int8_wer": 0.1298,
+    "fp32_wer": 0.1152,
+    "int8_exact_utterance": 0.675,
+    "_the_layout_finding": "161,440,050 cycles for 7,718,400 MACs is 20.92 cycles/MAC, against kws_cnn's 1.30 on the same kernel. The cause is NOT the repacked-weight block -- raising MB_PEXT_CONV_WBYTES from 8,192 to 65,536 moves it 2.2%. It is that a 1-D temporal convolution written as (k,1) kernels over a C x T x 1 tensor has KW = 1, and KW is the length of the only contiguous run in the curated kernel's NCHW gather: c3 does 640 single-byte gathers per output pixel to feed 80 DOT8s. kws_models.DigitCTCT transposes time onto the width axis -- IDENTICAL MACs, IDENTICAL K per layer, only KW changes -- and measures 9,534,875 cycles, 1.24 cycles/MAC, 16.93x fewer. See SPEECH_ON_ROCKET.md section 11.4.",
+    "digit_ctc_t": {
+      "frontend_cycles": 14390597,
+      "model_cycles": 9534875,
+      "total_ms": 693.8,
+      "rtf": 0.173,
+      "cycles_per_mac": 1.235,
+      "int8_wer": 0.138,
+      "fp32_wer": 0.1172,
+      "int8_exact_utterance": 0.6538
+    },
+    "_which_is_the_default": "scripts/41_rocket_digits.sh defaults to --arch digit_ctc_t, the transposed one. --arch digit_ctc_wide reproduces the 20.92 cycles/MAC version, which is the more instructive of the two and is why both are kept."
+  },
+  "done": true,
+  "selftest_ok": true,
+  "mic_rate_hz": 15994,
+  "hart": 0,
+  "mb_pext_hw": 1,
+  "model_max_abs_err": 0,
+  "out_frames": 50,
+  "_range_comment": "The timing windows are wide enough to survive a compiler or codegen change and to cover BOTH feature layouts -- digit_ctc_t measures 9.5 M cycles and digit_ctc_wide 161 M for IDENTICAL arithmetic, and both are legitimate outputs of this lab (section 11.4 reports both, because the slow one is the more instructive). What the window catches is the curated kernels silently not being selected, which would be another 15x beyond even the slow layout. Nothing here checks what was transcribed: whether anyone spoke to the board is not a property of the hardware.",
+  "frontend_cycles": {
+    "min": 10000000,
+    "max": 25000000
+  },
+  "model_cycles": {
+    "min": 5000000,
+    "max": 250000000
+  },
+  "audio_ms": {
+    "min": 3900,
+    "max": 4100
+  },
+  "utterances": {
+    "min": 1,
+    "max": 16
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "_comment": "Golden values for scripts/36_rocket_audio_fe_bench.sh -- the log-mel/MFCC front end of fpga/pynq-z2/sw/audio_fe.c, built three ways (float / fixed-point-with-mul / fixed-point-with-MBP.QMUL) at two framings, and run on hart 0 of the microphone bitstream (PynqZ2RocketBigLittlePextTacitMicConfig, MAGIC 0x5A5A0005, 34.4828 MHz). The split between exact values and ranges is the one every other golden here uses: exact for anything STRUCTURAL, a window for anything MEASURED, and nothing at all for a raw cycle count.",
+
+  "_what_the_exact_fields_are_for": "all_ran and all_selftests_pass say the three builds executed and each transformed a known tone into the right mel band on the silicon. int_pext_bit_identical_everywhere is the strongest correctness statement available and is pinned to true rather than ranged: FE_ARITH=int and FE_ARITH=pext route every twiddle multiply through the SAME expression -- pext.h's mb_pext_qmul, software model on one side and the routed ALU on the other -- so any difference at all means the silicon disagrees with the frozen contract, and the response is to find out which is wrong, not to widen this. max_logmel_diff_vs_float is the fixed-point error against the float build of the same algorithm; 1 Q8 LSB is 0.0039 in log2, i.e. 0.012 dB of power. It is pinned at a CEILING of 4 because a bigger number means a numeric regression in the fixed-point path, not a slower one.",
+
+  "_why_the_op_costs_are_here": "op_cycles_x100 is the yardstick every cost model in fpga/pynq-z2/docs/SPEECH_ON_ROCKET.md divides by, so it is checked rather than quoted. The chains are dependent and 8x unrolled, so the empty loop costs 0.25 cycles per measured operation and everything else should be read as a marginal cost over that. The three MBP ops all measure 1.25 (= 1.00 marginal) because they are single-cycle ALU instructions; a build that quietly fell back to pext.h's software model would read 14.25 like qmul_sw does, which is what the qmul_hw window is there to catch. The first version of this benchmark measured 0.00 for add and for mul -- not a fast machine but a folded loop -- so `nop` is measured too and pinned near zero: if the empty loop ever costs what a real op costs, the barrier stopped working.",
+
+  "_measured": {
+    "_comment": "Not checked -- recorded so a future run has something to compare against. rdcycle on hart 0 at 34,482,759 Hz, interrupts locked per window, best of 3 windows of 16 frames, hart 1 idle. Frames per second of audio is rate/hop at the microphone's real 15993.859 Hz: 99.96 for asr and 49.98 for kws, both rounded to the integer the runner divides by.",
+    "cycles_per_frame": {
+      "asr-float": 2612563, "asr-int": 111434, "asr-pext": 70588,
+      "kws-float": 2660362, "kws-int": 112579, "kws-pext": 71822
+    },
+    "stage_cycles_asr_pext": {
+      "window": 6093, "cfft256": 30885, "split_real": 9008,
+      "power": 6462, "melbank": 14986, "dct": 4220
+    },
+    "stage_cycles_asr_int": {
+      "window": 5895, "cfft256": 61211, "split_real": 18541,
+      "power": 6461, "melbank": 14993, "dct": 6618
+    },
+    "op_cycles_marginal": {
+      "add": 1.00, "mul": 7.75, "mulw": 6.75, "mul_small": 5.75,
+      "qmul_sw": 14.00, "qmul_hw": 1.00, "dot8_hw": 1.00, "max8_hw": 1.00
+    },
+    "_where_the_qmul_win_comes_from": "cfft256 and split_real are the two stages whose inner loop is a Q0.31 twiddle multiply, and they are the two that halve: 61211 -> 30885 and 18541 -> 9008, both 1.98x-2.00x. window, power and melbank do not move at all, because their multiplies are int16xint16 and int64xint16, which MBP.QMUL cannot express. That is the honest shape of the result -- the extension helps the FFT and nothing else in the chain.",
+    "_melbank_is_the_remaining_hotspot": "melbank is 14,986 cycles, 21% of the accelerated frame, for 468 multiply-accumulates -- 32 cycles per tap, because each one is a 64-bit `mul` (7.75 cycles measured) plus a variable 64-bit shift and two loads. It could be routed through MBP.QMUL by choosing the block-floating-point shift so the shifted power fits in int32 and packing the Q0.15 mel weight into Q0.31, which would cost 13 bits of within-frame dynamic range (129 dB -> 90 dB). That is a measured-cost, un-taken optimisation, not a claim."
+  },
+
+  "all_ran": true,
+  "all_selftests_pass": true,
+  "int_pext_bit_identical_everywhere": true,
+  "images": ["asr-float", "asr-int", "asr-pext", "kws-float", "kws-int", "kws-pext"],
+
+  "_range_comment": "Every window below is wide enough to survive a compiler or Zephyr change and narrow enough to fail if the thing it names stopped happening. max_logmel_diff_vs_float is a ceiling on numeric error. The rtf_x1000 windows would fail if the float build stopped being float (it would drop by 37x), if the pext build fell back to the software model (it would rise past the int build), or if the geometry changed under them. mul_over_qmul_marginal_x100 is a property of the two datapaths and is clock-free.",
+  "max_logmel_diff_vs_float": {"min": 0, "max": 4},
+  "mul_over_qmul_marginal_x100": {"min": 500, "max": 1100},
+  "pext_over_float_x100_asr": {"min": 2500, "max": 5000},
+  "pext_over_int_x100_asr": {"min": 130, "max": 200},
+  "rtf_asr_float_x1000": {"min": 5000, "max": 11000},
+  "rtf_asr_int_x1000": {"min": 250, "max": 420},
+  "rtf_asr_pext_x1000": {"min": 150, "max": 270},
+  "rtf_kws_pext_x1000": {"min": 75, "max": 140},
+  "qmul_hw_x100": {"min": 100, "max": 200},
+  "dot8_hw_x100": {"min": 100, "max": 200},
+  "mul_x100": {"min": 600, "max": 1100},
+  "nop_x100": {"min": 0, "max": 100}
+}

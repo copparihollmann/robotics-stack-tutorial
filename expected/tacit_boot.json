@@ -1,0 +1,29 @@
+{
+  "_comment": "Golden values for samples/tacit_boot on chipyard_pynqz1 -- TACIT captured from Rocket on the physical PYNQ-Z1 starting at the RESET VECTOR, not at main(). arch/riscv/core/reset.S (patches/0003-zephyr-startup-tacit-dma-sink.patch) programs the DMA sink address and the encoder target before asserting enable. scripts/23_rocket_tacit_boot.sh compares against this.",
+  "_not_checked": "tacit_out_bytes is deliberately absent, for the same reason as expected/tacit_dma.json: every packet carries a delta timestamp in core cycles, so a DRAM refresh shifts a varint and the total moves by a few bytes. Seven consecutive runs measured 147093-147101 bytes. The counts below carry the same +/-0.2% tolerance tacit_dma.json uses, and they need it: six of those seven runs decoded to exactly 117423 packets / 563711 instructions / 681135 lines, and one to 117422 / 563709 / 681132 -- two instructions, from the periodic mtime interrupt landing a few cycles earlier. perfetto_begin_slices was 10064 in all seven and is checked exactly.",
+  "_evidence": "boot_symbols and first_slice are what make this a BOOT trace rather than a bigger workload trace. A byte count cannot tell those apart; a slice named z_prep_c can. The list is Zephyr's early boot path as it also appears in Lab A's Spike trace (expected/tacit.json).",
+  "booted": true,
+  "sink_wrote_bytes": true,
+  "decoded_ok": true,
+  "traced_from_boot": true,
+  "first_slice": "z_prep_c",
+  "boot_symbols": [
+    "z_prep_c",
+    "arch_bss_zero",
+    "memset",
+    "soc_interrupt_init",
+    "z_cstart",
+    "z_sys_init_run_level",
+    "do_device_init",
+    "plic_init",
+    "sys_clock_driver_init",
+    "uart_console_init",
+    "bg_thread_main",
+    "boot_banner",
+    "main"
+  ],
+  "packets_decoded": { "value": 117423, "within": 0.002 },
+  "instructions_decoded": { "value": 563711, "within": 0.002 },
+  "decoded_txt_lines": { "value": 681135, "within": 0.002 },
+  "perfetto_begin_slices": 10064
+}

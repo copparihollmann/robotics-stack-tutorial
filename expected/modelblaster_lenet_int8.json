@@ -1,0 +1,42 @@
+{
+  "_comment": "Golden values for scripts/24_rocket_modelblaster.sh on LeNet-5 at int8, scalar backend, chipyard_pynqz1_smp -- the dual-core big.LITTLE Rocket bitstream on the PYNQ-Z1. Two kinds of expectation appear here, and the split is the point of the file. EXACT values cover everything STRUCTURAL: which model was built, that every kernel came from reference_kernels.py rather than a stale per-model cache, that those kernels contain no floating point at all (22 of the 43 _s8 KernelSpecs dequantize to float, which on this FPU-less core is libgcc soft-float emulation that the ELF gate cannot see because soft-float calls are integer instructions), that the hardware reported two distinct mhartids, and -- the strongest correctness statement available -- that BOTH harts reproduced the quantized golden bit for bit (max_abs_err 0) and produced byte-identical output as each other. RANGES cover everything MEASURED. Raw cycle counts are deliberately NOT here: they are reproducible to 0.08% run to run on this hardware (see _measured below), but they move with any compiler, Zephyr or codegen change, so pinning them would produce a red check that says nothing about whether the hardware still behaves. What is pinned instead is the big/LITTLE ratio, which is a property of the two cores, and an upper bound on run-to-run spread, which is a property of the measurement being clean.",
+  "_measured": {
+    "_comment": "Not checked -- recorded so a future run has something to compare against. rdcycle at 40 MHz, 11 timed iterations per hart, the other hart idle in wfi, interrupts masked per iteration. The lists are five SEPARATE board sessions, four of them after a full rebuild from source: the big core spans 175 cycles (0.002%) and the LITTLE 13,248 (0.07%) across all five. The little_over_big_x100 field read 206 in the first session and 207 in the other three -- the underlying ratio is 2.070 to 2.071 and the field is an integer.",
+    "hart0_big_median_cycles": [8660340, 8660167, 8660165, 8660284, 8660165],
+    "hart0_big_median_ms": [216.508, 216.504, 216.504, 216.507, 216.504],
+    "hart0_spread_pct_of_median": [0.079, 0.077, 0.078, 0.083, 0.078],
+    "hart1_little_median_cycles": [17925274, 17938522, 17938477, 17938509, 17938477],
+    "hart1_little_median_ms": [448.132, 448.463, 448.462, 448.463, 448.462],
+    "hart1_spread_pct_of_median": [0.008, 0.008, 0.010, 0.010, 0.010],
+    "little_over_big": [2.07, 2.07, 2.07, 2.07, 2.07],
+    "per_op_little_over_big": {
+      "conv1_conv2d_s8": 2.04,
+      "pool1_maxpool2d_s8": 1.16,
+      "conv2_conv2d_s8": 1.97,
+      "pool2_maxpool2d_s8": 1.14,
+      "fc1_linear_s8": 3.25,
+      "fc2_linear_s8": 3.14,
+      "fc3_linear_s8": 3.10
+    }
+  },
+
+  "booted": true,
+  "model": "lenet",
+  "quant": "int8",
+  "op_count": 7,
+  "graph_ops": ["conv2d_s8", "linear_s8", "maxpool2d_s8"],
+  "kernel_sources_all_reference": true,
+  "kernels_integer_only": true,
+  "harts_observed": [0, 1],
+  "iterations_per_hart": [11],
+  "hart0_max_abs_err": 0,
+  "hart1_max_abs_err": 0,
+  "outputs_identical": true,
+  "both_harts": true,
+  "distinct_harts": true,
+  "result_pass": true,
+
+  "_range_comment": "little_over_big_x100 measured 206 across runs. The window is wide enough to survive a codegen or compiler change that shifts the mix of multiply and non-multiply work (the ratio is a weighted average of ~1.15x on maxpool, ~2.0x on conv and ~3.1x on linear), and narrow enough to fail if the two harts stop being the cores this SoC was built with -- e.g. if both workers landed on hart 0, which would read as 1.00. max_spread_pct_of_median is an upper bound on measurement noise, not a performance claim: it fires if something (an unmasked interrupt, a co-runner on the other hart) started perturbing the timed region.",
+  "little_over_big_x100": {"min": 190, "max": 225},
+  "max_spread_pct_of_median": {"max": 2.0}
+}

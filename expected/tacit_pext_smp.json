@@ -1,0 +1,60 @@
+{
+  "_comment": "Golden values for samples/tacit_pext_smp on chipyard_pynqz1_pext -- BOTH harts of the dual-core big.LITTLE Rocket traced simultaneously on the P-EXT bitstream (MAGIC 0x5A5A0004, 34.4828 MHz), each into its own DMA-sink buffer, both decoded, the SAME cross-hart barrier located in both traces, and the four MBP packed-SIMD instructions checked in hart 0's decoded stream against the image itself. scripts/31_rocket_tacit_pext_smp.sh compares against this. Requires a bitstream built with patches/0004-rocketchip-mcycle-free-run.patch applied (or trace_skew_cycles is ~-6.9e6 and the two skew bounds fail) and a decoder built with patches/0007-decoder-mbp-pext-mnemonics.patch applied (or every mbp.* line reads `unknown`, mbp_decoded_on_mbp_hart is 0 and mbp_unknown_at_site is 96).",
+
+  "_not_checked": "Absolute timestamps, packet counts and byte counts are deliberately absent, exactly as in expected/tacit_smp.json. Every packet carries a DELTA timestamp in core cycles, so where the encoder was enabled and how long the barrier took to release move all three between otherwise identical runs. What is checked is structural, plus a BOUND on the skew, plus two things that are not measurements at all: the decoded MBP instruction counts (a declared compile-time trip count) and the 64-bit answer the two harts computed (pure integer arithmetic on a fixed seed).",
+
+  "_skew_bound": "Measured on this bitstream over two board sessions: trace -8 and 19 cycles, software 0 and 19 cycles, and the two trace methods (the Perfetto slice and the raw instruction stream) agreed EXACTLY in both. expected/tacit_smp.json records 72 / 26 on the 40 MHz dual-core build with the same barrier construction; the residual there and here is how tightly the software EVENT is defined -- one hart leaves the barrier a coherence round trip before the other and the two cores take different numbers of cycles to reach the marker -- not counter drift. The bound is kept at 2000, the same as Lab B7's, so the two labs are gated identically: ~100x the observed value and still ~3400x below the ~6.9e6 an unpatched mcycle produces at this clock.",
+
+  "_measured": {
+    "_comment": "Not checked -- recorded so a future run has something to compare against. The two harts' Perfetto traces for this run: hart 0 has tacit_sync_marker [8971936..8972046] then mbp_body_hw [8972101..8972802]; hart 1 has tacit_sync_marker [8971928..8972277] then mbp_body_sw [8972289..8993213]. Same axis, same two function names in the same order, and the second one is 30x wider on the hart that has no MBP datapath. That picture is the deliverable.",
+    "hart0_bytes": 6202,
+    "hart0_packets": 6173,
+    "hart0_instructions": 19017,
+    "hart1_bytes": 911,
+    "hart1_packets": 666,
+    "hart1_instructions": 5052,
+    "mbp_body_cycles_hart0_hardware": 762,
+    "scalar_body_cycles_hart1_software_model": 20940,
+    "body_cycles_ratio": 27.5,
+    "mbp_body_trace_span_cycles": 669,
+    "mbp_body_span_delta_cycles": 93,
+    "idle_differential_cost_cycles": 31,
+    "trace_skew_cycles_seen": [19, -8],
+    "sw_skew_cycles_seen": [19, 0]
+  },
+
+  "_merged": "The merged Perfetto timeline (patches/0010). One decoder run now writes trace.merged.perfetto.json alongside the per-hart files: both harts in ONE file, each on its own pid/tid, each track NAMED by a `ph:M` process_name/thread_name pair carrying the label the lab supplies. The labels are not invented by the decoder -- which hart carries the MBP datapath is read off the guest's own PEXT_EXPECT on_hart= field, so a build that swaps the roles relabels the tracks rather than mislabelling them. merged_matches_per_hart re-reads the merged file and requires every hart's marker to sit at the same cycle it does in that hart's own trace.perfetto.json: nothing is rescaled or re-based. merged_mbp_body_shorter is the heterogeneity read off the merged timeline ALONE -- same function name prefix, same axis, the hart with the datapath the shorter slice. A DIRECTION, not a bound; the ratio is recorded below and not checked. THE MERGE ASSUMES ONE TIMEBASE: on a bitstream without patches/0004 the two tracks come out millions of cycles apart, and the two skew bounds above fail before any of this does.",
+
+  "_merged_measured": "The merged file from the board run now in out/rocket_tacit_pext_smp (a later session than the _measured block above, which is why the absolute timestamps differ): 16 events, 2 tracks, 4 metadata events. hart 0 (big, MBP) pid 0 -- tacit_sync_marker @8,971,952 for 102 cycles, mbp_body_hw @8,972,107 for 701 cycles. hart 1 (LITTLE, scalar) pid 1 -- tacit_sync_marker @8,971,942 for 349 cycles, mbp_body_sw @8,972,303 for 20,924 cycles. One axis 8,971,942 .. 8,993,254, 21,312 cycles wide; markers 10 cycles apart; bodies 29.8x. Across three sessions the marker moved 16 cycles in absolute terms and the skew 2 (-8, -10, -10), while the two body widths did not move at all -- a fixed trip count over a fixed datapath with interrupts off. That is why the goldens bound the skew, name the bodies and check their direction, and record no absolute timestamp.",
+
+  "booted": true,
+  "run_ok": true,
+  "both_harts_traced": true,
+  "harts_traced": [0, 1],
+  "marker_found_once_in_both": true,
+  "perfetto_matches_txt": true,
+  "trace_matches_software": true,
+  "synchronized": true,
+  "trace_skew_cycles": { "abs_max": 2000 },
+  "sw_skew_cycles": { "abs_max": 2000 },
+
+  "merged_trace_written": true,
+  "merged_harts": [0, 1],
+  "merged_tracks_named": true,
+  "merged_matches_per_hart": true,
+  "merged_body_on_mbp_hart": "mbp_body_hw",
+  "merged_body_on_scalar_hart": "mbp_body_sw",
+  "merged_mbp_body_shorter": true,
+
+  "hw_matches_sw_model": true,
+  "body_seed": "0x0123456789abcdef",
+  "body_result_hw": "0xf87f5950c72b47a5",
+  "body_result_sw": "0xf87f5950c72b47a5",
+
+  "mbp_decoded_on_mbp_hart": 96,
+  "mbp_decoded_on_scalar_hart": 0,
+  "mbp_counts_match_trip_count": true,
+  "mbp_operands_match_elf": true,
+  "mbp_unknown_at_site": 0,
+  "mbp_body_span_inside_rdcycle": true
+}

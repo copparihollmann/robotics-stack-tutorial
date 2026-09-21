@@ -1,0 +1,6 @@
+{
+  "_comment": "Golden values for samples/hello_world on chipyard_pynqz1 -- Rocket + TACIT on the PYNQ-Z1, booted by the PS through SOC_CTRL. scripts/20_rocket_run.sh compares against this. Neither image size nor md5 is checked: the build path is embedded in the ELF, so both shift between checkouts. The third console line is 'Failed to reboot: spinning endlessly...', which is expected -- hello_world calls sys_reboot() to end a simulation and there is no reboot path on real hardware.",
+  "booted": true,
+  "console_lines": 3,
+  "hello_line": "Hello World! chipyard_pynqz1/rocketchip_virt_riscv64"
+}

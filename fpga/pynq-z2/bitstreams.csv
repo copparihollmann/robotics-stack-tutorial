@@ -1,0 +1,43 @@
+# WHICH BITSTREAMS THIS REPO SHIPS, AND WHAT EACH ONE IS FOR.
+#
+# WHY THIS FILE EXISTS.  scripts/lib/bitstream_id.sh already identifies a bitstream by md5
+# once a lab has one in hand, and refuses the known-bad ones.  It cannot answer the question
+# a person with a fresh clone asks first: WHICH files am I supposed to have, and did I get
+# them intact?  Before this file the answer lived in 46 separate `need_file "$BIT"` lines
+# whose advice was "build it with Vivado" -- useless to anyone who is not going to build one.
+#
+# The gate is scripts/check_bitstreams.sh (and bitstream_require() in bitstream_id.sh, which
+# every board lab on the tutorial path calls).  A file that is ABSENT is a hard failure with
+# a message saying where to get it; a file whose md5 DIFFERS is a hard failure, because a
+# bitstream that is not the one the goldens were measured against is not a smaller problem
+# than no bitstream at all.  A bitstream that is not listed here is passed through unverified
+# -- exploratory builds are not required to register themselves.
+#
+# availability
+#   git        tracked in this repository.  A clone has it; nothing else to fetch.
+#   untracked  NOT shipped in this repository.  See README.md "Bitstreams" for why,
+#              and for the two ways to get one (SD card /opt/iiswc/bit, or a release tarball).
+#              $IISWC_BIT_DIR and /opt/iiswc/bit are both searched by bitstream_require().
+#
+# magic        the word each design self-identifies with at M_AXI_GP0 offset 0x08.  It names
+#              the CONFIGURATION, not the build -- that is what md5 is for.  Blank where the
+#              variant shares a MAGIC with its siblings and no row records which.
+#
+# Regenerate:  scripts/check_bitstreams.sh --write   (md5s are computed, never hand-typed)
+
+file,md5,bytes,magic,availability,role
+fpga/pynq-z2/build_z1/pynqz1_dramtest.bit,883a74ba12bf23fc1fba613b7daad638,4045670,0x5A5A0001,git,"preflight: DRAM self-test, proves M_AXI_GP0 reaches the PL (host/run_dramtest.py)"
+fpga/pynq-z2/build_rocket_z1/pynqz1_rocket_tacit.bit,21769d8b20a2a6883afcd6d413918a1b,4045677,0x5A5A0002,git,"Labs A-series on hardware + B/B2/B4: single-core Rocket + TACIT (scripts/20,21,23)"
+fpga/pynq-z2/build_rocket_smp_z1/pynqz1_rocket_smp.bit,52868861283167e1e84f0c820c9c5f77,4045677,0x5A5A0003,git,"Labs B3/B5/B6/B7: dual-core big.LITTLE + TACIT (scripts/22,24,25,26)"
+fpga/pynq-z2/build_rocket_pext_z1/pynqz1_rocket_pext.bit,894730829ff493bd308792074c74da06,4045677,0x5A5A0004,git,"Labs B9-B13: + MBP packed SIMD on hart 0 (scripts/29,30,31,32,33)"
+fpga/pynq-z2/build_rocket_mic_z1/pynqz1_rocket_mic.bit,566bc5402d0cab22130942bf9904bfdb,4045677,0x5A5A0005,git,"PDM microphone front end (scripts/34,36)"
+fpga/pynq-z2/build_rocket_micrgb_z1/pynqz1_rocket_micrgb.bit,4c8f7bf79e2f2464908eca8656abd691,4045677,0x5A5A0006,git,"full-feature, no accelerator: mic + RGB LEDs (scripts/35,58)"
+fpga/pynq-z2/build_axiceil_z1/pynqz1_axiceil.bit,aee7e9879ab378381841984009101331,4045671,0x5A5A0020,git,"AXI interface-ceiling lab, no SoC (scripts/47)"
+fpga/pynq-z2/build_axiceil_v2_z1/pynqz1_axiceil.bit,fc9606927808dcb690d579ce30b49ef6,4045671,,git,AXI ceiling variant v2 (scripts/47)
+fpga/pynq-z2/build_axiceil_v5_z1/pynqz1_axiceil.bit,0eda8dc283ccbb1b5fb4cef389a87dd2,4045671,,git,AXI ceiling variant v5 (scripts/47)
+fpga/pynq-z2/build_axiceil_v6_z1/pynqz1_axiceil.bit,15187f82890dd05f3428ff467ae5039b,4045671,,git,AXI ceiling variant v6 (scripts/47)
+fpga/pynq-z2/build_rocket_micrgb_roccmoonnch8f40b98b_z1/pynqz1_rocket_micrgb_roccmoonnch8f40b98b.bit,995798bedfb15cff077ab58710af3bf8,4045677,0x5A5A0035,untracked,"measurement bitstream: every measured speech result (scripts/57,79,80)"
+fpga/pynq-z2/build_rocket_micrgb_roccmoonnch8f40b98boled_z1/pynqz1_rocket_micrgb_roccmoonnch8f40b98boled.bit,6c4a33661dd811bd1716051eb7435ad7,4045677,0x5A5A0036,untracked,measurement bitstream: + I2C/OLED (scripts/56)
+fpga/pynq-z2/build_rocket_micrgb_roccmoonnch8f40b98bpanel_z1/pynqz1_rocket_micrgb_roccmoonnch8f40b98bpanel.bit,f1f076322d221eceb6f096bbe42cf45f,4045677,0x5A5A0037,untracked,measurement bitstream: + I2C + BTN (scripts/81)
+fpga/pynq-z2/build_rocket_micrgb_roccmoonnch8f40b98ball_z1/pynqz1_rocket_micrgb_roccmoonnch8f40b98ball.bit,ced0aab0c7b52f25338eeffe8f678e4f,4045677,0x5A5A0038,untracked,measurement bitstream: engine+P-ext+mic+RGB+I2C+BTN+camera (scripts/66)
+fpga/pynq-z2/build_rocket_micrgb_tracepanelcam_z1/pynqz1_rocket_micrgb_tracepanelcam.bit,54838985885eacd88c28cc38cb0c829a,4045677,0x5A5A0039,untracked,"measurement bitstream: dual-core TACIT, no engine"

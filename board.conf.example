@@ -1,0 +1,33 @@
+# Which PYNQ board this checkout drives.  Copy to board.conf and edit:
+#
+#     cp board.conf.example board.conf
+#
+# board.conf is NOT tracked by git and never leaves your machine.  env.sh sources it when
+# PYNQ_HOST is not already set in the environment, so an explicit
+#
+#     PYNQ_HOST=xilinx@10.0.0.42 scripts/20_rocket_run.sh ...
+#
+# still wins over anything written here.
+#
+# WHY THERE IS NO DEFAULT.  env.sh used to default PYNQ_HOST to the address of one
+# particular board.  That is convenient on exactly one machine and wrong everywhere
+# else: on a shared segment it is somebody else's board, and a lab that loads a bitstream
+# into a stranger's PL is worse than one that refuses to start.  Scripts that need a board
+# now fail with an instruction instead.
+
+# The board, as ssh addresses it.  user@host.  The stock PYNQ v3.1.1 image logs in as
+# `xilinx`, and every stock card brings up a static alias on 192.168.2.99, so a board wired
+# point-to-point to this machine is usually reachable there.  On a shared network use the
+# address your DHCP server actually gave it -- see fpga/pynq-z2/docs/BRINGUP.md.
+#PYNQ_HOST=xilinx@<board-ip>
+
+# Staging directory ON THE BOARD.  Scripts push zephyr.bin, a bitstream and a runner here and
+# pull console.out / tacit.out back.  Nothing authoritative lives on a board; this is scratch.
+# The default (/home/xilinx/tutorial) is right on any stock image.
+#PYNQ_DIR=/home/xilinx/tutorial
+
+# A SHORT LOGICAL NAME for this board, stamped into results.csv and run.json so a row can
+# never be blended with another machine's.  fpga/pynq-z2/bwlab/boards.csv is a per-bench
+# register and ships EMPTY: either add a row for your board, or just name it here and
+# scripts/lib/board_id.sh stops asking.
+#IISWC_BOARD=my-pynq

@@ -1,0 +1,225 @@
+# Pinned dependency revisions for the IISWC tutorial.
+# Every entry is reachable from a public remote; anything that is NOT upstream is carried
+# as a patch in patches/ and applied by a script -- scripts/05_build_tacit_tools.sh for the
+# spike and decoder patches, scripts/06_patch_zephyr.sh for the Zephyr kernel one,
+# scripts/07_patch_rocketchip.sh and scripts/09_patch_rocket_pext.sh for the rocket-chip
+# ones, scripts/00_bootstrap.sh for the zephyr-chipyard-sw installer one, and
+# scripts/28_rocket_modelblaster_pext.sh for the ModelBlaster backend one.
+#
+# name                  remote                                              rev / branch
+
+zephyr-chipyard-sw      https://github.com/ucb-bar/zephyr-chipyard-sw.git   400791302d0   (rose-2-dev)
+#    ^^^ THIS PIN IS NOT FETCHABLE FROM THAT REMOTE.  Corrected 2026-09-21: the line used to
+#    read f92248ec1b4 while the gitlink in this repo said 400791302d0, so the file disagreed
+#    with the tree it claimed to pin.  The gitlink is now what is written, because the gitlink
+#    is what `git submodule update` uses -- but a fresh clone CANNOT check it out:
+#
+#      400791302d0  modelblaster: advance to the sub-byte weight grid
+#      bf50ca87d10  modelblaster: advance to the committed int8 Moonshine pipeline
+#
+#    are two local-only commits (`git -C zephyr-chipyard-sw rev-list HEAD --not --remotes`
+#    returns both), and they are submodule-pointer bumps onto two ModelBlaster commits that
+#    are themselves reachable from no remote -- 543437b and 99b9e84, the toolchain every
+#    board number in this programme was produced by.  Last fetchable ancestor: f92248ec1b4.
+#    Until those four commits are pushed, `git submodule update --init` fails for anyone but
+#    this machine.  docs/SELF_CONTAINED.md section 3 is the full account; it is blocker #1.
+tacit-decoder           https://github.com/ucb-bar/tacit_decoder.git        34e54441b5   (misc_decoders)
+riscv-isa-sim (TACIT)   https://github.com/riscv-tacit/riscv-isa-sim.git    0ee3058d33   (l_trace)
+
+# NOT a submodule and NOT pinned here: $CHIPYARD_DIR is a Chipyard checkout SHARED with
+# other projects whose working bitstreams are built from it, and env.sh gives it no default
+# on purpose. patches/0004 below edits it, which is why that patch keeps a .bak and why
+# 07_patch_rocketchip.sh has a --revert. The generated Verilog it produces is vendored under
+# fpga/pynq-z2/chipyard/gensrc/, and each bundle's .provenance names the rocket-chip patches
+# that were in the tree when it was elaborated -- that is the pin for this one.
+
+# Patches applied on top of the pins above:
+#   patches/0002-decoder-rtl-packet-layout.patch -> third_party/tacit-decoder
+#     The pin parses the sync/trap packets SPIKE's trace_encoder_l emits (prv byte, ctx
+#     varint, runtime_cfg byte). The RTL encoder in Chipyard's generators/tacit emits an
+#     older, shorter layout and leaves the trap from-address unshifted, so a trace
+#     captured off the FPGA does not parse. Adds `--encoder rtl`; `--encoder spike`
+#     stays the default, so Lab A is unaffected. NOT upstream.
+#
+#   patches/0003-zephyr-startup-tacit-dma-sink.patch -> zephyr-chipyard-sw/zephyr_ws/zephyr
+#     CONFIG_STARTUP_TACIT enables the trace encoder in arch/riscv/core/reset.S but sets
+#     no sink target and no sink address. That is right for spike (target 0 is the
+#     implicit sink and needs no address) and a silent total loss on an SoC whose only
+#     sink is a DMA sink at target 1: TraceSinkArbiter accepts every byte for an unmatched
+#     target and drops it. Adds CONFIG_STARTUP_TACIT_{TARGET,SINK_DMA_ADDR,SINK_DMA_SHIFT}
+#     and programs the sink and the target before enable rises. At the defaults it
+#     assembles to the identical five instructions, so Lab A's golden is unchanged to the
+#     byte (verified: expected/tacit.json still reproduces 258319). Applied by
+#     scripts/06_patch_zephyr.sh, which 00_bootstrap.sh and 23_rocket_tacit_boot.sh call.
+#     The kernel checkout is NOT tracked by this repo (gitlink `ignore = all`), which is
+#     why the edit has to live here. NOT upstream.
+#
+#   patches/0004-rocketchip-mcycle-free-run.patch -> $CHIPYARD_DIR/generators/rocket-chip
+#     TACIT stamps every packet with a delta timestamp in mcycle, and rocket-chip gates the
+#     cycle counter on `!io.csr_stall` where `io.csr_stall := reg_wfi || io.status.cease` --
+#     so the counter STOPS while a hart idles. Two harts that idle differently keep two
+#     timebases and their traces cannot share an axis: measured -8,857,274 cycles of skew at
+#     a barrier both harts provably reach together, against 64 cycles once patched. Removes
+#     reg_wfi from that one enable and nothing else: io.status.cease stays a stop condition,
+#     mcountinhibit(0) is untouched and still architecturally inhibits the counter, and
+#     io.csr_stall still gates the pipeline. Elaborating before and after gives a Verilog
+#     diff of two files (the two harts' CSRFiles) and three lines each, one of which is the
+#     change and two of which are firtool inlining a now-single-use wire. Applied by
+#     scripts/07_patch_rocketchip.sh. Legal per the privileged spec, which leaves it
+#     implementation-defined whether mcycle advances in a low-power state -- but it changes
+#     what rdcycle MEANS for code that sleeps (k_msleep(1): 3,002 -> 49,612 cycles). Only
+#     the DUAL-CORE bitstream is built from the patched RTL; the single-core one is not.
+#     See fpga/pynq-z2/docs/TACIT_MULTICORE.md. NOT upstream.
+#
+#   patches/0005-zcs-install-conda-stray-line.patch -> zephyr-chipyard-sw
+#     Line 6 of the pin's scripts/install_conda.sh is the literal text
+#     `scripts/install_conda.sh#` -- a comment that lost its leading `#` in upstream commit
+#     0d4c3622. Bash runs it as a command, so the installer exits 127 before downloading
+#     anything and takes the bootstrap with it. Nobody had hit it because every run until
+#     now reused an already-installed workspace; the first genuine from-scratch bootstrap
+#     dies there. Applied by scripts/00_bootstrap.sh on the full-install path only.
+#     NOT upstream.
+#
+#   patches/0001-spike-tacit-mmio-remap.patch -> third_party/riscv-isa-sim
+#     Re-maps the legacy L-Trace encoder MMIO block at 0x3000000 so a Zephyr guest's
+#     TR_TE_CTRL / TR_TE_TARGET stores do not take a store access fault, and defaults
+#     trace_encoder_l's br_mode to BR_TARG. Without it the guest hangs at boot and the
+#     encoder never enables. NOT upstream -- this is the one local-only commit the
+#     whole Spike TACIT flow depends on.
+#
+#   patches/0006-spike-mbp-pext-insns.patch -> third_party/riscv-isa-sim
+#     Teaches spike MBP.DOT8 / MBP.MAX8 / MBP.QMUL / MBP.CLIP8 -- the four R-type ops in
+#     custom-0 (opcode 0x0b, funct7 = 0, funct3 0..3) frozen in fpga/pynq-z2/sw/pext.h.
+#     Without it a kernel built with MB_PEXT_HW=1 takes an illegal-instruction trap on
+#     spike, so the extension could only be exercised on the one FPGA -- and the whole
+#     P-ext design was justified from dynamic instruction counts taken on spike
+#     (fpga/pynq-z2/docs/PEXT_SPEC.md section 5), which have to be re-measurable per kernel
+#     change. Deliberately NOT gated on an ISA-string extension: custom-0 cannot collide
+#     with anything standard, and a gate would force an --isa= flag onto every spike
+#     invocation in the tutorial including the bit-exact golden in scripts/10_tacit_hello.sh
+#     (re-verified after this patch: 541930 / 258319 / 793201 / 2372). The masks are exact,
+#     so funct3 4..7 and every funct7 != 0 still trap as illegal. Also adds the mnemonics
+#     to the disassembler. Checked against pext.h case by case by scripts/11_pext_selftest.sh.
+#     NOT upstream.
+#
+#   patches/0007-decoder-mbp-pext-mnemonics.patch -> third_party/tacit-decoder
+#     Names the same four ops in the decoded trace. This is a READABILITY fix and nothing
+#     more: control-flow reconstruction was already correct, because rvdasm's placeholder
+#     for an unknown opcode carries len = 4 and no branch/jump bits, which is exactly what
+#     a non-branching 4-byte ALU op needs. Measured before changing anything -- on a
+#     1,320,030-instruction trace of samples/pext_selftest the decoded PC sequence is
+#     identical to spike's own tacit.debug ground truth, and the Perfetto JSON is
+#     byte-identical before and after this patch; only 5296 `unknown` lines in trace.txt
+#     became `mbp.dot8 x13, x10, x11` and so on. NOT upstream.
+#
+#   patches/0008-rocket-pext-alu.patch -> $CHIPYARD_DIR/generators/rocket-chip
+#     The same four ops, in silicon: MBP.DOT8 / MBP.MAX8 / MBP.QMUL / MBP.CLIP8 integrated
+#     into Rocket's ALU as single-cycle two-read instructions on fn codes 20-23, enabled
+#     PER TILE by a new RocketCoreParams.usePExt. Four files: tile/Core.scala (the
+#     CoreParams hook, a concrete def defaulting false so BOOM/Shuttle/groundtest need no
+#     change), rocket/RocketCore.scala (the field, the decode-table entry, and a require()
+#     that refuses usePExt together with RoCC because RoCCDecode claims all of custom-0),
+#     rocket/IDecode.scala (the four BitPats) and rocket/ALU.scala (the datapath).
+#     A tile WITHOUT usePExt gets no decode table and no datapath, so custom-0 traps there
+#     -- which is the point, not a fallback: see PEXT_SPEC.md section 7.6.
+#     Applied by scripts/09_patch_rocket_pext.sh, NOT by 07: that script is single-purpose
+#     and exits early on its own mcycle marker, and its glob is *-rocketchip-*.patch, which
+#     this filename deliberately does not match. Either patch applies without the other.
+#     Measured inert for configs that do not set usePExt: scripts/09_patch_rocket_pext.sh
+#     --verify elaborates PynqZ2RocketBigLittleTacitConfig before and after and finds 500 of
+#     505 generated files byte-identical, the rest differing only in firtool source-locator
+#     comments and one simulation-only $error string. NOT upstream.
+#
+#   patches/0009-modelblaster-pext-backend.patch -> zephyr-chipyard-sw/modelblaster
+#     A `pext` hardware target for ModelBlaster, so codegen can select kernels written
+#     against the four MBP instructions. Two edits, both at pipeline's own documented
+#     extension points: one Backend in pipeline/backends.py (kernel_cflags is the single
+#     flag -DMB_PEXT_HW=1 and there is NO new -march -- the ops are emitted with `.insn r`
+#     and assemble under the board's own rv64imac_zicsr_zifencei, which is what keeps the
+#     exact multilib the Zephyr SDK selects, the same arrangement the ime_x60 backend
+#     already documents), and three AlgorithmCandidates in pipeline/reference_kernels.py,
+#     which is where kernels/README.md says an algorithm must be registered for the
+#     pipeline to probe for its file. The Backend deliberately hardcodes no path to
+#     pext.h: that header belongs to the SoC, and the app supplies the -I. The curated
+#     kernels themselves are NOT in the submodule -- they live in this repo at
+#     fpga/pynq-z2/modelblaster/kernels/pext/ and are reached with --global-curated-dir,
+#     so the submodule stays a read-only input for everything except these 148 lines.
+#     Applied idempotently by scripts/28_rocket_modelblaster_pext.sh. NOT upstream.
+#
+#   patches/0011-zephyr-dmic-pdm-mmio.patch -> zephyr-chipyard-sw/zephyr_ws/zephyr
+#     A Zephyr DMIC driver for the PL-side PDM microphone decimator: a new
+#     drivers/audio/dmic_pdm_mmio.c, its Kconfig, a dts/bindings/audio/iiswc,pdm-mic.yaml,
+#     and two one-line hooks in drivers/audio/{Kconfig,CMakeLists.txt}. It implements
+#     configure/trigger/read against <zephyr/audio/dmic.h> over an MMIO FIFO with NO DMA --
+#     16 kHz of 16-bit mono is 32 kB/s, and a 64 ms hardware FIFO is what buys the slack.
+#     The one thing to know before touching it: dmic_configure() reads the hardware's RATE
+#     register and writes the REAL rate back into cfg.streams[0].pcm_rate, because the
+#     chain produces 15993.859 Hz and not 16000 and nothing downstream should hard-code
+#     the 0.038%. Applied by scripts/06_patch_zephyr.sh alongside 0003 -- which needed
+#     fixing to notice it at all, since its idempotence marker was a single symbol from
+#     0003 and a tree carrying that reported "already patched" and skipped everything
+#     added later. NOT upstream.
+#
+#   patches/0012-chipyard-pdm-mic.patch -> $CHIPYARD_DIR/generators/chipyard
+#     The microphone as a TileLink peripheral inside the SoC, because ChipTop has no MMIO
+#     slave port and a block beside it in the PL cannot be reached by Rocket at all. Four
+#     files: a new pdmmic/PdmMic.scala (PdmMicParams/PdmMicKey, a TLRegisterNode wrapper
+#     around the pdm_mic_core BlackBox at 0x1009_0000, CanHavePeripheryPdmMic, WithPdmMic),
+#     one line in DigitalTop.scala, three in iobinders/Ports.scala, and
+#     WithPdmMicPunchthrough in iobinders/IOBinders.scala -- modelled line for line on
+#     ospi's WithOspiPunchthrough, which is the same shape for the camera.
+#     THE VERILOG IS NOT IN THE PATCH: pdm_mic_core is a plain BlackBox, so Chipyard emits
+#     the instantiation and not the module, and the module stays in fpga/pynq-z2/src/ where
+#     sim/run_pdm_sim.sh tests it and tcl/build_rocket.tcl adds it to the project.
+#     Measured inert for configs that do not set PdmMicKey: re-elaborating
+#     PynqZ2RocketBigLittlePextTacitConfig with it applied gives 506 of 506 generated files
+#     byte-identical once firtool's source-locator comments are stripped.
+#     Applied by scripts/04_patch_chipyard_mic.sh, which also installs PynqZ2Configs.scala.
+#     NOT upstream.
+#
+#   patches/0020-modelblaster-kws-models.patch -> zephyr-chipyard-sw/modelblaster
+#     Six ~20-line modules under models/ -- kws_cnn, kws_dscnn, kws_cnn_tiny and the three
+#     connected-digit CTC transcribers kws_digit_ctc{,_wide,_t} -- so that
+#     `--model kws_<arch>` resolves. ModelBlaster imports modelblaster.models.<id>, so a
+#     model living outside the submodule still needs a module inside it; that module does
+#     nothing but put $IISWC_ROOT on sys.path and defer to
+#     fpga/pynq-z2/modelblaster/kws/mb_shim.py.
+#     WHY THE SPLIT. The submodule is a pinned read-only input and
+#     scripts/02_verify_patches.sh proves its working tree equals base + patches/ --
+#     an untracked model file would pass that gate and still not survive a fresh
+#     checkout. And the trained weights are a 460 KB npz, which cannot go in a patch at
+#     all. Same shape as 0009, whose curated kernels live in
+#     fpga/pynq-z2/modelblaster/kernels/ and reach the pipeline through
+#     --global-curated-dir.
+#     The number is 0020 and not 0013 deliberately: 0013+ were reserved for the RGB-LED
+#     work happening in parallel, and a patch series with two owners is worth the gap.
+#     Applied idempotently by scripts/37_rocket_kws_board.sh and
+#     scripts/41_rocket_digits.sh. NOT upstream.
+#
+#   (no patch) -- the speech front end and the integer nonlinearities, Labs B16-B21
+#     fpga/pynq-z2/sw/audio_fe.{h,c} and its generated tables are files in THIS repo, not
+#     a patch to anything: they are new code with no upstream to diff against, the same
+#     way fpga/pynq-z2/sw/pext.h is. Recorded here so the absence is deliberate rather
+#     than an omission. The one thing that IS generated and must not be hand-edited is
+#     audio_fe_tables_{asr,kws}.c; tools/gen_fe_tables.py --check re-derives and diffs
+#     both, and Labs B16, B18 and B21 run that before they build.
+#     fpga/pynq-z2/sw/int_nonlin.{h,c} is the same kind of thing for softmax and layer
+#     norm: new code with no upstream to diff against, measured against ModelBlaster's
+#     own reference expressions rather than replacing them in the submodule. Lab B20 is
+#     what checks it, and SPEECH_ON_ROCKET.md section 12 is why it exists instead of a
+#     floating-point unit.
+#
+#   (no patch) -- the RGB LEDs, Lab B15
+#     Worth recording BECAUSE there is nothing to record. LD4 and LD5 reach Zephyr with no
+#     patch to Chipyard and no patch to Zephyr, which is why the patch series still ends at
+#     0012. Both halves already exist upstream and only had to be named:
+#       * chipyard.config.WithGPIO + chipyard.iobinders.WithGPIOPunchthrough -- sifive's
+#         GPIO controller from generators/rocket-chip-blocks, already mixed into DigitalTop
+#         as HasPeripheryGPIO, with WithGPIOPinsTiedOff already in AbstractConfig. The whole
+#         SoC change is the three-line PynqZ2RocketBigLittlePextTacitMicRgbConfig in
+#         fpga/pynq-z2/chipyard/PynqZ2Configs.scala, which is this repo's own file.
+#       * Zephyr's drivers/gpio/gpio_sifive.c and dts/bindings/gpio/sifive,gpio0.yaml,
+#         shipped since 2017, default-y on DT_HAS_SIFIVE_GPIO0_ENABLED. The board
+#         definition (boards/chipyard/pynqz1_micrgb) is likewise this repo's own file.
+#     That is the point of comparison for 0011/0012 above: a PDM decimator is not a device
+#     either tree ships and a GPIO controller is. See fpga/pynq-z2/docs/RGB_LEDS.md.

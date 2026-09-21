@@ -1,0 +1,29 @@
+/dts-v1/;
+/plugin/;
+
+/* Enable PS UART1 so Linux creates /dev/ttyPS1.
+ *
+ * Two fragments are required, not one:
+ *
+ *   fragment@0  flips serial@e0001000 from "disabled" to "okay". The stock PYNQ device
+ *               tree ships UART1 disabled.
+ *   fragment@1  adds the /aliases/serial1 entry. The xuartps driver derives its port line
+ *               number from the serial alias; with only serial0 present, probing UART1
+ *               fails with "uart_add_one_port() failed; err=-22" (EINVAL) and no
+ *               /dev/ttyPS1 appears even though status reads "okay".
+ */
+/ {
+    fragment@0 {
+        target = <&uart1>;
+        __overlay__ {
+            status = "okay";
+        };
+    };
+
+    fragment@1 {
+        target-path = "/aliases";
+        __overlay__ {
+            serial1 = "/axi/serial@e0001000";
+        };
+    };
+};

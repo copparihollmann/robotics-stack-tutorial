@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+mainmenu "oled_status host test"
+
+rsource "../../src/Kconfig.oled_status"
+
+config OLED_TEST_ABSENT
+	bool "Neither emulated display ACKs (module not fitted)"
+	help
+	  Built as a separate image by scripts/54_oled_host_tests.sh: oled_status's probe is
+	  one-shot, so "absent" cannot share a binary with "present".
+
+source "Kconfig.zephyr"

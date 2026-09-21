@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+mainmenu "Microphone recording with LED cues"
+
+config MIC_LED_SECONDS
+	int "Seconds of audio to record"
+	default 15
+	help
+	  15 s of 16-bit mono at 15,994 Hz is 480 KB, which fits the DRAM window at
+	  0x8C00_0000 with room to spare. The guest clamps to MIC_LED_MAX_BYTES anyway.
+
+config MIC_LED_MAX_BYTES
+	int "Cap on the PCM buffer in DRAM (bytes)"
+	default 1048576
+
+config MIC_LED_IDLE_MS
+	int "Idle time before the get-ready blinks (ms)"
+	default 3000
+
+config MIC_LED_READY_BLINKS
+	int "Number of get-ready blinks, one per second"
+	default 3
+
+source "Kconfig.zephyr"

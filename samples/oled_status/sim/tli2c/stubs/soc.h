@@ -1,0 +1,4 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC (34483) x CONFIG_RTC_CLOCK_DIVIDER_VALUE (1000), as on the Z1 boards. */
+#pragma once
+#define SIFIVE_PERIPHERAL_CLOCK_FREQUENCY (34483UL * 1000UL)

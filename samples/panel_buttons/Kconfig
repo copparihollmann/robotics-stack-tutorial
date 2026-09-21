@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+mainmenu "Panel button read"
+
+config PANEL_BTN_SECONDS
+	int "How long to watch the buttons (seconds)"
+	default 20
+	help
+	  The window a person at the bench has to press every button.  It is also the whole
+	  of this sample's statistical power: with a 10 ms poll, 20 s is about 2,000 chances
+	  to see a 1.  Nothing shorter is worth running with a human in the loop.
+
+source "Kconfig.zephyr"

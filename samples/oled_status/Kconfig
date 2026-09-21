@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+mainmenu "OLED status demo"
+
+rsource "src/Kconfig.oled_status"
+
+config OLED_DEMO_FRAMES
+	int "Simulated camera frames before the demo prints its summary (0 = run forever)"
+	default 300
+
+config OLED_DEMO_FRAME_MS
+	int "Simulated frame period (ms)"
+	default 33
+
+config OLED_DEMO_PATTERN_MS
+	int "How long the test pattern stays up before the status screen (ms)"
+	default 2000
+
+config OLED_DEMO_GOLDEN
+	bool "Draw the golden screen and the test pattern once, then stop"
+	help
+	  For the RTL simulation and the board lab's image check: the screen is the fixed
+	  one the host test renders into expected/oled_status.json, so the SSD1306 model's
+	  framebuffer can be compared byte for byte.
+
+source "Kconfig.zephyr"

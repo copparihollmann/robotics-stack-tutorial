@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Options of the oled_status library (src/oled_status.c). Sourced by the sample's Kconfig
+# and by the host test's, so both compile the library with the same knobs.
+
+config OLED_STATUS_PERIOD_MS
+	int "Minimum time between OLED refreshes (ms)"
+	default 1000
+	help
+	  A full 128x64 refresh is 1,036 bytes on the wire and busy-polls one hart for about
+	  87 ms at 100 kHz or 27 ms at 400 kHz (estimates, fpga/pynq-z2/docs/OLED_SSD1306.md
+	  section 4). Posts that arrive faster than this are coalesced; the newest wins.
+
+config OLED_STATUS_STACK_SIZE
+	int "Stack size of the OLED thread"
+	default 2048
+
+config OLED_STATUS_RTF_FULL_SCALE_MILLI
+	int "Real-time factor at which the RTF bar is full (x1000)"
+	default 8000

@@ -1,0 +1,54 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/*
+ * The OLED on the camera shield's I2C bus: i2c0 is the TLI2C at 0x1004_0000, already
+ * declared (disabled, clock-frequency 100000) in dts/riscv/chipyard/chipyard-riscv.dtsi,
+ * which every boards/chipyard/pynqz1* DTS includes. This overlay only enables it and adds
+ * the display at both addresses 0.96" modules are strapped for.
+ *
+ * zephyr,deferred-init on both: nothing probes the bus before main(). oled_status's
+ * thread NOP-probes 0x3c then 0x3d and device_init()s the one that ACKs.
+ *
+ * Panel properties are Zephyr's own ssd1306_128x64 shield values (boards/shields/ssd1306):
+ * COM pins alternative (no com-sequential), segment remap + COM scan flipped for the usual
+ * module orientation, precharge 0x22. No reset-gpios: these modules have no RES pin.
+ *
+ * clock-frequency is deliberately NOT set here. chipyard_pynqz1_cam (the camera build's
+ * board) sets 100000, and so does the shared dtsi; that is the measured-right value, and the
+ * bus has ONE controller and therefore one prescaler for the camera and the display together.
+ * fpga/pynq-z2/docs/OLED_SSD1306.md section 7.3 has the measurement (112.7 kHz actual) and
+ * why 400000 is not recommended. `status` stays here so the overlay also works on boards
+ * whose DTS leaves i2c0 disabled, such as chipyard_pynqz1_micrgb.
+ */
+&i2c0 {
+	status = "okay";
+
+	oled_3c: ssd1306@3c {
+		compatible = "solomon,ssd1306fb";
+		reg = <0x3c>;
+		width = <128>;
+		height = <64>;
+		segment-offset = <0>;
+		page-offset = <0>;
+		display-offset = <0>;
+		multiplex-ratio = <63>;
+		segment-remap;
+		com-invdir;
+		prechargep = <0x22>;
+		zephyr,deferred-init;
+	};
+
+	oled_3d: ssd1306@3d {
+		compatible = "solomon,ssd1306fb";
+		reg = <0x3d>;
+		width = <128>;
+		height = <64>;
+		segment-offset = <0>;
+		page-offset = <0>;
+		display-offset = <0>;
+		multiplex-ratio = <63>;
+		segment-remap;
+		com-invdir;
+		prechargep = <0x22>;
+		zephyr,deferred-init;
+	};
+};

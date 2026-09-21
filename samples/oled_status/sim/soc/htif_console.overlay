@@ -1,0 +1,20 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/*
+ * RTL SIMULATION ONLY -- never used on the board.
+ *
+ * The TestHarness's UARTAdapter is clocked for the generated DTS's 500 MHz peripheral bus,
+ * while the guest computes its baud divisor from CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC x
+ * CONFIG_RTC_CLOCK_DIVIDER_VALUE = 34.483 MHz -- the board's real clock. The console would
+ * be garbage. HTIF (tohost/fromhost, which fesvr reads out of the ELF by symbol) is the
+ * simulator's own console, so the sample's lines come out on the simulator's stdout.
+ */
+&htif {
+	status = "okay";
+};
+
+/ {
+	chosen {
+		zephyr,console = &htif;
+		zephyr,shell-uart = &htif;
+	};
+};

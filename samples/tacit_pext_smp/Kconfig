@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The same one symbol samples/modelblaster_pext declares, for the same reason: pext.h
+# reads CONFIG_MB_PEXT directly (Zephyr puts autoconf.h in front of every translation
+# unit), so declaring it here is all that is needed to make the header emit real
+# encodings in this app.
+#
+# It is NOT shared with that sample deliberately. A Kconfig fragment sourced by two apps
+# would be one more thing that has to be in scope for either of them to build; one
+# symbol, copied, with the same help text, costs less than that.
+
+mainmenu "TACIT on two harts, with MBP on one of them"
+
+config MB_PEXT
+	bool "Build the MBP body against the real extension"
+	default y
+	help
+	  Emit the real MBP.DOT8 / MBP.MAX8 / MBP.QMUL / MBP.CLIP8 encodings
+	  (custom-0, opcode 0x0b) for the body hart 0 runs.
+
+	  THE EXTENSION EXISTS ON HART 0 ONLY.  The body hart 1 runs calls
+	  pext.h's `_sw` software model explicitly and is unaffected by this
+	  symbol, which is what lets one image carry both instruction mixes.
+
+	  With this off, hart 0 would execute the software model too, both
+	  traces would contain the same instructions, and the sample refuses
+	  to run rather than reporting a heterogeneous trace that is not one.
+
+source "Kconfig.zephyr"

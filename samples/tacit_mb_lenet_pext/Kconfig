@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Two symbols. MB_PEXT is PEXT_SPEC.md section 7.2's build-time half of the
+# heterogeneity contract, copied verbatim from samples/modelblaster_pext so the two
+# images select kernels the same way. TACIT_MB_SINK_DMA is what lets one source build
+# for the board and for spike.
+
+mainmenu "ModelBlaster LeNet under TACIT, with the MBP packed-integer extension"
+
+config MB_PEXT
+	bool "Build the ModelBlaster kernels against the MBP extension"
+	default y
+	help
+	  Emit the real MBP.DOT8 / MBP.MAX8 / MBP.QMUL / MBP.CLIP8 encodings
+	  (custom-0, opcode 0x0b) instead of pext.h's software model.
+
+	  THE EXTENSION EXISTS ON HART 0 ONLY.  With this enabled, any thread
+	  that reaches a curated pext kernel MUST be pinned to CPU 0 with
+	  k_thread_cpu_pin(), or it takes an illegal-instruction trap.  See
+	  PEXT_SPEC.md section 7.
+
+	  Turn this off and the identical sources compile against the header's
+	  bit-identical software model -- useful for bring-up, and it makes the
+	  traced window contain no custom-0 encodings at all, which is the one
+	  thing this sample exists not to report.
+
+config TACIT_MB_SINK_DMA
+	bool "Stream the encoded trace into DRAM through TraceSinkDMA"
+	default y
+	help
+	  y  -- the FPGA SoC.  PynqZ2RocketBigLittlePextTacitConfig instantiates
+	        tacit.WithTraceSinkDMA(1) and nothing else, so the encoder is
+	        pointed at target 1, the sink is given a DRAM address, and the
+	        guest flushes the inclusive L2 afterwards because the sink is a
+	        master on the system bus and the PS reads DRAM.  See
+	        fpga/pynq-z2/docs/TACIT_ON_FPGA.md sections 2 and 3.
+
+	  n  -- spike.  The simulator's sink is target 0 and writes tacit.out,
+	        tacit.log and tacit.debug into the CWD; it needs no address, and
+	        there is no L2 control node at 0x2010000 to write to (the store
+	        would take an access fault).  Set from
+	        boards/spike_riscv64.conf.
+
+source "Kconfig.zephyr"

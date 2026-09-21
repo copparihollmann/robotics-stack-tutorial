@@ -1,0 +1,96 @@
+--- a/fpga/pynq-z2/modelblaster/kernels/pext_nl/pext_nl_layernorm_s8_pext_int_rsqrt.c	2026-09-16 16:47:14.114149348 -0700
++++ b/fpga/pynq-z2/modelblaster/kernels/pext_nl/pext_nl_layernorm_s8_pext_int_rsqrt.c	2026-09-17 21:56:20.817247006 -0700
+@@ -69,6 +69,16 @@
+     int si, se, om_s, dummy;
+     int64_t eps_q16 = 0;
+     int m, k;
++    /* per-channel folded affine, computed once per dispatch rather than once per element.
++     * MBP_LN_MAXK bounds K; Moonshine is 288 and the reference contract has no bound, so a
++     * K above it falls back to the original per-element path rather than overflowing. */
++    int32_t pc_gm[MBP_LN_MAXK];
++    int     pc_gs[MBP_LN_MAXK], pc_gneg[MBP_LN_MAXK];
++    int64_t pc_b8[MBP_LN_MAXK];
++
++    if (K > MBP_LN_MAXK) { kernel_layernorm_s8_slow(input, gamma, beta, output, M, K,
++                                                    scale_in, scale_out, eps,
++                                                    activation_min, activation_max); return; }
+ 
+     nl_f2ms_recip(scale_out, &om, &om_s);
+     nl_f2ms(scale_in, &mi, &si);
+@@ -86,6 +96,42 @@
+         if (eps_q16 < 0) eps_q16 = 0;
+     }
+ 
++    /* THE HOIST.  gamma[k] and beta[k] decode to a (mantissa, exponent, sign) triple that
++     * depends only on k, and folding it with 1/scale_out depends only on k.  As originally
++     * written both lived in the INNER loop, so on Moonshine's LayerNorm (M = 165, K = 288)
++     * every channel's decode ran 165 times instead of once -- 47,520 decodes per dispatch
++     * where 288 suffice.  The rsqrt, which the kernel is named for, is once per ROW and is
++     * not the cost.
++     *
++     * WHY IT SURVIVED: the kernel's headline "69 cycles/element, measured on the board
++     * (Lab B20)" was measured with gamma = beta = NULL
++     * (samples/int_nonlin_bench/src/main.c:296), which takes both `if`s below and skips the
++     * entire dominant path.  In use with real gamma and beta it measures 136.48 (Lab B26),
++     * 137.03 (Lab B28, QATU) and 160.80 (Lab B31's standalone bench).  The advertised number
++     * was true and was measured with the term that dominates its real cost switched off.
++     */
++    for (k = 0; k < K; k++) {
++        int32_t gm, bm;
++        int gs, bs, gneg, bneg;
++
++        if (gamma) {
++            nlk_f2mss(gamma[k], &gm, &gs, &gneg);
++            nlk_msmul(gm, gs, om, om_s, &gm, &gs);
++        } else {
++            gm = om; gs = om_s; gneg = 0;
++        }
++        pc_gm[k] = gm; pc_gs[k] = gs; pc_gneg[k] = gneg;
++        if (beta) {
++            int64_t b8;
++            nlk_f2mss(beta[k], &bm, &bs, &bneg);
++            nlk_msmul(bm, bs, om, om_s, &bm, &bs);
++            b8 = nl_scale((int64_t)1 << 8, bm, bs);
++            pc_b8[k] = bneg ? -b8 : b8;
++        } else {
++            pc_b8[k] = 0;
++        }
++    }
++
+     for (m = 0; m < M; m++) {
+         const int8_t *x = input + (size_t)m * K;
+         int8_t *y = output + (size_t)m * K;
+@@ -108,29 +154,11 @@
+ 
+         for (k = 0; k < K; k++) {
+             int64_t d8 = ((int64_t)x[k] << 8) - mean;          /* Q8 of (x - mu_q) */
+-            /* xn in Q16: d8 * rs * 2^-(15+sh), and 8 + 16 - 23 - sh == -(15 + sh). */
+             int64_t xn = (int64_t)(((__int128)d8 * rs) >> (15 + sh));
+-            int32_t gm, bm;
+-            int gs, bs, gneg, bneg;
+-            int64_t v_q8;
+-
+-            if (gamma) {
+-                nlk_f2mss(gamma[k], &gm, &gs, &gneg);
+-                nlk_msmul(gm, gs, om, om_s, &gm, &gs);
+-            } else {
+-                gm = om; gs = om_s; gneg = 0;
+-            }
+-            /* xn is Q16 and we want eight fractional bits: shift by 16 - 8 == 8. */
+-            v_q8 = nl_scale(xn, gm, gs + 8);
+-            if (gneg) v_q8 = -v_q8;
+-            if (beta) {
+-                nlk_f2mss(beta[k], &bm, &bs, &bneg);
+-                nlk_msmul(bm, bs, om, om_s, &bm, &bs);
+-                {
+-                    int64_t b8 = nl_scale((int64_t)1 << 8, bm, bs);
+-                    v_q8 += bneg ? -b8 : b8;
+-                }
+-            }
++            int64_t v_q8 = nl_scale(xn, pc_gm[k], pc_gs[k] + 8);
++
++            if (pc_gneg[k]) v_q8 = -v_q8;
++            v_q8 += pc_b8[k];
+             y[k] = nl_q8_to_s8(v_q8, activation_min, activation_max);
+         }
+     }

@@ -1,0 +1,144 @@
+diff --git a/fpga/pynq-z2/rtl_study/roccmoon/merge/mbxr_engine.v b/fpga/pynq-z2/rtl_study/roccmoon/merge/mbxr_engine.v
+index 06317eb..fc2dc88 100644
+--- a/fpga/pynq-z2/rtl_study/roccmoon/merge/mbxr_engine.v
++++ b/fpga/pynq-z2/rtl_study/roccmoon/merge/mbxr_engine.v
+@@ -273,6 +273,7 @@ module mbxr_engine_core #(
+   wire lane_go_bad = lgc && !lane_go_ok;
+   wire go_attn = lane_go_ok && (cmd_rs1[1:0] == 2'd1);
+   wire go_ln   = lane_go_ok && (cmd_rs1[1:0] == 2'd2);
++  wire go_lut  = lane_go_ok && (cmd_rs1[1:0] == 2'd3);   // T4's LUT lane, mbxl_lut.v
+ 
+   // (mbxr_lanes is instantiated below u_mac, where s2_final exists)
+   assign rd_addr[0 +: 16] = ln_rd_own ? ln_rd_addr[0 +: 16] : {5'd0, t_abuf, a_addr};
+@@ -313,7 +314,7 @@ module mbxr_engine_core #(
+   mbxr_lanes #(.NCH(NCH), .AW(AW)) u_lanes (
+     .clk(clk), .rst(rst),
+     .cfg_we(lcf), .cfg_addr(cmd_rs1[15:0]), .cfg_wdata(cmd_rs2[31:0]),
+-    .go_attn(go_attn), .go_ln(go_ln), .abuf(t_abuf), .wbuf(t_wbuf),
++    .go_attn(go_attn), .go_ln(go_ln), .go_lut(go_lut), .abuf(t_abuf), .wbuf(t_wbuf),
+     .rd_addr(ln_rd_addr), .rd_data(rd_data), .rd_own(ln_rd_own),
+     .s0_valid(ln_s0_valid), .s0_clr(ln_s0_clr), .s0_last(ln_s0_last),
+     .act_sel(ln_act_sel), .p_rdata(ln_p_rdata),
+diff --git a/fpga/pynq-z2/rtl_study/roccmoon/merge/mbxr_lanes.v b/fpga/pynq-z2/rtl_study/roccmoon/merge/mbxr_lanes.v
+index bc68824..82b9f54 100644
+--- a/fpga/pynq-z2/rtl_study/roccmoon/merge/mbxr_lanes.v
++++ b/fpga/pynq-z2/rtl_study/roccmoon/merge/mbxr_lanes.v
+@@ -55,6 +55,7 @@ module mbxr_lanes #(
+   // ---- starts, one cycle each, and the buffers cfg named -------------------------------
+   input  wire        go_attn,
+   input  wire        go_ln,
++  input  wire        go_lut,
+   input  wire        abuf,
+   input  wire        wbuf,
+   // ---- the engine's scratchpad, addressed as mbxr_engine addresses it -------------------
+@@ -84,6 +85,15 @@ module mbxr_lanes #(
+ );
+   localparam NRD = NCH + 1;
+ 
++  // status[10:0] carries r_left, which is bounded by go_bad's word-range refusal at 2^AW.
++  // If AW ever changes, the field must change with it -- this fails elaboration rather than
++  // letting the field truncate silently (LAYERNORM_LANE.md s15.4a's failure class).
++  generate
++    if (AW != 10) begin : g_aw_check
++      $error("mbxr_lanes: status[10:0] assumes AW == 10; widen the field with AW");
++    end
++  endgenerate
++
+   // ======================================================================================
+   // the widened configuration space: four comparisons, and each lane's own map beneath
+   // ======================================================================================
+@@ -95,6 +105,9 @@ module mbxr_lanes #(
+   wire [9:0]  a_cfg_addr = {(cl_lane == 3'd0), cl_local[8:0]};
+   wire        l_cfg_we   = cfg_we && (cl_lane == 3'd2);
+   wire        s_cfg_we   = cfg_we && (cl_lane == 3'd3);
++  // lane 4: mbxl_lut's own 13-bit space, unchanged -- the fifth comparison, and no other
++  // lane's internal decode moves.  Lanes 5..7 stay free.
++  wire        u_cfg_we   = cfg_we && (cl_lane == 3'd4);
+ 
+   // ---- lane 3: the LN streamer's own registers -------------------------------------------
+   //   0 first scratchpad word   1 words to read   2 K   3 {two_pass, out16, in16}
+@@ -152,14 +165,17 @@ module mbxr_lanes #(
+       if (own == 2'd0) begin
+         if (go_attn)    begin own <= 2'd1; guard <= 4'd15; end
+         else if (go_ln_ok) begin own <= 2'd2; guard <= 4'd15; end
++        else if (go_lut)   begin own <= 2'd3; guard <= 4'd15; end
+       end else if (guard == 4'd0) begin
+         if (own == 2'd1 && a_idle && !a_busy)      own <= 2'd0;
+         else if (own == 2'd2 && ln_drained && l_idle) own <= 2'd0;
++        else if (own == 2'd3 && u_idle)               own <= 2'd0;
+       end
+     end
+   end
+   wire attn_on = (own == 2'd1);
+   wire ln_on   = (own == 2'd2);
++  wire lut_on  = (own == 2'd3);
+   assign rd_own  = (own != 2'd0);
+   assign out_own = (own != 2'd0);
+   assign busy    = (own != 2'd0);
+@@ -261,6 +277,28 @@ module mbxr_lanes #(
+     .out_valid(l_ov), .out_ready(l_or), .out_data(l_odata), .out_last(l_olast),
+     .idle(l_idle), .err(l_err));
+ 
++  // ======================================================================================
++  // lane 4: the LUT lane.  No MAC, no accumulator, no p_rdata -- it reads one scratchpad
++  // word, looks eight bytes up in parallel and hands one drain word back.  It refuses a
++  // range that leaves the buffer itself (err[2], checked at start from its own latched
++  // registers, before any word is read), so the engine's go_bad does not need to cover it.
++  // ======================================================================================
++  wire [AW-1:0] u_word;
++  wire          u_ov, u_busy, u_idle;
++  wire [63:0]   u_od;
++  wire [2:0]    u_err;
++
++  mbxl_lut #(.AW(AW)) u_lut (
++    .clk(clk), .rst(rst),
++    .cfg_we(u_cfg_we), .cfg_addr(cl_local), .cfg_wdata(cfg_wdata),
++    .start(go_lut && (own == 2'd0)),
++    .rd_word(u_word), .rd_data(rd_data[63:0]),
++    .out_valid(u_ov), .out_data(u_od), .out_hold(out_hold),
++    .busy(u_busy), .idle(u_idle), .err(u_err));
++  /* verilator lint_off UNUSEDSIGNAL */
++  wire _unused_u = u_busy;
++  /* verilator lint_on UNUSEDSIGNAL */
++
+   wire        p_ov;
+   wire [63:0] p_od;
+   mbxr_lnpk u_lnpk (
+@@ -271,8 +309,9 @@ module mbxr_lanes #(
+   // ======================================================================================
+   // the muxes the engine reads
+   // ======================================================================================
+-  assign rd_addr[0 +: 16] = ln_on ? {5'd0, abuf, r_word[AW-1:0]}
+-                                  : {5'd0, abuf, a_aaddr};
++  assign rd_addr[0 +: 16] = lut_on ? {5'd0, abuf, u_word}
++                          : ln_on  ? {5'd0, abuf, r_word[AW-1:0]}
++                                   : {5'd0, abuf, a_aaddr};
+   genvar gp;
+   generate
+     for (gp = 1; gp < NRD; gp = gp + 1) begin : g_wport
+@@ -280,10 +319,22 @@ module mbxr_lanes #(
+     end
+   endgenerate
+ 
+-  assign out_valid = ln_on ? p_ov : (attn_on && a_ov);
+-  assign out_data  = ln_on ? p_od : a_od;
++  assign out_valid = lut_on ? u_ov : ln_on ? p_ov : (attn_on && a_ov);
++  assign out_data  = lut_on ? u_od : ln_on ? p_od : a_od;
+ 
+-  assign status = {own, ln_drained, l_idle, a_idle, a_busy, l_err, a_err, r_left};
++  // r_left cannot exceed 1,024 now that go_bad refuses a wider range, so 11 bits carry it and
++  // bits [15:11] fall free.  THE LUT LANE'S FIELDS GO THERE AND NOTHING ELSE MOVES: own,
++  // ln_drained, l_idle, a_idle, a_busy, l_err and a_err keep the exact bit positions they have
++  // today, so `lst`'s existing decode is unchanged and the driver's change is one width
++  // constant plus two new accessors.  r_left[10:0] is written as r_left[AW:0] with an
++  // elaboration check that AW == 10, so the field and the refusal that bounds it move together
++  // or fail loudly rather than truncating in silence.
++  //
++  //   [31:30] own    [29] ln_drained  [28] l_idle  [27] a_idle  [26] a_busy
++  //   [25:20] l_err  [19:16] a_err    [15:13] u_err  [12] u_idle  [11] reserved
++  //   [10:0]  r_left
++  assign status = {own, ln_drained, l_idle, a_idle, a_busy, l_err, a_err,
++                   u_err, u_idle, 1'b0, r_left[AW:0]};
+ endmodule
+ 
+ // ---- 8 bytes or 4 halfwords into a 64-bit drain word ---------------------------------------

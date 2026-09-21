@@ -1,0 +1,11 @@
+# The current driver run against compat/'s frozen pre-0x5A5A002E engine, `tb_mbxr --quick`.
+# These are EXACT, not a band: the flat drain on silicon that is already in the field must be
+# the same machine it always was, to the Get, the Put and the cycle.
+#
+# WHEN A NUMBER HERE LEGITIMATELY MOVES: adding a case to tb_mbxr changes `cases` and every
+# total below it.  Re-bless it DELIBERATELY -- run_compat_tb.sh --bless -- and say in the commit
+# which case you added.  A change you cannot name is the thing this file exists to catch.
+cases	119
+gets	1078701
+puts	96619
+cycles	63999256

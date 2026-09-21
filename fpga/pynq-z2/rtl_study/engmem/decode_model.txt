@@ -1,0 +1,15 @@
+decoder token, 4 s utterance (15 tokens), engine nl+ew, 64-byte placement
+path                                                                                                       fill ms  token ms harts' DRAM-crossing bound
+as built: SBUS through the L2 (0x5A5A0010, ldepth 4)                                                          94.8     343.3 
+001A skip clean Release, ldepth 4 (instrument: 7.67 B/cycle at 4)                                             75.7     324.2 
+001A skip clean Release, ldepth 6 (instrument: 8.00)                                                          72.5     321.1 
+(i) zero-RTL: W client on MBUS through an async crossing, engine on FCLK0 (64-bit client: 8.00 B/core cycle)      72.5     321.1 +6.8 ms if the whole residue were DRAM-bound (it is not: L1/L2-resident tensors)
+(ii) split-DMA dual-clock W fill, 1 lane, FCLK1 100, ldepth 4 (instrument: 768 MB/s)                          26.1     274.7 +6.8 ms if the whole residue were DRAM-bound (it is not: L1/L2-resident tensors)
+(ii) split-DMA dual-clock W fill, 1 lane, FCLK1 100, ldepth 8 (instrument: 800 MB/s)                          25.1     273.6 +6.8 ms if the whole residue were DRAM-bound (it is not: L1/L2-resident tensors)
+(ii) 2 lanes into ONE spad write port at FCLK1 100 (the write port caps at 800 MB/s)                          25.1     273.6 +6.8 ms if the whole residue were DRAM-bound (it is not: L1/L2-resident tensors)
+(ii) 2 lanes, HP0+HP2, two W write ports on disjoint banks (instrument: 1,600 MB/s)                           12.6     261.1 +6.8 ms if the whole residue were DRAM-bound (it is not: L1/L2-resident tensors)
+
+encoder, per 4 s utterance (B26): fill 212.3 ms = 7.78 % of the 2.7 s hart-0 time spent in engine dispatches; the coordinator's relay puts it at 1.1 % of the steady-state encoder
+  moving activations to a memory-clock lane: saves 124 ms of fill (35.5 MB at 211 -> 800 MB/s)
+  ... and the flush contract costs 226 ms (555424 blocks x 14 cycles, s9.6 prediction, unmeasured)
+decoder per token: A 20672 B + out 60032 B -> 0.29 ms at 276 MB/s, 0.10 ms at 800

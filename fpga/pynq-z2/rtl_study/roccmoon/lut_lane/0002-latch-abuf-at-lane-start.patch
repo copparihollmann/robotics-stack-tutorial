@@ -1,0 +1,32 @@
+--- a/fpga/pynq-z2/rtl_study/roccmoon/merge/mbxr_lanes.v	2026-09-17 20:43:04.409420689 -0700
++++ b/fpga/pynq-z2/rtl_study/roccmoon/merge/mbxr_lanes.v	2026-09-17 20:43:04.421420909 -0700
+@@ -173,6 +173,16 @@
+       end
+     end
+   end
++  // `abuf` is the engine's t_abuf, a LIVE wire.  t_abuf is written by `cfg && !t_busy`, and a
++  // lane dispatch does NOT set t_busy -- so a cfg issued while a lane owns the scratchpad
++  // re-points that lane's reads to the other buffer MID-STREAM, silently, with no error bit.
++  // A pipelined harness must write cfg to flip buffers between tiles, so it meets this hazard
++  // by construction.  Latching the buffer at the start of a lane dispatch costs one flip-flop
++  // and removes it for all three lanes.
++  reg own_abuf;
++  always @(posedge clk) if (own == 2'd0) own_abuf <= abuf;
++  wire l_abuf = (own == 2'd0) ? abuf : own_abuf;
++
+   wire attn_on = (own == 2'd1);
+   wire ln_on   = (own == 2'd2);
+   wire lut_on  = (own == 2'd3);
+@@ -309,9 +319,9 @@
+   // ======================================================================================
+   // the muxes the engine reads
+   // ======================================================================================
+-  assign rd_addr[0 +: 16] = lut_on ? {5'd0, abuf, u_word}
+-                          : ln_on  ? {5'd0, abuf, r_word[AW-1:0]}
+-                                   : {5'd0, abuf, a_aaddr};
++  assign rd_addr[0 +: 16] = lut_on ? {5'd0, l_abuf, u_word}
++                          : ln_on  ? {5'd0, l_abuf, r_word[AW-1:0]}
++                                   : {5'd0, abuf,   a_aaddr};
+   genvar gp;
+   generate
+     for (gp = 1; gp < NRD; gp = gp + 1) begin : g_wport

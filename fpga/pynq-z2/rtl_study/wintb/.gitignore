@@ -1,0 +1,4 @@
+obj/
+rtl/gen/
+results/build.log
+*.err

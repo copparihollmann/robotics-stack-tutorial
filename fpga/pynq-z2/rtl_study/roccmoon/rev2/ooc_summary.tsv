@@ -1,0 +1,3 @@
+label	lut	ff	dsp	bram_tiles	ramb36_cells	lut_as_memory	slack_ns	datapath_ns	levels	start	end
+r1_eng4	3058	1983	48	20	20	44	6.726	21.557	17	null	null
+r2a_eng4	3242	2331	48	20	20	44	7.828	20.542	16	null	null

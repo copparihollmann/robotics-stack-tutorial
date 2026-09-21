@@ -1,0 +1,7 @@
+# scripts/52_roccmoon_rtl_sim.sh on 2026-09-16T23:29:53-07:00: the SoC's own RTL (PynqZ2RocketBigLittlePextTacitMicRgbRoccMoonConfig) in Verilator
+
+hart 0: custom-1 traps (mcause 2), as it must
+hart 1: engine id 0x0000000404024d52  mbxr_run rc 0  polls 15  last fence 0x0000000000000000
+hart 1: MBP.DOT8 traps (custom-0 not claimed by RoCCDecode)
+engine vs reference: 0 of 78 bytes differ, max_abs_err 0
+ROCCMOON_RTL_SIM: PASS

@@ -1,0 +1,60 @@
+                                                      : ... note: In instance 'tb_axiceil.dut.g_port[3].u_port'
+      |                       ^~~~~
+                      ... For warning description see https://verilator.org/warn/SYMRSVDWORD?v=5.022
+                      ... Use "/* verilator lint_off SYMRSVDWORD */" and lint_on around source to disable this message.
+== guard, standalone
+  pass  guard agrees with the reference at both edges and 200k random points (0 disagreements)
+  pass  guard fault clears on reset
+  pass  a 16-beat burst ending exactly at 0x2000_0000 is not a fault
+  pass  guard latches fault + address for a burst ending 8 bytes past 0x2000_0000
+== GP0 register file
+  pass  MAGIC reads 0x5A5A0020 (5a5a0020)
+  pass  REGION_LO = 0x1000_0000
+  pass  REGION_HI = 0x2000_0000
+  pass  BUILD = 04100528 (4 ports, 16 IDs, version 5)
+  pass  SCRATCH round-trips under all three AW/W orderings
+  pass  port 2's nine config words read back
+  pass  an unmapped port offset reads 0xDEADBEEF
+== a region outside the window is refused before it reaches the port
+  pass  cfg_err_wr set, guard untouched (PSTAT 0000000a)
+  pass  a region a page past 0x2000_0000 is refused (PSTAT 0000000a)
+  pass  a burst ending exactly at 0x2000_0000 is accepted (PSTAT 00000002)
+  pass  no request outside the window ever reached a model
+== write a region, read it back: 4 ports at once, random ports, every burst length
+  pass  every port wrote 4096 words, all B OKAY, no protocol errors
+  pass  every port read 4096 words back with 0 errors, min(asked, 8) <= peak outstanding <= asked
+  pass  a wrong seed reads as 4096 errors (4096)
+== mixed read+write on each port under windows that wrap, then verify
+  pass  mixed windows: 0 read errors, 0 write errors, every write region wrapped at least once
+  pass  the regions written during those windows verify with 0 errors
+== the instrument's own ceiling: an ideal port reads one beat per cycle
+  pass  read-only, 16 beats x 8 out: 99997 beats in 100000 cycles = 7.9998 B/cycle
+  pass  write-only: 99996 W beats, 99984 B-acked beats in 100000 cycles = 7.9997 B/cycle
+  pass  mixed, 16-beat bursts: rd 99997 + wr 99996 beats = 15.999 B/cycle on one port
+  pass  mixed, 1-beat bursts, 16 out: rd 99997 + wr 99996 beats (15.999 B/cycle)
+    port 0 ideal: AR stalls 0, R gaps 2
+== abort drains, and a start while busy is refused
+  pass  second start refused while busy (STATUS 00020101)
+  pass  abort drained to done (STATUS 00020010)
+  pass  no errors across the abort
+== every burst length the instrument issues, both directions, random, interleaved and lagging ports
+  pass  a region of 300 words (not whole pages) is refused (cfg_err_wr; PSTAT 0000000a)
+  pass  L = 1..16 (k cycling 1,2,3,8,16): 50 bursts written and read back on a random, an interleaving and a capability-lagging port, 0 errors, PS pins balanced
+== abort drains: mid-address, mid-burst, and with responses withheld
+  pass  (a) abort with AW/AR refused: still busy, nothing reached the port (STATUS 00000001)
+  pass  (a) released: drains to done, PS pins balanced, 0 errors (STATUS 00000010, LIVE 00000000)
+  pass  (b) abort mid-burst: still busy, AWs accepted 23481 > bursts completed 23477
+  pass  (b) released: drains to done, PS pins balanced, 0 errors (STATUS 00000010, LIVE 00000000)
+  pass  (c) abort with responses withheld: still busy; the pins say the PS holds 8 writes + 8 reads, and so does the model
+  pass  (c) released: drains to done, PS pins balanced, 0 errors (STATUS 00000010, LIVE 00000000)
+== the two hang signatures, told apart by the pins
+  pass  (d) ID[5:4] not echoed: master stuck, PS idle (AW +2 = B +2), first unclaimed BID 0x10
+  pass  (d) after PL reset, MODE[24] id_lo_only: 800 words written and read back, 0 errors
+  pass  (e) B withheld: abort cannot drain; the pins say the PS holds 3
+  pass  (e) released: drains to done, PS pins balanced, 0 errors (STATUS 00000040, LIVE 00000000)
+== models
+  pass  strict port models saw no protocol violations (0/0/0/0)
+  pass  no W beat ever reached a port before its AW was accepted (0/0/0/0)
+  pass  and no out-of-window request, ever
+ALL CHECKS PASSED
+exit=0

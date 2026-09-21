@@ -1,0 +1,8 @@
+obj/
+rtl/gen/
+results/build.log
+*.err
+obj_*/
+results/*.log
+obj2b*/
+rtl/gen2b/

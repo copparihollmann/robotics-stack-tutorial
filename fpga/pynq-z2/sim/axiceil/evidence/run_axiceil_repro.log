@@ -1,0 +1,11 @@
+build 1: REPRO: cap_lag=0 orphan_early=1 early_w=0 finished=1 abort_drained=1 port_holds_writes=0 b_beats=4096 model_errors=0 oob=0
+build 2: REPRO: cap_lag=0 orphan_early=1 early_w=2 finished=0 abort_drained=0 port_holds_writes=1 b_beats=4080 model_errors=2 oob=0
+current: REPRO: cap_lag=0 orphan_early=1 early_w=0 finished=1 abort_drained=1 port_holds_writes=0 b_beats=4096 model_errors=0 oob=0
+build 1: REPRO: cap_lag=16 orphan_early=1 early_w=0 finished=1 abort_drained=1 port_holds_writes=0 b_beats=4096 model_errors=0 oob=0
+build 2: REPRO: cap_lag=16 orphan_early=1 early_w=2 finished=0 abort_drained=0 port_holds_writes=1 b_beats=4080 model_errors=2 oob=0
+current: REPRO: cap_lag=16 orphan_early=1 early_w=0 finished=1 abort_drained=1 port_holds_writes=0 b_beats=4096 model_errors=0 oob=0
+build 1: REPRO: cap_lag=64 orphan_early=1 early_w=0 finished=1 abort_drained=1 port_holds_writes=0 b_beats=4096 model_errors=0 oob=0
+build 2: REPRO: cap_lag=64 orphan_early=1 early_w=2 finished=0 abort_drained=0 port_holds_writes=1 b_beats=4080 model_errors=2 oob=0
+current: REPRO: cap_lag=64 orphan_early=1 early_w=0 finished=1 abort_drained=1 port_holds_writes=0 b_beats=4096 model_errors=0 oob=0
+REPRO CHECKS PASSED
+exit=0

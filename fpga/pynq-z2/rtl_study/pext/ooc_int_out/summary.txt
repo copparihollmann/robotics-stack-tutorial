@@ -1,0 +1,55 @@
+# Raw PEXT_RESULT lines from ooc_pext_integrated.tcl on xc7z020clg400-1
+# (synth + place + route, out of context). Generated alongside PEXT_FEASIBILITY.md 2.6.
+#
+#   alu_base / alu_pext   the ALU cone alone: stock RocketALU vs the generated
+#                         RocketALU with coreParams.usePExt
+#   ex_base  / ex_pext    the whole EX stage around each (bypass network, operand
+#                         muxes, ALU, three result registers)
+#   ex_none               section 2's own pext_ex_stage.v model, as a cross-check
+#                         that the transcription in pext_integrated.v did not drift
+#   op_*                  one op's cone, io_fn tied to that function code. A LOWER
+#                         bound on that op's contribution (the result mux collapses
+#                         too); there to say WHICH op dominates, not what it costs.
+#
+# maxdsp=-1 is Vivado's own choice (it infers 18 DSP48E1s). maxdsp=0 forbids DSP
+# inference, and is slower and much bigger -- see PEXT_FEASIBILITY.md 2.6.
+
+## --- Vivado picks (18 DSP48E1 inferred) ---
+PEXT_RESULT alu_base period=25.0 maxdsp=-1 lut=558 ff=199 dsp=0 slack=13.796 dpd=11.151 logic=1.616 route=9.535 levels=7
+PEXT_RESULT alu_pext period=25.0 maxdsp=-1 lut=916 ff=200 dsp=18 slack=6.972 dpd=17.973 logic=12.178 route=5.795 levels=12
+PEXT_RESULT ex_base period=25.0 maxdsp=-1 lut=905 ff=464 dsp=0 slack=10.267 dpd=14.678 logic=1.324 route=13.354 levels=7
+PEXT_RESULT ex_pext period=25.0 maxdsp=-1 lut=1166 ff=466 dsp=18 slack=3.179 dpd=21.818 logic=13.107 route=8.711 levels=16
+PEXT_RESULT ex_none period=25.0 maxdsp=-1 lut=905 ff=464 dsp=0 slack=11.408 dpd=13.537 logic=1.448 route=12.033 levels=8
+PEXT_RESULT op_dot8 period=25.0 maxdsp=-1 lut=242 ff=192 dsp=8 slack=11.891 dpd=13.106 logic=7.481 route=5.625 levels=11
+PEXT_RESULT op_max8 period=25.0 maxdsp=-1 lut=181 ff=192 dsp=0 slack=19.708 dpd=5.287 logic=3.082 route=2.205 levels=17
+PEXT_RESULT op_qmul period=25.0 maxdsp=-1 lut=166 ff=192 dsp=10 slack=8.573 dpd=16.375 logic=11.557 route=4.818 levels=10
+PEXT_RESULT op_clip8 period=25.0 maxdsp=-1 lut=139 ff=192 dsp=0 slack=19.076 dpd=5.869 logic=1.188 route=4.674 levels=4
+PEXT_RESULT alu_base period=28.571 maxdsp=-1 lut=558 ff=199 dsp=0 slack=17.908 dpd=10.654 logic=1.642 route=9.012 levels=7
+PEXT_RESULT alu_pext period=28.571 maxdsp=-1 lut=916 ff=200 dsp=18 slack=10.498 dpd=18.018 logic=11.822 route=6.196 levels=12
+PEXT_RESULT ex_base period=28.571 maxdsp=-1 lut=905 ff=464 dsp=0 slack=15.208 dpd=13.356 logic=1.324 route=12.032 levels=7
+PEXT_RESULT ex_pext period=28.571 maxdsp=-1 lut=1166 ff=466 dsp=18 slack=4.452 dpd=24.064 logic=12.975 route=11.089 levels=15
+PEXT_RESULT ex_none period=28.571 maxdsp=-1 lut=905 ff=464 dsp=0 slack=14.922 dpd=13.594 logic=1.684 route=11.846 levels=8
+PEXT_RESULT op_dot8 period=28.571 maxdsp=-1 lut=242 ff=192 dsp=8 slack=15.462 dpd=13.106 logic=7.481 route=5.625 levels=11
+PEXT_RESULT op_max8 period=28.571 maxdsp=-1 lut=181 ff=192 dsp=0 slack=23.054 dpd=5.512 logic=3.082 route=2.430 levels=17
+PEXT_RESULT op_qmul period=28.571 maxdsp=-1 lut=166 ff=192 dsp=10 slack=12.144 dpd=16.375 logic=11.557 route=4.818 levels=10
+PEXT_RESULT op_clip8 period=28.571 maxdsp=-1 lut=139 ff=192 dsp=0 slack=22.184 dpd=6.380 logic=1.188 route=5.192 levels=4
+
+## --- -max_dsp 0 (LUT only) ---
+PEXT_RESULT alu_base period=25.0 maxdsp=0 lut=558 ff=199 dsp=0 slack=13.796 dpd=11.151 logic=1.616 route=9.535 levels=7
+PEXT_RESULT alu_pext period=25.0 maxdsp=0 lut=3585 ff=211 dsp=0 slack=0.450 dpd=24.495 logic=11.224 route=13.271 levels=29
+PEXT_RESULT ex_base period=25.0 maxdsp=0 lut=905 ff=464 dsp=0 slack=10.267 dpd=14.678 logic=1.324 route=13.354 levels=7
+PEXT_RESULT ex_pext period=25.0 maxdsp=0 lut=3849 ff=466 dsp=0 slack=-0.208 dpd=25.155 logic=12.132 route=13.023 levels=35
+PEXT_RESULT ex_none period=25.0 maxdsp=0 lut=905 ff=464 dsp=0 slack=11.408 dpd=13.537 logic=1.448 route=12.033 levels=8
+PEXT_RESULT op_dot8 period=25.0 maxdsp=0 lut=1017 ff=192 dsp=0 slack=8.654 dpd=16.291 logic=6.741 route=9.550 levels=19
+PEXT_RESULT op_max8 period=25.0 maxdsp=0 lut=181 ff=192 dsp=0 slack=19.708 dpd=5.287 logic=3.082 route=2.205 levels=17
+PEXT_RESULT op_qmul period=25.0 maxdsp=0 lut=2089 ff=198 dsp=0 slack=2.250 dpd=22.697 logic=11.566 route=11.131 levels=32
+PEXT_RESULT op_clip8 period=25.0 maxdsp=0 lut=139 ff=192 dsp=0 slack=19.076 dpd=5.869 logic=1.188 route=4.674 levels=4
+PEXT_RESULT alu_base period=28.571 maxdsp=0 lut=558 ff=199 dsp=0 slack=17.908 dpd=10.654 logic=1.642 route=9.012 levels=7
+PEXT_RESULT alu_pext period=28.571 maxdsp=0 lut=3588 ff=211 dsp=0 slack=3.811 dpd=24.705 logic=11.560 route=13.145 levels=33
+PEXT_RESULT ex_base period=28.571 maxdsp=0 lut=905 ff=464 dsp=0 slack=15.208 dpd=13.356 logic=1.324 route=12.032 levels=7
+PEXT_RESULT ex_pext period=28.571 maxdsp=0 lut=3846 ff=466 dsp=0 slack=0.988 dpd=27.528 logic=12.152 route=15.376 levels=37
+PEXT_RESULT ex_none period=28.571 maxdsp=0 lut=905 ff=464 dsp=0 slack=14.922 dpd=13.594 logic=1.684 route=11.846 levels=8
+PEXT_RESULT op_dot8 period=28.571 maxdsp=0 lut=1017 ff=192 dsp=0 slack=12.188 dpd=16.328 logic=6.752 route=9.576 levels=18
+PEXT_RESULT op_max8 period=28.571 maxdsp=0 lut=181 ff=192 dsp=0 slack=23.054 dpd=5.512 logic=3.082 route=2.430 levels=17
+PEXT_RESULT op_qmul period=28.571 maxdsp=0 lut=2090 ff=198 dsp=0 slack=4.954 dpd=23.564 logic=11.559 route=12.005 levels=33
+PEXT_RESULT op_clip8 period=28.571 maxdsp=0 lut=139 ff=192 dsp=0 slack=22.184 dpd=6.380 logic=1.188 route=5.192 levels=4

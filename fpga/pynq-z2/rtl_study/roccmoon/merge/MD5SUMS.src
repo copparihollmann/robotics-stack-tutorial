@@ -1,0 +1,29 @@
+# Provenance of merge/mbxr_engine.v
+#
+# Copied from engine revision 2a and then edited to instantiate the two lanes.  The md5s
+# below are of the SOURCE files at the time of the copy, so a later change to revision 2a
+# is visible as a mismatch here and can be re-merged deliberately.  They are NOT the md5s
+# of the files Vivado reads -- the build log prints those as ENGINE_RTL: lines.
+#
+# 2026-09-18: mbxr_tseq.v and mbxr_datapath.v re-recorded for the 6-bit weight unpacker
+# (B80).  The PREVIOUS values -- the ones 0x5A5A002E md5 d6112edd was built from -- are
+# 8596f212d1e9b05e6bad4d2ce8911929 (mbxr_tseq.v) and 6c6aa1b8375528fd20f0aa18dddc6e30
+# (mbxr_datapath.v), with merge/mbxr_engine.v itself at cce8c84fde25710ad4bb860c6f1c83cf.
+# A build log carrying the NEW md5s contains the unpacker; one carrying the old ones does not.
+#
+# NOT MINE AND LEFT ALONE: rtl_study/roccmoon/mbxr_engine.v's entry below was ALREADY moved
+# before the unpacker landed (recorded 38adce9a, on disk fcde3f34 at 0x5A5A002E's build).  That
+# is revision 2a's own engine, which the `lanes` variant does not read, and re-recording it
+# here would bury a pre-existing drift inside an unrelated change.
+
+38adce9a8f700b28ed1a51b08d28a27d  rtl_study/roccmoon/mbxr_engine.v
+e7ac9978ae33cc3f40b8371570abdf08  rtl_study/roccmoon/mbxr_tseq.v
+c80c49d0fb916e8e34e72c6b4567d8a4  rtl_study/roccmoon/mbxr_datapath.v
+36870fb3b757a74197c4a8cd4d0f5767  rtl_study/roccmoon/mbxr_st.v
+9d097035680e6eab59d61311cac79307  rtl_study/roccmoon/mbxd_spad2.v
+c474e28d50a44b75671e18850e299b06  rtl_study/rocc/mbxd_dma.v
+22d9b90333c7293d0496f3b93f7103a4  rtl_study/rocc/mbx_mac.v
+4d05241c712d3c50d80f8a92db08bee8  rtl_study/roccmoon/attn_unit/mbxa_unit.v
+326276ed53d2373c329d1a2723bc674f  rtl_study/roccmoon/attn_unit/mbxa_rq.v
+7e3c50b281748ebca3ad00d5bd5338e8  rtl_study/roccmoon/smx_lane/mbxr_smx.v
+a169c78c46c30949815d663e3128045d  rtl_study/roccmoon/ln_lane/mbxr_ln.v

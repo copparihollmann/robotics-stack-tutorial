@@ -1,0 +1,8 @@
+  caught      idbook  (53 failed checks; first: run timed out, status 00000002)
+  caught      wlast  (2 failed checks; first: L = 1..16 (k cycling 1,2,3,8,16): 50 bursts written and read back on a random, an interleaving and a capabilit)
+  caught      rlast  (1 failed checks; first: L = 1..16 (k cycling 1,2,3,8,16): 50 bursts written and read back on a random, an interleaving and a capabilit)
+  caught      abortvalid  (6 failed checks; first: (a) released: drains to done, PS pins balanced, 0 errors (STATUS 00000001, LIVE 00000420))
+  caught      wbeforeaw  (2 failed checks; first: strict port models saw no protocol violations (311/102/2/180))
+  caught      guard4k  (1 failed checks; first: guard agrees with the reference at both edges and 200k random points (1094 disagreements))
+ALL MUTATIONS CAUGHT
+exit=0

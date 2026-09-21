@@ -1,0 +1,63 @@
+0x5A5A0011 (roccmoonmul) RTL gates, Verilator, 2026-09-17
+===========================================================
+The pipelined multiplier on hart 0 (ROCC_DECOUPLED.md section 8.15.3), gated in the SoC's own RTL
+before any bitstream.  Reproduce with scripts/63_roccmoonmul_rtl_gates.sh.  Raw logs are in
+archive/runs/roccmoonmul_rtl_sim@20260917T1016/ (gate logs, golden dumps, diffs) and
+archive/runs/roccmoonmul@20260917T1025/ (elaboration, OOC, build and gate-script logs).
+
+WHAT WAS SIMULATED
+  config        PynqZ2RocketBigLittlePextTacitMicRgbRoccMoonMulConfig (Chipyard TestHarness, DRAMSim)
+  elaboration   2026-09-17T08:54:25-07:00, gensrc bundle sha256 6ffc8530daf7b759... (commit f5994c1);
+                the simulator was built at 08:57 from that same elaboration
+  simulator     Verilator 5.022, MBXR_BEHAVIOURAL (the engine's DSP48E1 cells as behavioural code)
+  baseline      out/roccmoon_rtl_sim/simulator: 0x5A5A0010's TestHarness, scripts/52's build
+  riscv-tests   source commit 0494f954a3d8d2ca9e4972da7a01e94b6a909bce, built with the Chipyard
+                conda gcc, -march=rv64im_zicsr -mabi=lp64
+  golden        rtl_study/muldiv/golden/, riscv64-zephyr-elf-gcc 14.3.0 (Zephyr SDK 1.0.0-beta1),
+                -march=rv64imac_zicsr_zifencei -mabi=lp64 -O2; host: gcc -O2 on x86-64
+
+GATE 1: riscv-tests rv64um-p-*, hart 0 .............................................. PASS
+  mul mulh mulhsu mulhu mulw div divu divuw divw rem remu remuw remw: 13/13 pass
+  Negative control: mul.S with test 4's expected value changed 0x15 -> 0x16 FAILS as it should
+  (TestHarness $stop, exit 255).  So a pass is a real pass, not a harness that never fails.
+
+GATE 2: samples/pext_rtl_selftest .................................................. PASS
+  TOTAL 3055 checks, 0 failures.  MBP DOT8/MAX8/QMUL/CLIP8 execute on hart 0, and the same four
+  encodings trap (illegal instruction) on hart 1.
+
+GATE 3: samples/roccmoon_rtl_sim ................................................... PASS
+  custom-1 traps on hart 0; the engine dispatch on hart 1 is byte-exact; MBP.DOT8 traps on hart 1.
+
+GATE 4: encoder-dispatch golden, RTL against host C, byte for byte ................ PASS
+  Inputs are real Moonshine encoder activations (acts.npz) with the model's own dispatch scalars:
+    softmax_s8 pext_int_row     24 x 165 rows of layer 0's attention scores, scale_in 0.280755699
+    softmax_s8 pext_int_memo2   the same rows (bit-exact with pext_int_row by construction)
+    layernorm_s8 pext_int_rsqrt 24 x 288 rows of layers.0.input_layernorm's input, real gamma/beta
+    mstress                     2,000 iterations of back-to-back RV64M chains on xorshift operands
+  Every output byte was dumped (466 lines).  The diff against host C is EMPTY on 0x5A5A0011, and
+  the same ELF also gives an empty diff on 0x5A5A0010:
+    H softmax_row    1721ddf3bf22dbd8     H softmax_memo2  1721ddf3bf22dbd8
+    H layernorm      b7510bee6a77695c     H mstress        5f54659513380cd0
+    H mstress_digest 47df68ae93dc6177
+  Nothing trapped on hart 0 (the image checks crt.S's trap count before it reports).
+
+RTL CYCLES PER KERNEL, mcycle around each call, the same ELF on both SoCs (MEASURED in RTL
+simulation; this is not a board measurement)
+                    0x5A5A0010   0x5A5A0011   speed-up   mul-family   div-family   saved per multiply
+  softmax_row        1,107,806      854,521     1.296       39,475           25        6.42
+  softmax_memo2        173,956      166,338     1.046        1,403           25        5.43
+  layernorm          1,284,711      929,064     1.383       56,185           50        6.33
+  mstress              803,362      619,583     1.297       26,000       14,262        7.07
+  Multiply counts: spike -g PC histogram of single-kernel builds of the same source
+  (golden/count_golden_m.py), mul/mulh/mulhsu/mulhu/mulw inside each measured window.
+  "Saved per multiply" charges the whole cycle difference to the multiplies.  The divider logic is
+  the same in both SoCs.
+  An earlier run of the first three kernels, with mstress at 20,000 iterations and stopped inside
+  mstress (so code alignment differed by a few bytes), gave 1,084,464 -> 832,625 (6.38 per multiply),
+  174,141 -> 167,468 (4.76) and 1,290,835 -> 925,216 (6.51).  Byte-exact there too.
+
+  Against the prediction (a7cd1e5): it priced the saving per M instruction at 5.7 / 7.0 / 8.4 extra
+  cycles today minus ~1.5 afterwards, i.e. 4.2 / 5.5 / 6.9.  The encoder's two heavy kernels measure
+  6.3-6.4 in RTL, between the mid and high cases.  mstress's full-width random operands (no early
+  out) give 7.1.  memo2's few multiplies are mostly on 32-bit operands, which already exit early
+  on 0x5A5A0010.

@@ -1,0 +1,20 @@
+{
+  "f_pdm_hz": 2463054.1871921183,
+  "f_cic_hz": 111957.00850873264,
+  "f_pcm_hz": 15993.858358390378,
+  "pcm_rate_err_pct": -0.038385260060135803,
+  "ntaps": 289,
+  "coef_bits": 18,
+  "out_shift": 22,
+  "coef_scale": 586704.0907041868,
+  "coef_sum": 586717,
+  "coef_absmax": 83897,
+  "coef_abssum": 1184813,
+  "fir_pb_ripple_db": 0.22046496303180574,
+  "fir_sb_max_db": -81.3050214440211,
+  "chain_pb_ripple_db": 0.006367447408372766,
+  "chain_sb_max_db": -81.6740189494551,
+  "cic_droop_7k_db": -0.22324347844591064,
+  "dc_gain_pdm_to_pcm": 32768.72099685669,
+  "cic_alias_worst_db": -94.19293913643273
+}

@@ -1,0 +1,450 @@
+// SIMULATION ONLY.  Standalone harness around the generated SiFive InclusiveCache (L2) of
+// PynqZ2RocketBigLittlePextTacitMicRgbBwConfig, to attribute the bandwidth cap of its MISS path.
+//
+// Path, every box except the two marked (tb) is the generated RTL of the silicon config:
+//
+//   BwProbe (generated, with mbxd_dma.v)            source 0..7, 3 bits
+//     -> TLBuffer_a32d64s3k3z4u  (generated: coupler_from_bwprobe, Queue2 A + Queue2 D)
+//     -> S x 2-entry TL slices, each way             (tb, runtime S, 0 = none)
+//     -> sbus xbar source prefix {3'h4, src}          (tb: the remap TLXbar_sbus does, = 0x20..0x27)
+//     -> TLBuffer_a32d64s6k3z3c  (generated: InclusiveCache_inner_TLBuffer, flowAD)
+//     -> InclusiveCache          (generated)
+//     -> TLCacheCork             (generated)
+//     -> memory model            (tb, C++: SERIAL / PARALLEL, L, G, M)
+//
+// The control port is tied off.  B/C/E on the inner side are tied (the instrument is TL-UL).
+// Observation signals are exported with hierarchical references for the C++ attribution.
+
+module l2tb_top (
+  input  logic         clock,
+  input  logic         reset,
+  input  logic [3:0]   cfg_s,          // sbus delay slices, each way
+
+  // ---- BwProbe MMIO (the regmap port, driven by C++) ------------------------------
+  input  logic         mmio_a_valid,
+  input  logic [2:0]   mmio_a_opcode,
+  input  logic [28:0]  mmio_a_address,
+  input  logic [63:0]  mmio_a_data,
+  output logic [63:0]  mmio_d_data,
+
+  // ---- memory side: TLCacheCork auto_out ------------------------------------------
+  output logic         mem_a_valid,
+  input  logic         mem_a_ready,
+  output logic [2:0]   mem_a_opcode,
+  output logic [2:0]   mem_a_size,
+  output logic [4:0]   mem_a_source,     // zero-extended cork source
+  output logic [31:0]  mem_a_address,
+  output logic [127:0] mem_a_data,      // zero-extended cork data (64 or 128 bits)
+  input  logic         mem_d_valid,
+  output logic         mem_d_ready,
+  input  logic [2:0]   mem_d_opcode,
+  input  logic [2:0]   mem_d_size,
+  input  logic [4:0]   mem_d_source,
+  input  logic [127:0] mem_d_data,
+
+  // ---- observation ------------------------------------------------------------------
+  output logic [63:0]  obs0,
+  output logic [63:0]  obs1,
+  output logic [15:0]  obs_req,      // mshr_request, zero-padded to 16
+  output logic [15:0]  obs_sel,      // mshr_selectOH
+  output logic [15:0]  obs_schv,     // per-MSHR schedule.valid
+  output logic [15:0]  obs_statv,    // per-MSHR status.valid
+  output logic [7:0]   obs_nm,       // number of MSHRs in this RTL
+  output logic [7:0]   obs_ibeats,   // inner D beats per 64-byte block (8 on a 64-bit sbus, 4 on 128-bit)
+  output logic [7:0]   obs_obytes,   // outer (cork -> memory) beat bytes: 8 or 16
+  output logic [95:0]  obs_plan,     // 16 x 6 plan bits {x, dir, e, d, c, a}
+  output logic [191:0] obs_mshr,     // 16 x 12 flags
+  output logic [15:0]  obs_probe,    // {pa_source, pd_source, pd_opcode, 7'b0}
+  output logic [15:0]  obs_mux,      // {ca_v, ca_r, xa_v, xa_r, g_client, lock, last_client, la_v, la_r, la_source[5:0], 0}
+
+  // ---- second TL client (tb, C++-driven), enters like an sbus client: Queue2-equivalent
+  //      coupler each way, then a round-robin, burst-locked 2:1 mux with the probe path ----
+  input  logic         cl_a_valid,
+  output logic         cl_a_ready,
+  input  logic [2:0]   cl_a_opcode,
+  input  logic [2:0]   cl_a_size,
+  input  logic [5:0]   cl_a_source,
+  input  logic [31:0]  cl_a_address,
+  input  logic [7:0]   cl_a_mask,
+  input  logic [63:0]  cl_a_data,
+  output logic         cl_d_valid,
+  input  logic         cl_d_ready,
+  output logic [2:0]   cl_d_opcode,
+  output logic [2:0]   cl_d_size,
+  output logic [5:0]   cl_d_source,
+  output logic         cl_d_denied,
+  output logic [63:0]  cl_d_data
+);
+  // ===================================================================================
+  // BwProbe
+  // ===================================================================================
+  logic        pa_ready, pa_valid;
+  logic [2:0]  pa_source;
+  logic [31:0] pa_address;
+  logic        pd_valid, pd_denied, pd_corrupt;
+  logic [2:0]  pd_opcode, pd_source;
+  assign obs_probe = {pa_source, pd_source, pd_opcode, 7'b0};
+  assign obs_ibeats = 8'd@@IBEATS@@;
+  assign obs_obytes = 8'd@@OBYTES@@;
+  logic [3:0]  pd_size;
+  logic [@@DATAW@@-1:0] pd_data;
+
+  BwProbe probe (
+    .clock(clock), .reset(reset),
+    .auto_client_out_a_ready(pa_ready),
+    .auto_client_out_a_valid(pa_valid),
+    .auto_client_out_a_bits_source(pa_source),
+    .auto_client_out_a_bits_address(pa_address),
+    .auto_client_out_d_valid(pd_valid),
+    .auto_client_out_d_bits_opcode(pd_opcode),
+    .auto_client_out_d_bits_size(pd_size),
+    .auto_client_out_d_bits_source(pd_source),
+    .auto_client_out_d_bits_denied(pd_denied),
+    .auto_client_out_d_bits_data(pd_data),
+    .auto_client_out_d_bits_corrupt(pd_corrupt),
+    .auto_mmio_in_a_ready(),
+    .auto_mmio_in_a_valid(mmio_a_valid),
+    .auto_mmio_in_a_bits_opcode(mmio_a_opcode),
+    .auto_mmio_in_a_bits_param(3'h0),
+    .auto_mmio_in_a_bits_size(2'h3),
+    .auto_mmio_in_a_bits_source(11'h0),
+    .auto_mmio_in_a_bits_address(mmio_a_address),
+    .auto_mmio_in_a_bits_mask(8'hFF),
+    .auto_mmio_in_a_bits_data(mmio_a_data),
+    .auto_mmio_in_a_bits_corrupt(1'b0),
+    .auto_mmio_in_d_ready(1'b1),
+    .auto_mmio_in_d_valid(),
+    .auto_mmio_in_d_bits_opcode(),
+    .auto_mmio_in_d_bits_size(),
+    .auto_mmio_in_d_bits_source(),
+    .auto_mmio_in_d_bits_data(mmio_d_data));
+
+  // ===================================================================================
+  // coupler_from_bwprobe buffer (generated)
+  // ===================================================================================
+  logic        ba_ready, ba_valid;
+  logic [2:0]  ba_opcode, ba_param, ba_source;
+  logic [3:0]  ba_size;
+  logic [31:0] ba_address;
+  logic [@@MASKW@@-1:0] ba_mask;
+  logic [@@DATAW@@-1:0] ba_data;
+  logic        ba_corrupt;
+  logic        bd_ready, bd_valid, bd_denied, bd_corrupt;
+  logic [2:0]  bd_opcode, bd_source;
+  logic [@@SINKW@@-1:0] bd_sink;
+  logic [1:0]  bd_param;
+  logic [3:0]  bd_size;
+  logic [@@DATAW@@-1:0] bd_data;
+
+  @@PBUF@@ pbuf (
+    .clock(clock), .reset(reset),
+    .auto_in_a_ready(pa_ready), .auto_in_a_valid(pa_valid),
+    .auto_in_a_bits_source(pa_source), .auto_in_a_bits_address(pa_address),
+    .auto_in_d_valid(pd_valid), .auto_in_d_bits_opcode(pd_opcode), .auto_in_d_bits_size(pd_size),
+    .auto_in_d_bits_source(pd_source), .auto_in_d_bits_denied(pd_denied),
+    .auto_in_d_bits_data(pd_data), .auto_in_d_bits_corrupt(pd_corrupt),
+    .auto_out_a_ready(ba_ready), .auto_out_a_valid(ba_valid),
+    .auto_out_a_bits_opcode(ba_opcode), .auto_out_a_bits_param(ba_param),
+    .auto_out_a_bits_size(ba_size), .auto_out_a_bits_source(ba_source),
+    .auto_out_a_bits_address(ba_address), .auto_out_a_bits_mask(ba_mask),
+    .auto_out_a_bits_data(ba_data), .auto_out_a_bits_corrupt(ba_corrupt),
+    .auto_out_d_ready(bd_ready), .auto_out_d_valid(bd_valid),
+    .auto_out_d_bits_opcode(bd_opcode), .auto_out_d_bits_param(bd_param),
+    .auto_out_d_bits_size(bd_size), .auto_out_d_bits_source(bd_source),
+    .auto_out_d_bits_sink(bd_sink), .auto_out_d_bits_denied(bd_denied),
+    .auto_out_d_bits_data(bd_data), .auto_out_d_bits_corrupt(bd_corrupt));
+
+  // ===================================================================================
+  // S delay slices (tb), each way
+  // ===================================================================================
+  localparam AW = 3+3+4+3+32+@@MASKW@@+@@DATAW@@+1;
+  localparam DW = 3+2+4+3+@@SINKW@@+1+@@DATAW@@+1;
+  logic          xa_valid, xa_ready;
+  logic [AW-1:0] xa_bits;
+  logic          xd_valid, xd_ready;
+  logic [DW-1:0] xd_bits;
+
+  tl_delay #(.W(AW)) dly_a (.clock(clock), .reset(reset), .s(cfg_s),
+    .in_valid(ba_valid), .in_ready(ba_ready),
+    .in_bits({ba_opcode, ba_param, ba_size, ba_source, ba_address, ba_mask, ba_data, ba_corrupt}),
+    .out_valid(xa_valid), .out_ready(xa_ready), .out_bits(xa_bits));
+
+  logic        id_ready, id_valid, id_denied, id_corrupt;
+  logic [2:0]  id_opcode, id_size;
+  logic [@@SINKW@@-1:0] id_sink;
+  logic [5:0]  id_source;
+  logic [1:0]  id_param;
+  logic [@@DATAW@@-1:0] id_data;
+
+  // D demux by source: 0x20-0x27 is the probe, everything else is the C++ client
+  logic id_is_probe, idp_ready, idc_ready;
+  assign id_is_probe = (id_source[5:3] == 3'h4);
+  assign id_ready = id_is_probe ? idp_ready : idc_ready;
+
+  tl_delay #(.W(DW)) dly_d (.clock(clock), .reset(reset), .s(cfg_s),
+    .in_valid(id_valid && id_is_probe), .in_ready(idp_ready),
+    .in_bits({id_opcode, id_param, {1'b0, id_size}, id_source[2:0], id_sink, id_denied, id_data, id_corrupt}),
+    .out_valid(bd_valid), .out_ready(bd_ready),
+    .out_bits({bd_opcode, bd_param, bd_size, bd_source, bd_sink, bd_denied, bd_data, bd_corrupt}));
+
+  // sbus xbar: bwprobe is input 5, prefix 3'h4 (TLXbar_sbus_i6_o2_a32d64s6k3z4c.sv:305)
+  logic [2:0]  xa_opcode, xa_param, xa_source;
+  logic [3:0]  xa_size;
+  logic [31:0] xa_address;
+  logic [@@MASKW@@-1:0] xa_mask;
+  logic [@@DATAW@@-1:0] xa_data;
+  logic        xa_corrupt;
+  assign {xa_opcode, xa_param, xa_size, xa_source, xa_address, xa_mask, xa_data, xa_corrupt} = xa_bits;
+
+  // ---- C++ client coupler (2-entry FIFO each way == Queue2) ------------------------
+  localparam CAW = 3+3+6+32+8+64;
+  logic           ca_valid, ca_ready;
+  logic [CAW-1:0] ca_bits;
+  logic [2:0]  ca_opcode, ca_size;
+  logic [5:0]  ca_source;
+  logic [31:0] ca_address;
+  logic [7:0]  ca_mask;
+  logic [63:0] ca_data;
+  tl_slice #(.W(CAW)) cl_a_q (.clock(clock), .reset(reset),
+    .in_valid(cl_a_valid), .in_ready(cl_a_ready),
+    .in_bits({cl_a_opcode, cl_a_size, cl_a_source, cl_a_address, cl_a_mask, cl_a_data}),
+    .out_valid(ca_valid), .out_ready(ca_ready), .out_bits(ca_bits));
+  assign {ca_opcode, ca_size, ca_source, ca_address, ca_mask, ca_data} = ca_bits;
+  localparam CDW = 3+3+6+1+64;
+  tl_slice #(.W(CDW)) cl_d_q (.clock(clock), .reset(reset),
+    .in_valid(id_valid && !id_is_probe), .in_ready(idc_ready),
+    .in_bits({id_opcode, id_size, id_source, id_denied, id_data[63:0]}),
+    .out_valid(cl_d_valid), .out_ready(cl_d_ready),
+    .out_bits({cl_d_opcode, cl_d_size, cl_d_source, cl_d_denied, cl_d_data}));
+
+  // ---- 2:1 A mux: round-robin between messages, locked for the beats of a Put burst ----
+  logic       mx_lock;          // a client multi-beat burst is in progress
+  logic [2:0] mx_left;          // client beats left after this one
+  logic       mx_last_client;   // last grant went to the client
+  wire  ca_multi = (ca_opcode == 3'h0 || ca_opcode == 3'h1) && ca_size > 3'd3;
+  wire  g_client = mx_lock || (ca_valid && (!xa_valid || !mx_last_client));
+  wire  g_probe  = !g_client;
+  wire  mx_ready;
+  assign xa_ready = g_probe && mx_ready;
+  assign ca_ready = g_client && mx_ready;
+  wire  mx_valid = g_client ? ca_valid : xa_valid;
+  assign obs_mux = {ca_valid, ca_ready, xa_valid, xa_ready, g_client, mx_lock, mx_last_client, la_valid, la_ready, la_source, 1'b0};
+  always_ff @(posedge clock) begin
+    if (reset) begin
+      mx_lock <= 1'b0; mx_left <= 3'd0; mx_last_client <= 1'b0;
+    end else if (mx_valid && mx_ready) begin
+      mx_last_client <= g_client;
+      if (g_client) begin
+        if (!mx_lock && ca_multi) begin
+          mx_lock <= 1'b1; mx_left <= 3'((32'd1 << ca_size) / 32'd8 - 32'd1) - 3'd1;
+        end else if (mx_lock) begin
+          if (mx_left == 3'd0) mx_lock <= 1'b0; else mx_left <= mx_left - 3'd1;
+        end
+      end
+    end
+  end
+
+  // ===================================================================================
+  // InclusiveCache_inner_TLBuffer (generated, flowAD)
+  // ===================================================================================
+  logic        la_ready, la_valid, la_corrupt;
+  logic [2:0]  la_opcode, la_param, la_size;
+  logic [5:0]  la_source;
+  logic [31:0] la_address;
+  logic [@@MASKW@@-1:0] la_mask;
+  logic [@@DATAW@@-1:0] la_data;
+  logic        ld_ready, ld_valid, ld_denied, ld_corrupt;
+  logic [2:0]  ld_opcode, ld_size;
+  logic [@@SINKW@@-1:0] ld_sink;
+  logic [1:0]  ld_param;
+  logic [5:0]  ld_source;
+  logic [@@DATAW@@-1:0] ld_data;
+  logic        le_valid;
+  logic [@@SINKW@@-1:0] le_sink;
+  logic        lb_ready, lb_valid, lc_valid, lc_ready;
+  logic [1:0]  lb_param_w;
+  logic [5:0]  lb_source_w;
+  logic [31:0] lb_address_w;
+
+  @@IBUF@@ ibuf (
+    .clock(clock), .reset(reset),
+    .auto_in_a_ready(mx_ready), .auto_in_a_valid(mx_valid),
+    .auto_in_a_bits_opcode(g_client ? ca_opcode : xa_opcode), .auto_in_a_bits_param(g_client ? 3'h0 : xa_param),
+    .auto_in_a_bits_size(g_client ? ca_size : xa_size[2:0]),
+    .auto_in_a_bits_source(g_client ? ca_source : {3'h4, xa_source}),
+    .auto_in_a_bits_address(g_client ? ca_address : xa_address), .auto_in_a_bits_mask(g_client ? @@MASKW@@'(ca_mask) : xa_mask),
+    .auto_in_a_bits_data(g_client ? @@DATAW@@'(ca_data) : xa_data), .auto_in_a_bits_corrupt(g_client ? 1'b0 : xa_corrupt),
+    .auto_in_b_ready(1'b1), .auto_in_b_valid(), .auto_in_b_bits_param(),
+    .auto_in_b_bits_source(), .auto_in_b_bits_address(),
+    .auto_in_c_ready(), .auto_in_c_valid(1'b0), .auto_in_c_bits_opcode(3'h0),
+    .auto_in_c_bits_param(3'h0), .auto_in_c_bits_size(3'h0), .auto_in_c_bits_source(6'h0),
+    .auto_in_c_bits_address(32'h0), .auto_in_c_bits_data('0), .auto_in_c_bits_corrupt(1'b0),
+    .auto_in_d_ready(id_ready), .auto_in_d_valid(id_valid),
+    .auto_in_d_bits_opcode(id_opcode), .auto_in_d_bits_param(id_param),
+    .auto_in_d_bits_size(id_size), .auto_in_d_bits_source(id_source),
+    .auto_in_d_bits_sink(id_sink), .auto_in_d_bits_denied(id_denied),
+    .auto_in_d_bits_data(id_data), .auto_in_d_bits_corrupt(id_corrupt),
+    .auto_in_e_valid(1'b0), .auto_in_e_bits_sink('0),
+    .auto_out_a_ready(la_ready), .auto_out_a_valid(la_valid),
+    .auto_out_a_bits_opcode(la_opcode), .auto_out_a_bits_param(la_param),
+    .auto_out_a_bits_size(la_size), .auto_out_a_bits_source(la_source),
+    .auto_out_a_bits_address(la_address), .auto_out_a_bits_mask(la_mask),
+    .auto_out_a_bits_data(la_data), .auto_out_a_bits_corrupt(la_corrupt),
+    .auto_out_b_ready(lb_ready), .auto_out_b_valid(lb_valid),
+    .auto_out_b_bits_param(lb_param_w), .auto_out_b_bits_source(lb_source_w),
+    .auto_out_b_bits_address(lb_address_w),
+    .auto_out_c_ready(lc_ready), .auto_out_c_valid(lc_valid),
+    .auto_out_c_bits_opcode(), .auto_out_c_bits_param(), .auto_out_c_bits_size(),
+    .auto_out_c_bits_source(), .auto_out_c_bits_address(), .auto_out_c_bits_data(),
+    .auto_out_c_bits_corrupt(),
+    .auto_out_d_ready(ld_ready), .auto_out_d_valid(ld_valid),
+    .auto_out_d_bits_opcode(ld_opcode), .auto_out_d_bits_param(ld_param),
+    .auto_out_d_bits_size(ld_size), .auto_out_d_bits_source(ld_source),
+    .auto_out_d_bits_sink(ld_sink), .auto_out_d_bits_denied(ld_denied),
+    .auto_out_d_bits_data(ld_data), .auto_out_d_bits_corrupt(ld_corrupt),
+    .auto_out_e_valid(le_valid), .auto_out_e_bits_sink(le_sink));
+
+
+  // ===================================================================================
+  // InclusiveCache (generated)
+  // ===================================================================================
+  logic        oa_ready, oa_valid, oa_corrupt;
+  logic [2:0]  oa_opcode, oa_param, oa_size;
+  logic [@@OSRCW@@-1:0] oa_source;
+  logic [31:0] oa_address;
+  logic [@@OMASKW@@-1:0] oa_mask;
+  logic [@@ODATAW@@-1:0] oa_data;
+  logic        oc_ready, oc_valid, oc_corrupt;
+  logic [2:0]  oc_opcode, oc_param, oc_size;
+  logic [@@OSRCW@@-1:0] oc_source;
+  logic [31:0] oc_address;
+  logic [@@ODATAW@@-1:0] oc_data;
+  logic        od_ready, od_valid, od_denied, od_corrupt;
+  logic [2:0]  od_opcode, od_size, od_sink;
+  logic [@@OSRCW@@-1:0] od_source;
+  logic [1:0]  od_param;
+  logic [@@ODATAW@@-1:0] od_data;
+  logic        oe_valid;
+  logic [2:0]  oe_sink;
+
+  InclusiveCache l2 (
+    .clock(clock), .reset(reset),
+    .auto_ctrls_ctrl_in_a_ready(), .auto_ctrls_ctrl_in_a_valid(1'b0),
+    .auto_ctrls_ctrl_in_a_bits_opcode(3'h4), .auto_ctrls_ctrl_in_a_bits_param(3'h0),
+    .auto_ctrls_ctrl_in_a_bits_size(2'h3), .auto_ctrls_ctrl_in_a_bits_source(11'h0),
+    .auto_ctrls_ctrl_in_a_bits_address(26'h0), .auto_ctrls_ctrl_in_a_bits_mask(8'hFF),
+    .auto_ctrls_ctrl_in_a_bits_data(64'h0), .auto_ctrls_ctrl_in_a_bits_corrupt(1'b0),
+    .auto_ctrls_ctrl_in_d_ready(1'b1), .auto_ctrls_ctrl_in_d_valid(),
+    .auto_ctrls_ctrl_in_d_bits_opcode(), .auto_ctrls_ctrl_in_d_bits_size(),
+    .auto_ctrls_ctrl_in_d_bits_source(), .auto_ctrls_ctrl_in_d_bits_data(),
+    .auto_in_a_ready(la_ready), .auto_in_a_valid(la_valid),
+    .auto_in_a_bits_opcode(la_opcode), .auto_in_a_bits_param(la_param),
+    .auto_in_a_bits_size(la_size), .auto_in_a_bits_source(la_source),
+    .auto_in_a_bits_address(la_address), .auto_in_a_bits_mask(la_mask),
+    .auto_in_a_bits_data(la_data), .auto_in_a_bits_corrupt(la_corrupt),
+    .auto_in_b_ready(lb_ready), .auto_in_b_valid(lb_valid),
+    .auto_in_b_bits_param(lb_param_w), .auto_in_b_bits_source(lb_source_w),
+    .auto_in_b_bits_address(lb_address_w),
+    .auto_in_c_ready(lc_ready), .auto_in_c_valid(1'b0), .auto_in_c_bits_opcode(3'h0),
+    .auto_in_c_bits_param(3'h0), .auto_in_c_bits_size(3'h0), .auto_in_c_bits_source(6'h0),
+    .auto_in_c_bits_address(32'h0), .auto_in_c_bits_data('0), .auto_in_c_bits_corrupt(1'b0),
+    .auto_in_d_ready(ld_ready), .auto_in_d_valid(ld_valid),
+    .auto_in_d_bits_opcode(ld_opcode), .auto_in_d_bits_param(ld_param),
+    .auto_in_d_bits_size(ld_size), .auto_in_d_bits_source(ld_source),
+    .auto_in_d_bits_sink(ld_sink), .auto_in_d_bits_denied(ld_denied),
+    .auto_in_d_bits_data(ld_data), .auto_in_d_bits_corrupt(ld_corrupt),
+    .auto_in_e_valid(le_valid), .auto_in_e_bits_sink(le_sink),
+    .auto_out_a_ready(oa_ready), .auto_out_a_valid(oa_valid),
+    .auto_out_a_bits_opcode(oa_opcode), .auto_out_a_bits_param(oa_param),
+    .auto_out_a_bits_size(oa_size), .auto_out_a_bits_source(oa_source),
+    .auto_out_a_bits_address(oa_address), .auto_out_a_bits_mask(oa_mask),
+    .auto_out_a_bits_data(oa_data), .auto_out_a_bits_corrupt(oa_corrupt),
+    .auto_out_c_ready(oc_ready), .auto_out_c_valid(oc_valid),
+    .auto_out_c_bits_opcode(oc_opcode), .auto_out_c_bits_param(oc_param),
+    .auto_out_c_bits_size(oc_size), .auto_out_c_bits_source(oc_source),
+    .auto_out_c_bits_address(oc_address), .auto_out_c_bits_data(oc_data),
+    .auto_out_c_bits_corrupt(oc_corrupt),
+    .auto_out_d_ready(od_ready), .auto_out_d_valid(od_valid),
+    .auto_out_d_bits_opcode(od_opcode), .auto_out_d_bits_param(od_param),
+    .auto_out_d_bits_size(od_size), .auto_out_d_bits_source(od_source),
+    .auto_out_d_bits_sink(od_sink), .auto_out_d_bits_denied(od_denied),
+    .auto_out_d_bits_data(od_data), .auto_out_d_bits_corrupt(od_corrupt),
+    .auto_out_e_valid(oe_valid), .auto_out_e_bits_sink(oe_sink));
+
+  // ===================================================================================
+  // TLCacheCork (generated)
+  // ===================================================================================
+  logic [@@CSRCW@@-1:0] mem_a_src_w;
+  logic [@@ODATAW@@-1:0] mem_a_data_w;
+  assign mem_a_data = 128'(mem_a_data_w);
+  assign mem_a_source = 5'(mem_a_src_w);
+  TLCacheCork cork (
+    .clock(clock), .reset(reset),
+    .auto_in_a_ready(oa_ready), .auto_in_a_valid(oa_valid),
+    .auto_in_a_bits_opcode(oa_opcode), .auto_in_a_bits_param(oa_param),
+    .auto_in_a_bits_size(oa_size), .auto_in_a_bits_source(oa_source),
+    .auto_in_a_bits_address(oa_address), .auto_in_a_bits_mask(oa_mask),
+    .auto_in_a_bits_data(oa_data), .auto_in_a_bits_corrupt(oa_corrupt),
+    .auto_in_c_ready(oc_ready), .auto_in_c_valid(oc_valid),
+    .auto_in_c_bits_opcode(oc_opcode), .auto_in_c_bits_param(oc_param),
+    .auto_in_c_bits_size(oc_size), .auto_in_c_bits_source(oc_source),
+    .auto_in_c_bits_address(oc_address), .auto_in_c_bits_data(oc_data),
+    .auto_in_c_bits_corrupt(oc_corrupt),
+    .auto_in_d_ready(od_ready), .auto_in_d_valid(od_valid),
+    .auto_in_d_bits_opcode(od_opcode), .auto_in_d_bits_param(od_param),
+    .auto_in_d_bits_size(od_size), .auto_in_d_bits_source(od_source),
+    .auto_in_d_bits_sink(od_sink), .auto_in_d_bits_denied(od_denied),
+    .auto_in_d_bits_data(od_data), .auto_in_d_bits_corrupt(od_corrupt),
+    .auto_in_e_valid(oe_valid), .auto_in_e_bits_sink(oe_sink),
+    .auto_out_a_ready(mem_a_ready), .auto_out_a_valid(mem_a_valid),
+    .auto_out_a_bits_opcode(mem_a_opcode), .auto_out_a_bits_param(),
+    .auto_out_a_bits_size(mem_a_size), .auto_out_a_bits_source(mem_a_src_w),
+    .auto_out_a_bits_address(mem_a_address), .auto_out_a_bits_mask(),
+    .auto_out_a_bits_data(mem_a_data_w), .auto_out_a_bits_corrupt(),
+    .auto_out_d_ready(mem_d_ready), .auto_out_d_valid(mem_d_valid),
+    .auto_out_d_bits_opcode(mem_d_opcode), .auto_out_d_bits_param(2'h0),
+    .auto_out_d_bits_size(mem_d_size), .auto_out_d_bits_source(mem_d_source[@@CSRCW@@-1:0]),
+    .auto_out_d_bits_denied(1'b0), .auto_out_d_bits_data(mem_d_data[@@ODATAW@@-1:0]),
+    .auto_out_d_bits_corrupt(1'b0));
+
+  // ===================================================================================
+  // Observation (hierarchical references into the generated RTL)
+  // ===================================================================================
+`define SCH l2.inclusive_cache_bank_sched
+
+  assign obs0 = {
+    // [63:56] probe side
+    pa_valid, pa_ready, pd_valid, 5'b0,
+    // [55:48] inner L2 port
+    la_valid, la_ready, ld_valid, ld_ready, ld_opcode, 1'b0,
+    // [47:32] outer L2 port
+    oa_valid, oa_ready, oc_valid, oc_ready, oc_opcode, od_valid, od_ready, od_opcode, oe_valid, 3'b0,
+    // [31:24] cork internals
+    cork._q_io_deq_valid, cork._pool_io_alloc_valid, cork.idle_1, cork.@@CORK_DATA_LOCK@@, cork.@@CORK_RA_LOCK@@, 3'b0,
+    // [23:0] scheduler
+    17'b0, `SCH._directory_io_ready, `SCH.request_ready, 5'b0
+  };
+
+  assign obs1 = {
+    // [63:48] SinkD
+    `SCH.sinkD._d_q_io_deq_valid, `SCH.sinkD.d_q_io_deq_ready, `SCH.sinkD.io_grant_safe,
+    `SCH.sinkD.io_bs_adr_valid, `SCH.sinkD.io_bs_adr_ready, `SCH.sinkD.io_bs_adr_bits_noop,
+    3'(`SCH.sinkD.io_bs_adr_bits_beat), 3'(`SCH.sinkD.r_counter), `SCH.sinkD._d_q_io_deq_bits_opcode, 1'b0,
+    // [47:32] SourceD
+    `SCH.sourceD.io_req_valid, `SCH.sourceD.io_req_ready, `SCH.sourceD.busy, `SCH.sourceD.s1_block_r,
+    `SCH.sourceD.io_bs_radr_valid, `SCH.bankedStore.io_sourceD_radr_ready, 3'(`SCH.sourceD.io_bs_radr_bits_beat),
+    `SCH.sourceD.s2_full, `SCH.sourceD.s3_full, `SCH.sourceD.s4_full, `SCH.sourceD.s3_valid_d,
+    `SCH.sourceD.io_d_valid, `SCH.sourceD.io_d_ready, 1'b0,
+    // [31:16] schedule resources
+    `SCH.sourceA.io_req_valid, `SCH.sourceA.io_req_ready,
+    `SCH.sourceC.io_req_valid, `SCH.sourceC.io_req_ready,
+    `SCH.sourceE.io_req_valid, `SCH.sourceE.io_req_ready,
+    `SCH.directory.io_write_valid, `SCH.directory.io_write_ready,
+    `SCH.directory.io_read_valid, `SCH.directory._write_q_io_deq_valid,
+    `SCH.sinkA.io_req_valid, `SCH.sinkA.io_req_ready,
+    `SCH.bankedStore.io_sourceC_adr_valid, `SCH.bankedStore.io_sinkC_adr_valid, 2'b0,
+    16'b0
+  };
+
+@@OBSGEN@@
+endmodule

@@ -1,0 +1,14 @@
+[submodule "zephyr-chipyard-sw"]
+	path = zephyr-chipyard-sw
+	url = https://github.com/ucb-bar/zephyr-chipyard-sw.git
+	branch = rose-2-dev
+	ignore = untracked
+[submodule "third_party/tacit-decoder"]
+	path = third_party/tacit-decoder
+	url = https://github.com/ucb-bar/tacit_decoder.git
+	branch = misc_decoders
+[submodule "third_party/riscv-isa-sim"]
+	path = third_party/riscv-isa-sim
+	url = https://github.com/riscv-tacit/riscv-isa-sim.git
+	branch = l_trace
+	ignore = dirty

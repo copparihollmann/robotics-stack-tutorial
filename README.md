@@ -162,9 +162,14 @@ The docs kept here are the ones that tell you how to *do* something:
   how to wire and run the thing
 
 Comments in the code cite a larger set of design documents by name — `MEMORY_BANDWIDTH.md §7`,
-`ROCC_DECOUPLED.md §8`, and so on. Those are the project's internal research record and are **not
-part of this repository**; the citation is left in place because it says *why* a constant is what it
-is, and that is worth more than a tidy comment.
+`ROCC_DECOUPLED.md §8`, and so on — and occasionally a raw run under `out/` or `archive/`. Those are
+the project's internal research and evidence record and are **not part of this repository**. The
+citations are left in place because they say *why* a constant is what it is, and that is worth more
+than a tidy comment; treat them as a pointer to the reasoning, not a file you are expected to open.
+
+`deps.lock` pins every external tree this repo builds against — Spike, the TACIT decoder, the Zephyr
+workspace — with the exact revision and the reason it is pinned there. It is the file to read when a
+submodule checkout does not do what you expect.
 
 ## A note on the board password
 

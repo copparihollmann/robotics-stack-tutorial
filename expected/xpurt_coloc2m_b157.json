@@ -1,0 +1,838 @@
+{
+ "_comment": "Golden record for scripts/12_xpurt_coloc_sweep.sh -- the co-located schedule for two networks on the dual-hart Rocket, with SignDetLite PERIODIC at T = 1000 ms (1.00 fps, 4 declared instances) and Moonshine the NON-PERIODIC job the makespan measures. 9 heuristic policies + 2 CP-SAT paths x {none, dram} contention x {plain, compact} = 44 cells. Host only: no board, no bitstream. Every DURATION in it was measured on one -- Moonshine's per dispatch on 0x5A5A0035 and SignDetLite's on 0x5A5A0038, both at 40.000 MHz -- and the PLACEMENT is the solver's.",
+ "_the_result": "AT T = 1000 ms, UNDER MEASURED DRAM CONTENTION, COMPACTION IS WHAT CROSSES THE WINDOW. `--scheduler cpsat` lands Moonshine at 5,412.25 ms with the contention model installed; with XPURT_COMPACT=1 the same solve lands at 3,992.30 ms. 1,419.95 ms recovered, op_deadline_miss_count 0 in BOTH -- so no detector frame was traded for it. On the uncontended arm the same pass is worth 376.15 ms (3,649.06 -> 3,272.91). AND NONE OF THE NINE HEURISTICS CLEARS BOTH OBJECTIVES AT ALL: all 36 heuristic cells fail the real-time test. The best makespan (heft = critical_path, 4,251.12 ms) misses three of the four detector windows; edf, the only policy that lands all four, ends 6,076.00 ms -- 2,076 ms past the reference. QUOTE THE THREE CROSSINGS TOGETHER: 0.25 fps heuristic, 1.0 fps achieved, 2.62 fps capacity. The middle figure is a solver result, not the machine's limit.",
+ "_4000ms_is_a_reference_not_a_constraint": "Moonshine carries no period and no window_duration in this spec, so nothing the solver saw made 4,000 ms a deadline. It is the real-time-factor-1 utterance window, compared against after the fact. THE FOUR DETECTOR WINDOWS ARE the constraints. `op_deadline_miss_count` counts late DETECTOR dispatches only.",
+ "_real_time_ok_is_derived_here": "The string `real_time_ok` occurs nowhere in the XPU-RT checkout: no solver computes it and no schedule, metrics or report file carries it. It is a two-part test applied by scripts/lib/b157_report.py -- Moonshine's end inside the 4,000 ms reference AND every detector instance inside its own window. A reader who takes it for solver output will believe 4,000 ms was enforced, and it never was. Each row's `real_time_ok` below is that derivation, not a measurement.",
+ "_what_the_sweep_must_prove_about_itself": {
+  "_comment": "Four checks decide whether a row may be believed at all, and each of them exists because the corresponding mistake was made and was invisible in the makespan column.",
+  "contention_arm_re_derived_from_each_log": "The spec's `\"contention\": {\"enabled\": true, \"path\": ...}` block IS NEVER READ. The string `contention` does not occur in run_xpurt_schedule.py's spec parsing; only `--contention PATH` installs a model. It is possible to solve the `none` arm for hours and file the result as `dram`. So every cell's arm is re-derived from its OWN log -- `none` must carry no '--contention: loaded' line, `dram` must name contention_b4_dram.json -- and a cell whose log disagrees with its directory is marked unverified rather than reported. Reference: 44 of 44 agree, and dram/plain reproduces the archived 5412.249935046185 exactly.",
+  "compaction_arm_read_back_from_the_artifact": "XPURT_COMPACT lands in metadata.solve_env.env of every emitted schedule, so the arm is read out of what the solver wrote rather than assumed from the launcher. Reference: 44 of 44.",
+  "no_machine_overlap": "Two dispatches on one machine may not overlap, measured with the durations the schedule itself emits. This matters most on `dram`, where greedy scales durations at lookup time but the CP-SAT model and the compaction pass read raw durations -- a plan made on solo costs and emitted with scaled ones could collide. Reference: 0 overlaps in all 44.",
+  "hard_machine_exclusion": "Every dispatch must land on a machine its dispatch graph's `infeasible_machines` does not forbid. A non-empty violation list invalidates every makespan in that file. Reference: 0 in all 40 valid cells, 74 in the 4 refused ones.",
+  "ortools_actually_present": "cpsat_available() tries $XPURT_CPSAT_PYTHON and then the PATH's python3 -- never sys.executable -- so a venv interpreter named by absolute path without the env var silently falls back to a python3 with no ortools. Every log is grepped for a surviving 'no interpreter with ortools'. Reference: 0."
+ },
+ "totals": {
+  "cells": 44,
+  "exclusion_violations": 74,
+  "contention_unverified": 0,
+  "compaction_unverified": 0,
+  "machine_overlaps": 0,
+  "ortools_missing_logs": 0,
+  "dispatches_per_schedule": 2285
+ },
+ "headline_cells": {
+  "_comment": "The rows worth quoting, read out of the table below.",
+  "best_heuristic_makespan": {
+   "policy": "heft = critical_path",
+   "contention": "none",
+   "moonshine_end_ms": 4251.12,
+   "windows_landed": "1 of 4",
+   "real_time_ok": false
+  },
+  "only_heuristic_landing_all_four": {
+   "policy": "edf",
+   "contention": "none",
+   "moonshine_end_ms": 6076.0,
+   "windows_landed": "4 of 4",
+   "real_time_ok": false,
+   "_note": "2,076 ms past the 4,000 ms reference."
+  },
+  "cpsat_none_plain": {
+   "moonshine_end_ms": 3649.06,
+   "windows_landed": "4 of 4",
+   "real_time_ok": true
+  },
+  "cpsat_none_compact": {
+   "moonshine_end_ms": 3272.91,
+   "windows_landed": "4 of 4",
+   "real_time_ok": true,
+   "_note": "The shortest Moonshine end in all 44 cells, and it is VALID."
+  },
+  "cpsat_dram_plain": {
+   "moonshine_end_ms": 5412.25,
+   "windows_landed": "4 of 4",
+   "real_time_ok": false
+  },
+  "cpsat_dram_compact": {
+   "moonshine_end_ms": 3992.3,
+   "windows_landed": "4 of 4",
+   "real_time_ok": true,
+   "_note": "1,419.95 ms recovered against dram/plain, op_deadline_miss_count 0 in both."
+  }
+ },
+ "_refused_cells": "FOUR CELLS ARE REFUSED, NOT REPORTED. The `cpsat_warmbest_b157` path -- the one that genuinely keeps a warm start, 2,285 of 2,285 operations hinted against 19.4 % of non-fixed variables on `--scheduler cpsat` -- placed dispatches on machines their own dispatch graph forbids. 74 violations across the four cells. moonshine_dispatch_1538 (linear_s8, infeasible_machines ['CPU_P#0']) was placed ON CPU_P#0, and moonshine_dispatch_1727 (permute4_s8, infeasible_machines ['CPU_E#0']) ON CPU_E#0. CPU_P is hart 0, which has the MBP P-extension and no engine; CPU_E is hart 1, which has the RoccMoon engine and no P-extension. Each of those is an ILLEGAL INSTRUCTION on silicon. CAUSE: cpsat_scheduler.cpsat_schedule builds its model from DecoderContext, and schedule_decoder.py contains the string `infeasible` ZERO times. The exclusion is a SET on the Operation, not an infinite cost, and build_payload excludes a combination only when its duration is non-finite -- so the forbidden cells arrive as cheap legal options and the emitted durations look ordinary (114.25 ms). Nothing in the artifact reads as wrong. `--scheduler cpsat` and the nine heuristics build feasible combinations explicitly and have 0 violations in all 40 other cells.",
+ "_and_the_lesson_is_not_the_one_it_looks_like": "It is tempting to read the refusal as having rescued the lab from a tempting answer. It did not: THE INVALID CELLS WERE MOSTLY SLOWER AS WELL AS ILLEGAL, so refusing them cost nothing. Warmbest is shorter in ONE of the four pairs (dram/plain, 5,182.71 against 5,412.25); the registry path wins the other three, and the shortest Moonshine end in all 44 cells -- 3,272.91 ms -- is a VALID one. There is no speed-for-validity trade here to go looking for. The real lesson is the opposite: INVALIDITY IS INVISIBLE IN THE MAKESPAN COLUMN IN EITHER DIRECTION. A schedule that breaks the machine model can be faster or slower than a legal one, and the number alone never says which -- which is exactly why the audit has to GATE the result rather than annotate it. On counting: 74 violations is right. The four cells' per-cell distinct dispatch counts sum to 37 (10+9+13+5), which is 37 (cell, dispatch) pairs; the number of DISTINCT DISPATCH NAMES across the four is 32. Either figure is defensible if it is named.",
+ "refused": [
+  {
+   "scheduler": "cpsat_warmbest_b157",
+   "contention": "none",
+   "compaction": "plain",
+   "exclusion_violations": 20,
+   "distinct_dispatches_in_this_cell": 10,
+   "withheld_makespan_ms": 3652.39
+  },
+  {
+   "scheduler": "cpsat_warmbest_b157",
+   "contention": "none",
+   "compaction": "compact",
+   "exclusion_violations": 18,
+   "distinct_dispatches_in_this_cell": 9,
+   "withheld_makespan_ms": 3615.78
+  },
+  {
+   "scheduler": "cpsat_warmbest_b157",
+   "contention": "dram",
+   "compaction": "plain",
+   "exclusion_violations": 26,
+   "distinct_dispatches_in_this_cell": 13,
+   "withheld_makespan_ms": 5182.71
+  },
+  {
+   "scheduler": "cpsat_warmbest_b157",
+   "contention": "dram",
+   "compaction": "compact",
+   "exclusion_violations": 10,
+   "distinct_dispatches_in_this_cell": 5,
+   "withheld_makespan_ms": 4218.46
+  }
+ ],
+ "_compaction_on_the_heuristics": "A bit-exact no-op, as predicted, and that is the point of running it: 0.000 ms recovered and 0 of 2,285 dispatches moved in all 18 plain-vs-compact heuristic pairs. A list scheduler already places every op at its earliest feasible instant, so there is nothing to left-shift. The pass only pays where a solver leaves joint idle. NOTE THE TWO THINGS THAT MAKE COMPACTION REACHABLE AT ALL: XPURT_COMPACT is applied only by schedulers.get_scheduler(), so it is a silent no-op on any bare `--solver <non-milp>` path while metadata.solve_env.env still records it as set; and _wrap_with_compaction discards its own result for a scheduler that returns a 2-tuple where the registry contract is 4.",
+ "compaction": [
+  {
+   "scheduler": "cpsat",
+   "contention": "dram",
+   "recovered_ms": 1419.955,
+   "dispatches_moved": 2283,
+   "result": "changed"
+  },
+  {
+   "scheduler": "cpsat",
+   "contention": "none",
+   "recovered_ms": 376.153,
+   "dispatches_moved": 2283,
+   "result": "changed"
+  },
+  {
+   "scheduler": "cpsat_warmbest_b157",
+   "contention": "dram",
+   "recovered_ms": 964.252,
+   "dispatches_moved": 2282,
+   "result": "changed"
+  },
+  {
+   "scheduler": "cpsat_warmbest_b157",
+   "contention": "none",
+   "recovered_ms": 36.607,
+   "dispatches_moved": 2281,
+   "result": "changed"
+  },
+  {
+   "scheduler": "critical_path",
+   "contention": "dram",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "critical_path",
+   "contention": "none",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "edf",
+   "contention": "dram",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "edf",
+   "contention": "none",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "fastest_device",
+   "contention": "dram",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "fastest_device",
+   "contention": "none",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "fifo",
+   "contention": "dram",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "fifo",
+   "contention": "none",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "heft",
+   "contention": "dram",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "heft",
+   "contention": "none",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "max_min",
+   "contention": "dram",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "max_min",
+   "contention": "none",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "min_min",
+   "contention": "dram",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "min_min",
+   "contention": "none",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "peft",
+   "contention": "dram",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "peft",
+   "contention": "none",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "round_robin",
+   "contention": "dram",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  },
+  {
+   "scheduler": "round_robin",
+   "contention": "none",
+   "recovered_ms": 0.0,
+   "dispatches_moved": 0,
+   "result": "BIT-IDENTICAL"
+  }
+ ],
+ "_how_to_tell_a_live_solve_from_a_dead_one": "A long CP-SAT cell writes a 0-BYTE LOG AND NO METRICS JSON UNTIL IT EXITS: Python block-buffers stdout to a file, and run_xpurt_schedule.py writes the schedule only after the solver returns. Checking for output files reports a healthy solve as dead. Liveness is `ps -eo pid,etime,time` -- elapsed AND CPU time, since 8 workers x 46 min is ~6.1 CPU-hours for one warm-start cell -- plus /proc/<pid>/fd/1 showing the open write handle on the log. `ps -C python3` matches nothing if your venv's binary is named `python`.",
+ "_reproducibility": "CP-SAT is deterministic ONLY at XPURT_CPSAT_WORKERS=1. The `--scheduler cpsat` cells here were solved at 1 worker and reproduce bit-exactly: nonperiodic_makespan_ms 3649.05855611 on two independent runs, delta 0.0, ALL 2,285 DISPATCHES IDENTICAL IN START TIME AND TARGET -- only wall time differed (2,723.98 s against 2,753.11 s), which is machine load. Above one worker the answer depends on how much search the wall budget bought and on thread interleaving, so the 8-worker cells are NOT reproducible to the millisecond. The worker count is recorded in metadata.solve_env of every schedule rather than assumed. One worker is also not a neutral default: on an adjacent cell at a 300 s budget, 1 worker gave 4,031.77 ms with 16 deadline misses where 8 gave 3,133.40 ms with none.",
+ "_caveats": [
+  "PREDICTED, NOT MEASURED. The durations are board-measured; the placement is the solver's, and the runtime does not execute this plan. Two-hart overlap has been demonstrated on silicon at ONE interleave point and nothing wider.",
+  "The reference sweep ran on a loaded machine (load average 40-78 on 48 cores). CP-SAT's answer at a fixed WALL budget depends on how much search that budget buys.",
+  "4,000 ms is a reference, never a constraint. The four detector windows are the constraints."
+ ],
+ "_artifacts_not_committed": "The sweep writes 44 logs, 132 schedule/metrics/report JSONs and 44 per-cell renders -- about 85 MB of schedules alone. None of it is in this repository: it is what your run produces, under out/b157/. What IS here is everything the solve READS (fpga/pynq-z2/xpurt/), the tooling, and this table to check the answer against.",
+ "rows": [
+  {
+   "policy": "edf",
+   "contention": "none",
+   "compaction": "plain",
+   "moonshine_end_ms": 6076.0,
+   "within_4000ms_reference": false,
+   "windows_landed": "0123",
+   "windows_missed": "-",
+   "real_time_ok": false,
+   "late_detector_dispatches": 0,
+   "detector_fps": 1.0,
+   "valid": true
+  },
+  {
+   "policy": "fifo",
+   "contention": "none",
+   "compaction": "plain",
+   "moonshine_end_ms": 6339.28,
+   "within_4000ms_reference": false,
+   "windows_landed": "3",
+   "windows_missed": "012",
+   "real_time_ok": false,
+   "late_detector_dispatches": 21,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "heft",
+   "contention": "none",
+   "compaction": "plain",
+   "moonshine_end_ms": 4251.12,
+   "within_4000ms_reference": false,
+   "windows_landed": "3",
+   "windows_missed": "012",
+   "real_time_ok": false,
+   "late_detector_dispatches": 23,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "peft",
+   "contention": "none",
+   "compaction": "plain",
+   "moonshine_end_ms": 5087.02,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 26,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "critical_path",
+   "contention": "none",
+   "compaction": "plain",
+   "moonshine_end_ms": 4251.12,
+   "within_4000ms_reference": false,
+   "windows_landed": "3",
+   "windows_missed": "012",
+   "real_time_ok": false,
+   "late_detector_dispatches": 23,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "min_min",
+   "contention": "none",
+   "compaction": "plain",
+   "moonshine_end_ms": 7081.22,
+   "within_4000ms_reference": false,
+   "windows_landed": "3",
+   "windows_missed": "012",
+   "real_time_ok": false,
+   "late_detector_dispatches": 21,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "max_min",
+   "contention": "none",
+   "compaction": "plain",
+   "moonshine_end_ms": 6038.92,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 12,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "round_robin",
+   "contention": "none",
+   "compaction": "plain",
+   "moonshine_end_ms": 6339.28,
+   "within_4000ms_reference": false,
+   "windows_landed": "3",
+   "windows_missed": "012",
+   "real_time_ok": false,
+   "late_detector_dispatches": 21,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "fastest_device",
+   "contention": "none",
+   "compaction": "plain",
+   "moonshine_end_ms": 6339.28,
+   "within_4000ms_reference": false,
+   "windows_landed": "3",
+   "windows_missed": "012",
+   "real_time_ok": false,
+   "late_detector_dispatches": 21,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "cpsat_warmbest_b157",
+   "contention": "none",
+   "compaction": "plain",
+   "moonshine_end_ms": 3652.39,
+   "within_4000ms_reference": true,
+   "windows_landed": "0123",
+   "windows_missed": "-",
+   "real_time_ok": true,
+   "late_detector_dispatches": 0,
+   "detector_fps": 1.0,
+   "valid": false
+  },
+  {
+   "policy": "cpsat",
+   "contention": "none",
+   "compaction": "plain",
+   "moonshine_end_ms": 3649.06,
+   "within_4000ms_reference": true,
+   "windows_landed": "0123",
+   "windows_missed": "-",
+   "real_time_ok": true,
+   "late_detector_dispatches": 0,
+   "detector_fps": 1.0,
+   "valid": true
+  },
+  {
+   "policy": "edf",
+   "contention": "none",
+   "compaction": "compact",
+   "moonshine_end_ms": 6076.0,
+   "within_4000ms_reference": false,
+   "windows_landed": "0123",
+   "windows_missed": "-",
+   "real_time_ok": false,
+   "late_detector_dispatches": 0,
+   "detector_fps": 1.0,
+   "valid": true
+  },
+  {
+   "policy": "fifo",
+   "contention": "none",
+   "compaction": "compact",
+   "moonshine_end_ms": 6339.28,
+   "within_4000ms_reference": false,
+   "windows_landed": "3",
+   "windows_missed": "012",
+   "real_time_ok": false,
+   "late_detector_dispatches": 21,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "heft",
+   "contention": "none",
+   "compaction": "compact",
+   "moonshine_end_ms": 4251.12,
+   "within_4000ms_reference": false,
+   "windows_landed": "3",
+   "windows_missed": "012",
+   "real_time_ok": false,
+   "late_detector_dispatches": 23,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "peft",
+   "contention": "none",
+   "compaction": "compact",
+   "moonshine_end_ms": 5087.02,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 26,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "critical_path",
+   "contention": "none",
+   "compaction": "compact",
+   "moonshine_end_ms": 4251.12,
+   "within_4000ms_reference": false,
+   "windows_landed": "3",
+   "windows_missed": "012",
+   "real_time_ok": false,
+   "late_detector_dispatches": 23,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "min_min",
+   "contention": "none",
+   "compaction": "compact",
+   "moonshine_end_ms": 7081.22,
+   "within_4000ms_reference": false,
+   "windows_landed": "3",
+   "windows_missed": "012",
+   "real_time_ok": false,
+   "late_detector_dispatches": 21,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "max_min",
+   "contention": "none",
+   "compaction": "compact",
+   "moonshine_end_ms": 6038.92,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 12,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "round_robin",
+   "contention": "none",
+   "compaction": "compact",
+   "moonshine_end_ms": 6339.28,
+   "within_4000ms_reference": false,
+   "windows_landed": "3",
+   "windows_missed": "012",
+   "real_time_ok": false,
+   "late_detector_dispatches": 21,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "fastest_device",
+   "contention": "none",
+   "compaction": "compact",
+   "moonshine_end_ms": 6339.28,
+   "within_4000ms_reference": false,
+   "windows_landed": "3",
+   "windows_missed": "012",
+   "real_time_ok": false,
+   "late_detector_dispatches": 21,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "cpsat_warmbest_b157",
+   "contention": "none",
+   "compaction": "compact",
+   "moonshine_end_ms": 3615.78,
+   "within_4000ms_reference": true,
+   "windows_landed": "0123",
+   "windows_missed": "-",
+   "real_time_ok": true,
+   "late_detector_dispatches": 0,
+   "detector_fps": 1.0,
+   "valid": false
+  },
+  {
+   "policy": "cpsat",
+   "contention": "none",
+   "compaction": "compact",
+   "moonshine_end_ms": 3272.91,
+   "within_4000ms_reference": true,
+   "windows_landed": "0123",
+   "windows_missed": "-",
+   "real_time_ok": true,
+   "late_detector_dispatches": 0,
+   "detector_fps": 1.0,
+   "valid": true
+  },
+  {
+   "policy": "edf",
+   "contention": "dram",
+   "compaction": "plain",
+   "moonshine_end_ms": 6406.56,
+   "within_4000ms_reference": false,
+   "windows_landed": "0123",
+   "windows_missed": "-",
+   "real_time_ok": false,
+   "late_detector_dispatches": 0,
+   "detector_fps": 1.0,
+   "valid": true
+  },
+  {
+   "policy": "fifo",
+   "contention": "dram",
+   "compaction": "plain",
+   "moonshine_end_ms": 6906.39,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 25,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "heft",
+   "contention": "dram",
+   "compaction": "plain",
+   "moonshine_end_ms": 4700.8,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 27,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "peft",
+   "contention": "dram",
+   "compaction": "plain",
+   "moonshine_end_ms": 5648.3,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 26,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "critical_path",
+   "contention": "dram",
+   "compaction": "plain",
+   "moonshine_end_ms": 4700.8,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 27,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "min_min",
+   "contention": "dram",
+   "compaction": "plain",
+   "moonshine_end_ms": 7704.02,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 25,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "max_min",
+   "contention": "dram",
+   "compaction": "plain",
+   "moonshine_end_ms": 6370.94,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 11,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "round_robin",
+   "contention": "dram",
+   "compaction": "plain",
+   "moonshine_end_ms": 6906.39,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 25,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "fastest_device",
+   "contention": "dram",
+   "compaction": "plain",
+   "moonshine_end_ms": 6906.39,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 25,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "cpsat_warmbest_b157",
+   "contention": "dram",
+   "compaction": "plain",
+   "moonshine_end_ms": 5182.71,
+   "within_4000ms_reference": false,
+   "windows_landed": "0123",
+   "windows_missed": "-",
+   "real_time_ok": false,
+   "late_detector_dispatches": 0,
+   "detector_fps": 1.0,
+   "valid": false
+  },
+  {
+   "policy": "cpsat",
+   "contention": "dram",
+   "compaction": "plain",
+   "moonshine_end_ms": 5412.25,
+   "within_4000ms_reference": false,
+   "windows_landed": "0123",
+   "windows_missed": "-",
+   "real_time_ok": false,
+   "late_detector_dispatches": 0,
+   "detector_fps": 1.0,
+   "valid": true
+  },
+  {
+   "policy": "edf",
+   "contention": "dram",
+   "compaction": "compact",
+   "moonshine_end_ms": 6406.56,
+   "within_4000ms_reference": false,
+   "windows_landed": "0123",
+   "windows_missed": "-",
+   "real_time_ok": false,
+   "late_detector_dispatches": 0,
+   "detector_fps": 1.0,
+   "valid": true
+  },
+  {
+   "policy": "fifo",
+   "contention": "dram",
+   "compaction": "compact",
+   "moonshine_end_ms": 6906.39,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 25,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "heft",
+   "contention": "dram",
+   "compaction": "compact",
+   "moonshine_end_ms": 4700.8,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 27,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "peft",
+   "contention": "dram",
+   "compaction": "compact",
+   "moonshine_end_ms": 5648.3,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 26,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "critical_path",
+   "contention": "dram",
+   "compaction": "compact",
+   "moonshine_end_ms": 4700.8,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 27,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "min_min",
+   "contention": "dram",
+   "compaction": "compact",
+   "moonshine_end_ms": 7704.02,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 25,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "max_min",
+   "contention": "dram",
+   "compaction": "compact",
+   "moonshine_end_ms": 6370.94,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 11,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "round_robin",
+   "contention": "dram",
+   "compaction": "compact",
+   "moonshine_end_ms": 6906.39,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 25,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "fastest_device",
+   "contention": "dram",
+   "compaction": "compact",
+   "moonshine_end_ms": 6906.39,
+   "within_4000ms_reference": false,
+   "windows_landed": "-",
+   "windows_missed": "0123",
+   "real_time_ok": false,
+   "late_detector_dispatches": 25,
+   "detector_fps": null,
+   "valid": true
+  },
+  {
+   "policy": "cpsat_warmbest_b157",
+   "contention": "dram",
+   "compaction": "compact",
+   "moonshine_end_ms": 4218.46,
+   "within_4000ms_reference": false,
+   "windows_landed": "0123",
+   "windows_missed": "-",
+   "real_time_ok": false,
+   "late_detector_dispatches": 0,
+   "detector_fps": 1.0,
+   "valid": false
+  },
+  {
+   "policy": "cpsat",
+   "contention": "dram",
+   "compaction": "compact",
+   "moonshine_end_ms": 3992.3,
+   "within_4000ms_reference": true,
+   "windows_landed": "0123",
+   "windows_missed": "-",
+   "real_time_ok": true,
+   "late_detector_dispatches": 0,
+   "detector_fps": 1.0,
+   "valid": true
+  }
+ ]
+}

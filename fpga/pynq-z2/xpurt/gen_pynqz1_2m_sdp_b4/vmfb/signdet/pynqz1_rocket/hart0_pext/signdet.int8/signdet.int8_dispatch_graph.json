@@ -1,0 +1,124 @@
+{
+ "dot_file": "",
+ "dispatches": {
+  "dispatch_0": {
+   "id": 0,
+   "ordinal": 1,
+   "total": 1,
+   "dependencies": [],
+   "infeasible_machines": [
+    "CPU_E#0"
+   ],
+   "_cell_classes": {
+    "CPU_P#0": "measured",
+    "CPU_E#0": "excluded_impossible"
+   }
+  },
+  "dispatch_1": {
+   "id": 1,
+   "ordinal": 1,
+   "total": 1,
+   "dependencies": [
+    "dispatch_0"
+   ],
+   "infeasible_machines": [
+    "CPU_E#0"
+   ],
+   "_cell_classes": {
+    "CPU_P#0": "measured",
+    "CPU_E#0": "excluded_impossible"
+   }
+  },
+  "dispatch_2": {
+   "id": 2,
+   "ordinal": 1,
+   "total": 1,
+   "dependencies": [
+    "dispatch_1"
+   ],
+   "infeasible_machines": [
+    "CPU_E#0"
+   ],
+   "_cell_classes": {
+    "CPU_P#0": "measured",
+    "CPU_E#0": "excluded_impossible"
+   }
+  },
+  "dispatch_3": {
+   "id": 3,
+   "ordinal": 1,
+   "total": 1,
+   "dependencies": [
+    "dispatch_2"
+   ],
+   "infeasible_machines": [
+    "CPU_E#0"
+   ],
+   "_cell_classes": {
+    "CPU_P#0": "measured",
+    "CPU_E#0": "excluded_impossible"
+   }
+  },
+  "dispatch_4": {
+   "id": 4,
+   "ordinal": 1,
+   "total": 1,
+   "dependencies": [
+    "dispatch_3"
+   ],
+   "infeasible_machines": [
+    "CPU_E#0"
+   ],
+   "_cell_classes": {
+    "CPU_P#0": "measured",
+    "CPU_E#0": "excluded_impossible"
+   }
+  },
+  "dispatch_5": {
+   "id": 5,
+   "ordinal": 1,
+   "total": 1,
+   "dependencies": [
+    "dispatch_4"
+   ],
+   "infeasible_machines": [
+    "CPU_E#0"
+   ],
+   "_cell_classes": {
+    "CPU_P#0": "measured",
+    "CPU_E#0": "excluded_impossible"
+   }
+  },
+  "dispatch_6": {
+   "id": 6,
+   "ordinal": 1,
+   "total": 1,
+   "dependencies": [
+    "dispatch_5"
+   ],
+   "infeasible_machines": [
+    "CPU_E#0"
+   ],
+   "_cell_classes": {
+    "CPU_P#0": "measured",
+    "CPU_E#0": "excluded_impossible"
+   }
+  },
+  "dispatch_7": {
+   "id": 7,
+   "ordinal": 1,
+   "total": 1,
+   "dependencies": [
+    "dispatch_6"
+   ],
+   "infeasible_machines": [
+    "CPU_E#0"
+   ],
+   "_cell_classes": {
+    "CPU_P#0": "measured",
+    "CPU_E#0": "excluded_impossible"
+   }
+  }
+ },
+ "_infeasible_machines_comment": "`infeasible_machines` is XPU-RT's own per-dispatch hard exclusion (workload_factory.parse_infeasible_combinations -> Operation.infeasible_combinations).  It names the machine(s) that did NOT run this dispatch, for one of two reasons recorded in `_cell_classes` and, per row, in the profile CSVs' `cell_class` column: excluded_impossible (illegal instruction there) or excluded_unmeasured (possible, never measured).  The matching profile row carries the 1e9 us SENTINEL_MS cost, so the cell is excluded twice over -- once as a constraint, once as a cost that is explicitly not a timing.  NOTE the index assumption: parse_infeasible_combinations maps a machine's index in `machines` onto a COMBINATION index, which is 1:1 only under machine_combination_mode=singletons with one core per kind. That is what this workload declares.  TO FILL AN UNMEASURED CELL: put the measured row in the CSV (cell_class=measured) AND drop that machine from this list.  Both, or the solver still cannot use it."
+}

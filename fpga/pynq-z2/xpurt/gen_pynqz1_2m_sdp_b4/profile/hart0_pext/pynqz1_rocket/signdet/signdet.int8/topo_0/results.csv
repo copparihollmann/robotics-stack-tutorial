@@ -1,0 +1,9 @@
+dispatch_id,module_name,vmfb_path,mlir_path,mean_time,mean_unit,mean_time_ns,returncode,log_path,source,op,shape,cycles,implementation,cell_class,exclusion_reason
+0,signdet$dispatch_0_conv2d_s8_pc,,,24.915675000,ms,24915675.000,0,,board_measured,conv2d_s8_pc,N=1;IC=3;IH=64;IW=64;OC=16;OH=32;OW=32;KH=3;KW=3;SH=2;SW=2;PH=1;PW=1,996627,pext_patch_dot8_pc[curated[pext]],measured,
+1,signdet$dispatch_1_conv2d_s8_pc,,,29.942725000,ms,29942725.000,0,,board_measured,conv2d_s8_pc,N=1;IC=16;IH=32;IW=32;OC=32;OH=16;OW=16;KH=3;KW=3;SH=2;SW=2;PH=1;PW=1,1197709,pext_patch_dot8_pc[curated[pext]],measured,
+2,signdet$dispatch_2_conv2d_s8_pc,,,69.206050000,ms,69206050.000,0,,board_measured,conv2d_s8_pc,N=1;IC=32;IH=16;IW=16;OC=32;OH=16;OW=16;KH=3;KW=3;SH=1;SW=1;PH=1;PW=1,2768242,pext_patch_dot8_pc[curated[pext]],measured,
+3,signdet$dispatch_3_conv2d_s8_pc,,,33.106925000,ms,33106925.000,0,,board_measured,conv2d_s8_pc,N=1;IC=32;IH=16;IW=16;OC=64;OH=8;OW=8;KH=3;KW=3;SH=2;SW=2;PH=1;PW=1,1324277,pext_patch_dot8_pc[curated[pext]],measured,
+4,signdet$dispatch_4_conv2d_s8_pc,,,77.147175000,ms,77147175.000,0,,board_measured,conv2d_s8_pc,N=1;IC=64;IH=8;IW=8;OC=64;OH=8;OW=8;KH=3;KW=3;SH=1;SW=1;PH=1;PW=1,3085887,pext_patch_dot8_pc[curated[pext]],measured,
+5,signdet$dispatch_5_conv2d_s8_pc,,,2.154425000,ms,2154425.000,0,,board_measured,conv2d_s8_pc,N=1;IC=64;IH=8;IW=8;OC=3;OH=8;OW=8;KH=1;KW=1;SH=1;SW=1;PH=0;PW=0,86177,pext_patch_dot8_pc[curated[pext]],measured,
+6,signdet$dispatch_6_permute4_s8,,,0.052850000,ms,52850.000,0,,board_measured,permute4_s8,d0=1;d1=3;d2=8;d3=8;p0=0;p1=2;p2=3;p3=1,2114,pext_block[curated[pext_nl]],measured,
+7,signdet$dispatch_7_softmax_s8,,,1.340250000,ms,1340250.000,0,,board_measured,softmax_s8,M=64;K=3,53610,pext_int_memo2[curated[pext_nl]],measured,

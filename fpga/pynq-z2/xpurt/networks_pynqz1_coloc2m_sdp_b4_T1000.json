@@ -1,0 +1,403 @@
+{
+  "_comment": "PYNQ-Z1 Rocket SoC, 40.000 MHz.  PERIODIC arm: SignDetLite is the REAL-TIME PERIODIC task at period 1000 ms (1.00 fps) and Moonshine is the NON-PERIODIC job being measured around it.  Costs are board-measured per dispatch and are BYTE-IDENTICAL to the non-periodic spec's -- the profile CSVs, dispatch graphs and contention artifacts are the same files.  SignDetLite's costs: out/b145_signdet_f167/run.json, Lab B145, 0x5A5A0038 md5 ced0aab0c7b52f25338eeffe8f678e4f, FCLK0 40.000 MHz, gate.max_abs_err 0 -- 8 dispatches, 9,514,643 measured cycles.  CROSS-BITSTREAM NOTE, stated because it is load-bearing: Moonshine's per-dispatch costs were measured on 0x5A5A0035 and SignDetLite's on 0x5A5A0038.  Both are 40.000 MHz, both carry the same md5-pinned nch=8 RoccMoon engine snapshot (src/lanes_engine_b98nch8b/) on hart 1 and the same MBP P-extension on hart 0, and RocketALU.sv / RoccMoonEngine.sv / RoccMoonShim.sv are byte-identical between the two elaborations; 0x5A5A0038 reproduced B134's nine board tokens at +0.033 % of 0x5A5A0035's cycle count (MAGIC_REGISTRY.md, 0x5A5A0038).  The co-location itself needs the engine, so it targets 0x5A5A0038 -- 0x5A5A0039 has TACIT and NO engine, which is where SignDetLite could run but Moonshine could not.",
+  "_basis_warning": "THE MAKESPAN IN THIS ARM IS NOT THE MAKESPAN IN THE NON-PERIODIC ARM.  restrict_makespan_to_nonperiodic is TRUE here, so the reported figure is MOONSHINE'S COMPLETION ALONE, measured around the detector's reserved instances; the detector's own tail is excluded from it (run_xpurt_schedule.py:1069).  In networks_pynqz1_coloc2m_sd_<arm>.json the flag is FALSE and the figure is the max over both networks.  The two tables are on different bases and must not be differenced.  op_deadline_miss_count also changes meaning: Moonshine carries no max_end_t here, so only late DETECTOR dispatches are counted.",
+  "_machines_comment": "TWO MACHINES, each holding an opcode the other traps on.  CPU_P is hart 0 (MBP P-extension, custom-0); CPU_E is hart 1 (RoccMoon engine and lanes, custom-1).  Unchanged from the non-periodic spec.",
+  "_periodic_comment": "num_instances is DECLARED, not left to workload_factory._estimate_num_periodic_instances.  That heuristic sizes the horizon from the sum over non-periodic dispatches of the WORST machine's cost, and Moonshine's worst machine is the EXCLUDED one, whose cost is profile_loader._penalise_unsupported's capped penalty -- 228,733 ms (b1) / 222,131 ms (b4) of pure exclusion artifact, which at T = 250 ms would ask for 915 detector instances.  Declared here as ceil(4000 / 1000) = 4: the detector firing continuously through ONE 4.0 s utterance window.  horizon_ms is the same 4000 ms so prune_periodic's trim cuts at max(4000, moonshine_makespan) and deletes nothing the demo would run.",
+  "_what_is_NOT_modelled": "THE SCHEDULE HOLDS THE 8 MODEL DISPATCHES ONLY.  B146 measured the real demo frame end to end at ~550 ms on silicon: inference 237.8 + front end 80.9 + L2 sweep 68.6 + OLED 86.1 + capture ~70.  The front end, the sweep, the OLED write and the capture are NOT in this graph, so a period of 550 ms here understates the true hart-0 load by roughly 2x.  A crossing point read off this table is 'the scheduler says it fits', not 'the board can do it'.",
+  "_cells_comment": "CROSS TERMS ARE NOT FABRICATED -- identical to the non-periodic spec.  Three classes: measured; excluded_impossible (illegal instruction there, no alternative body); excluded_unmeasured (a runnable body exists, nothing in this tree has timed it).  SignDetLite contributes ZERO excluded_unmeasured cells; all its CPU_E cells are impossible.",
+  "_cell_accounting": {
+    "by_class": {
+      "measured": 2261,
+      "excluded_impossible": 1510,
+      "excluded_unmeasured": 751
+    },
+    "by_class_by_impl": {
+      "hart0_pext": {
+        "measured": 1510,
+        "excluded_impossible": 0,
+        "excluded_unmeasured": 751
+      },
+      "hart1_engine": {
+        "measured": 751,
+        "excluded_impossible": 1510,
+        "excluded_unmeasured": 0
+      }
+    },
+    "per_network": {
+      "moonshine": {
+        "hart0_pext": 1502,
+        "hart1_engine": 751,
+        "dispatches": 2253
+      },
+      "signdet": {
+        "hart0_pext": 8,
+        "hart1_engine": 0,
+        "dispatches": 8
+      }
+    },
+    "per_op_kind": {
+      "moonshine/conv2d_s8@hart0_pext": {
+        "cell_class": "excluded_unmeasured",
+        "n": 3,
+        "kernel": "roccmoon_engine[curated]",
+        "home": "hart1_engine",
+        "reason": "the roccmoon kernel #includes a hart-0-executable fallback body, so this cell is physically possible -- but no board run in this tree has measured it, and inventing a number here would be fiction"
+      },
+      "moonshine/conv2d_s8@hart1_engine": {
+        "cell_class": "measured",
+        "n": 3,
+        "kernel": "roccmoon_engine[curated]",
+        "home": "hart1_engine",
+        "reason": ""
+      },
+      "moonshine/tanh_s8@hart0_pext": {
+        "cell_class": "excluded_unmeasured",
+        "n": 1,
+        "kernel": "roccmoon_lut[curated]",
+        "home": "hart1_engine",
+        "reason": "the roccmoon kernel #includes a hart-0-executable fallback body, so this cell is physically possible -- but no board run in this tree has measured it, and inventing a number here would be fiction"
+      },
+      "moonshine/tanh_s8@hart1_engine": {
+        "cell_class": "measured",
+        "n": 1,
+        "kernel": "roccmoon_lut[curated]",
+        "home": "hart1_engine",
+        "reason": ""
+      },
+      "moonshine/groupnorm_s8@hart0_pext": {
+        "cell_class": "measured",
+        "n": 1,
+        "kernel": "pext_int_rsqrt[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": ""
+      },
+      "moonshine/groupnorm_s8@hart1_engine": {
+        "cell_class": "excluded_impossible",
+        "n": 1,
+        "kernel": "pext_int_rsqrt[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": "hart 1's tile has no P-extension (PynqZ2Configs.scala:220 WithPExtOnTiles(0) names hart 0 only); this kernel's body is custom-0 throughout and holds no hart-1-executable alternative -- it would take an illegal instruction"
+      },
+      "moonshine/gelu_s8@hart0_pext": {
+        "cell_class": "excluded_unmeasured",
+        "n": 8,
+        "kernel": "roccmoon_lut[curated]",
+        "home": "hart1_engine",
+        "reason": "the roccmoon kernel #includes a hart-0-executable fallback body, so this cell is physically possible -- but no board run in this tree has measured it, and inventing a number here would be fiction"
+      },
+      "moonshine/gelu_s8@hart1_engine": {
+        "cell_class": "measured",
+        "n": 8,
+        "kernel": "roccmoon_lut[curated]",
+        "home": "hart1_engine",
+        "reason": ""
+      },
+      "moonshine/permute4_s8@hart0_pext": {
+        "cell_class": "measured",
+        "n": 169,
+        "kernel": "pext_block[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": ""
+      },
+      "moonshine/permute4_s8@hart1_engine": {
+        "cell_class": "excluded_impossible",
+        "n": 169,
+        "kernel": "pext_block[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": "hart 1's tile has no P-extension (PynqZ2Configs.scala:220 WithPExtOnTiles(0) names hart 0 only); this kernel's body is custom-0 throughout and holds no hart-1-executable alternative -- it would take an illegal instruction"
+      },
+      "moonshine/layernorm_pc_s8@hart0_pext": {
+        "cell_class": "excluded_unmeasured",
+        "n": 13,
+        "kernel": "roccmoon_lane[curated]",
+        "home": "hart1_engine",
+        "reason": "the roccmoon kernel #includes a hart-0-executable fallback body, so this cell is physically possible -- but no board run in this tree has measured it, and inventing a number here would be fiction"
+      },
+      "moonshine/layernorm_pc_s8@hart1_engine": {
+        "cell_class": "measured",
+        "n": 13,
+        "kernel": "roccmoon_lane[curated]",
+        "home": "hart1_engine",
+        "reason": ""
+      },
+      "moonshine/linear_s8@hart0_pext": {
+        "cell_class": "excluded_unmeasured",
+        "n": 720,
+        "kernel": "roccmoon_engine[curated]",
+        "home": "hart1_engine",
+        "reason": "the roccmoon kernel #includes a hart-0-executable fallback body, so this cell is physically possible -- but no board run in this tree has measured it, and inventing a number here would be fiction"
+      },
+      "moonshine/linear_s8@hart1_engine": {
+        "cell_class": "measured",
+        "n": 720,
+        "kernel": "roccmoon_engine[curated]",
+        "home": "hart1_engine",
+        "reason": ""
+      },
+      "moonshine/rope_s8@hart0_pext": {
+        "cell_class": "measured",
+        "n": 156,
+        "kernel": "pext_int_rot[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": ""
+      },
+      "moonshine/rope_s8@hart1_engine": {
+        "cell_class": "excluded_impossible",
+        "n": 156,
+        "kernel": "pext_int_rot[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": "hart 1's tile has no P-extension (PynqZ2Configs.scala:220 WithPExtOnTiles(0) names hart 0 only); this kernel's body is custom-0 throughout and holds no hart-1-executable alternative -- it would take an illegal instruction"
+      },
+      "moonshine/attention_s8@hart0_pext": {
+        "cell_class": "excluded_unmeasured",
+        "n": 6,
+        "kernel": "roccmoon_lane[curated]",
+        "home": "hart1_engine",
+        "reason": "the roccmoon kernel #includes a hart-0-executable fallback body, so this cell is physically possible -- but no board run in this tree has measured it, and inventing a number here would be fiction"
+      },
+      "moonshine/attention_s8@hart1_engine": {
+        "cell_class": "measured",
+        "n": 6,
+        "kernel": "roccmoon_lane[curated]",
+        "home": "hart1_engine",
+        "reason": ""
+      },
+      "moonshine/add_s8@hart0_pext": {
+        "cell_class": "measured",
+        "n": 228,
+        "kernel": "pext_int_add[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": ""
+      },
+      "moonshine/add_s8@hart1_engine": {
+        "cell_class": "excluded_impossible",
+        "n": 228,
+        "kernel": "pext_int_add[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": "hart 1's tile has no P-extension (PynqZ2Configs.scala:220 WithPExtOnTiles(0) names hart 0 only); this kernel's body is custom-0 throughout and holds no hart-1-executable alternative -- it would take an illegal instruction"
+      },
+      "moonshine/layernorm_s8@hart0_pext": {
+        "cell_class": "measured",
+        "n": 228,
+        "kernel": "pext_int_rsqrt[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": ""
+      },
+      "moonshine/layernorm_s8@hart1_engine": {
+        "cell_class": "excluded_impossible",
+        "n": 228,
+        "kernel": "pext_int_rsqrt[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": "hart 1's tile has no P-extension (PynqZ2Configs.scala:220 WithPExtOnTiles(0) names hart 0 only); this kernel's body is custom-0 throughout and holds no hart-1-executable alternative -- it would take an illegal instruction"
+      },
+      "moonshine/matmul_b_s8@hart0_pext": {
+        "cell_class": "measured",
+        "n": 288,
+        "kernel": "pext_dot8_exact[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": ""
+      },
+      "moonshine/matmul_b_s8@hart1_engine": {
+        "cell_class": "excluded_impossible",
+        "n": 288,
+        "kernel": "pext_dot8_exact[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": "hart 1's tile has no P-extension (PynqZ2Configs.scala:220 WithPExtOnTiles(0) names hart 0 only); this kernel's body is custom-0 throughout and holds no hart-1-executable alternative -- it would take an illegal instruction"
+      },
+      "moonshine/softmax_s8@hart0_pext": {
+        "cell_class": "measured",
+        "n": 144,
+        "kernel": "pext_int_memo2[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": ""
+      },
+      "moonshine/softmax_s8@hart1_engine": {
+        "cell_class": "excluded_impossible",
+        "n": 144,
+        "kernel": "pext_int_memo2[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": "hart 1's tile has no P-extension (PynqZ2Configs.scala:220 WithPExtOnTiles(0) names hart 0 only); this kernel's body is custom-0 throughout and holds no hart-1-executable alternative -- it would take an illegal instruction"
+      },
+      "moonshine/silu_s8@hart0_pext": {
+        "cell_class": "measured",
+        "n": 72,
+        "kernel": "pext_int_lut[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": ""
+      },
+      "moonshine/silu_s8@hart1_engine": {
+        "cell_class": "excluded_impossible",
+        "n": 72,
+        "kernel": "pext_int_lut[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": "hart 1's tile has no P-extension (PynqZ2Configs.scala:220 WithPExtOnTiles(0) names hart 0 only); this kernel's body is custom-0 throughout and holds no hart-1-executable alternative -- it would take an illegal instruction"
+      },
+      "moonshine/mul_s8@hart0_pext": {
+        "cell_class": "measured",
+        "n": 72,
+        "kernel": "pext_int_mul[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": ""
+      },
+      "moonshine/mul_s8@hart1_engine": {
+        "cell_class": "excluded_impossible",
+        "n": 72,
+        "kernel": "pext_int_mul[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": "hart 1's tile has no P-extension (PynqZ2Configs.scala:220 WithPExtOnTiles(0) names hart 0 only); this kernel's body is custom-0 throughout and holds no hart-1-executable alternative -- it would take an illegal instruction"
+      },
+      "moonshine/cat2_c1_s8@hart0_pext": {
+        "cell_class": "measured",
+        "n": 144,
+        "kernel": "pext_memo_lut[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": ""
+      },
+      "moonshine/cat2_c1_s8@hart1_engine": {
+        "cell_class": "excluded_impossible",
+        "n": 144,
+        "kernel": "pext_memo_lut[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": "hart 1's tile has no P-extension (PynqZ2Configs.scala:220 WithPExtOnTiles(0) names hart 0 only); this kernel's body is custom-0 throughout and holds no hart-1-executable alternative -- it would take an illegal instruction"
+      },
+      "signdet/conv2d_s8_pc@hart0_pext": {
+        "cell_class": "measured",
+        "n": 6,
+        "kernel": "pext_patch_dot8_pc[curated[pext]]",
+        "home": "hart0_pext",
+        "reason": ""
+      },
+      "signdet/conv2d_s8_pc@hart1_engine": {
+        "cell_class": "excluded_impossible",
+        "n": 6,
+        "kernel": "pext_patch_dot8_pc[curated[pext]]",
+        "home": "hart0_pext",
+        "reason": "there is NO engine kernel for conv2d_s8_pc anywhere -- out/signdet/kernels_board/roccmoon/ holds roccmoon_conv2d_s8_roccmoon_engine.c, the per-TENSOR sibling, and nothing registered for the per-CHANNEL op.  So this is not a runtime predicate that happened to refuse (SignNetLite's case): the picker had nothing to select, the engine runtime is never linked, and B145 measured exactly that -- engine.runtime_linked false, calls_engine 0, calls_fallback 0, mbxr_rt_stats absent from the ELF.  The body that executes is curated custom-0 MBP throughout and holds no hart-1-executable alternative; on hart 1 it would take an illegal instruction"
+      },
+      "signdet/permute4_s8@hart0_pext": {
+        "cell_class": "measured",
+        "n": 1,
+        "kernel": "pext_block[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": ""
+      },
+      "signdet/permute4_s8@hart1_engine": {
+        "cell_class": "excluded_impossible",
+        "n": 1,
+        "kernel": "pext_block[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": "curated pext_nl kernel, custom-0 (DOT8/MAX8/QMUL/CLIP8) throughout, with no hart-1-executable alternative in the same body -- hart 1's tile has no P-extension (PynqZ2Configs.scala:220 WithPExtOnTiles(0) names hart 0 only), so it would take an illegal instruction"
+      },
+      "signdet/softmax_s8@hart0_pext": {
+        "cell_class": "measured",
+        "n": 1,
+        "kernel": "pext_int_memo2[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": ""
+      },
+      "signdet/softmax_s8@hart1_engine": {
+        "cell_class": "excluded_impossible",
+        "n": 1,
+        "kernel": "pext_int_memo2[curated[pext_nl]]",
+        "home": "hart0_pext",
+        "reason": "curated pext_nl kernel, custom-0 (DOT8/MAX8/QMUL/CLIP8) throughout, with no hart-1-executable alternative in the same body -- hart 1's tile has no P-extension (PynqZ2Configs.scala:220 WithPExtOnTiles(0) names hart 0 only), so it would take an illegal instruction"
+      }
+    },
+    "unmeasured_op_kinds": {
+      "moonshine/conv2d_s8@hart0_pext": {
+        "n": 3,
+        "kernel": "roccmoon_engine[curated]",
+        "reason": "the roccmoon kernel #includes a hart-0-executable fallback body, so this cell is physically possible -- but no board run in this tree has measured it, and inventing a number here would be fiction"
+      },
+      "moonshine/tanh_s8@hart0_pext": {
+        "n": 1,
+        "kernel": "roccmoon_lut[curated]",
+        "reason": "the roccmoon kernel #includes a hart-0-executable fallback body, so this cell is physically possible -- but no board run in this tree has measured it, and inventing a number here would be fiction"
+      },
+      "moonshine/gelu_s8@hart0_pext": {
+        "n": 8,
+        "kernel": "roccmoon_lut[curated]",
+        "reason": "the roccmoon kernel #includes a hart-0-executable fallback body, so this cell is physically possible -- but no board run in this tree has measured it, and inventing a number here would be fiction"
+      },
+      "moonshine/layernorm_pc_s8@hart0_pext": {
+        "n": 13,
+        "kernel": "roccmoon_lane[curated]",
+        "reason": "the roccmoon kernel #includes a hart-0-executable fallback body, so this cell is physically possible -- but no board run in this tree has measured it, and inventing a number here would be fiction"
+      },
+      "moonshine/linear_s8@hart0_pext": {
+        "n": 720,
+        "kernel": "roccmoon_engine[curated]",
+        "reason": "the roccmoon kernel #includes a hart-0-executable fallback body, so this cell is physically possible -- but no board run in this tree has measured it, and inventing a number here would be fiction"
+      },
+      "moonshine/attention_s8@hart0_pext": {
+        "n": 6,
+        "kernel": "roccmoon_lane[curated]",
+        "reason": "the roccmoon kernel #includes a hart-0-executable fallback body, so this cell is physically possible -- but no board run in this tree has measured it, and inventing a number here would be fiction"
+      }
+    },
+    "_definition": {
+      "measured": "a board run in this tree executed this dispatch on this machine and recorded cycles",
+      "excluded_impossible": "the selected kernel's executed body traps on an absent opcode there, and the kernel holds no body that machine could execute",
+      "excluded_unmeasured": "a body that machine could execute exists in the same kernel, but nothing in this tree has measured it"
+    }
+  },
+  "_contention_comment": "Same artifacts as the non-periodic solve, unchanged.  contention_model.canonical_key strips the periodic instance index (signdet3_dispatch_5 -> signdet:5), so one per-dispatch table covers every instance -- contention is a property of the kernel, not of which instance is running it.  DRAM plateau aggregate 0.924 (headline); L2 edge 0.549 (sensitivity, the single worst point on the curve).",
+  "contention": {
+    "enabled": true,
+    "path": "artifacts/pynqz1_coloc/contention_b4_dram.json",
+    "_sensitivity_path": "artifacts/pynqz1_coloc/contention_b4_l2_edge.json"
+  },
+  "horizon_ms": 4000.0,
+  "hardware": {
+    "machines": {
+      "cpu_p": 1,
+      "cpu_e": 1
+    },
+    "profile_hw": {
+      "cpu_p": "hart0_pext",
+      "cpu_e": "hart1_engine"
+    },
+    "profile": {
+      "target": "pynqz1_rocket",
+      "topo_tag": "topo_0",
+      "topo_tag_override": true,
+      "gen_root": "gen_pynqz1_2m_sdp_b4"
+    },
+    "p_core_speedup": 1.0
+  },
+  "scheduler": {
+    "random_seed": 42,
+    "solver_verbosity": 1,
+    "time_limit": 120,
+    "use_profiled": true,
+    "prune_periodic": true,
+    "restrict_makespan_to_nonperiodic": true,
+    "machine_combination_mode": "singletons"
+  },
+  "networks": {
+    "moonshine": {
+      "id": 0,
+      "identifier": "moonshine",
+      "dispatch_deps_path": "gen_pynqz1_2m_sdp_b4/vmfb/moonshine/pynqz1_rocket/hart0_pext/moonshine.int8/moonshine.int8_dispatch_graph.json",
+      "_note": "NON-PERIODIC: no period, no window_duration, so this is the job the makespan measures.  12 decoder steps, 2253 dispatches, 3532.6 ms if serialised.  Its real-time requirement is the 4000 ms utterance window, tested against the reported makespan rather than by a max_end_t.",
+      "_split": "751 dispatches on CPU_E (hart 1) and 1502 on CPU_P (hart 0)"
+    },
+    "signdet": {
+      "id": 1,
+      "identifier": "signdet",
+      "dispatch_deps_path": "gen_pynqz1_2m_sdp_b4/vmfb/signdet/pynqz1_rocket/hart0_pext/signdet.int8/signdet.int8_dispatch_graph.json",
+      "period": 1000.0,
+      "window_duration": 1000.0,
+      "num_instances": 4,
+      "_note": "PERIODIC at 1000 ms (1.00 fps), 4 instances x 8 dispatches = 32 ops.  Instance i occupies [i*1000, (i+1)*1000] ms.  Each instance is 237.87 ms of measured hart-0 work, so the model-dispatch duty cycle alone is 23.8 % of one hart -- before the front end, L2 sweep, OLED and capture that _what_is_NOT_modelled names.",
+      "_split": "all on CPU_P (hart 0) -- STRUCTURAL truth, not a runtime outcome: no engine kernel exists for conv2d_s8_pc / permute4_s8 / softmax_s8 at all, so the engine runtime is never linked.  B145 measured engine.runtime_linked=false and mbxr_rt_stats absent from the ELF.  SignDetLite is PINNED to CPU_P, not scheduled there."
+    }
+  },
+  "edges": [],
+  "_arm": "b4",
+  "_machine_model": "two_periodic",
+  "_period_ms": 1000.0,
+  "_period_fps": 1.0,
+  "_num_instances": 4,
+  "_arm_note": "b4 (--batch-decode): encoder dispatches scaled by the measured x0.9932 back-to-back factor and decoder dispatches by the measured x0.5883 batch-4 factor (B129).  Region factors applied uniformly inside a region is the model.  The DETECTOR is never scaled: it is not batched."
+}

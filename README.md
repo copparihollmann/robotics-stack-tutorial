@@ -85,8 +85,9 @@ lab goes through it.
 
 ## The labs
 
-**A-series — host only, no board.** `scripts/10`, `11`: the Spike + TACIT + decoder flow, and the
-packed-SIMD instructions proved in simulation before any silicon.
+**A-series — host only, no board.** `scripts/10`, `11`, `12`: the Spike + TACIT + decoder flow, the
+packed-SIMD instructions proved in simulation before any silicon, and the co-location solve —
+scheduling two networks across the two harts from board-measured per-dispatch costs.
 
 **RTL gates — Verilator, seconds, no licence.** `scripts/27`, `52`, `55`, `63`, `65`, `72`: the
 P-ext ALU, the RoCC engine, the OLED I²C path, the fast multiplier and the camera capture path, each
@@ -120,6 +121,19 @@ end at the same cycle by construction: **0.10 s apart, 0.7 % of a 13.309 s windo
 43.75 s. Seven gates, two of which fail on the old artefact — that is what makes them gates. It
 also re-measures the number that sizes the trace buffers, and finds a busy lane emits **5.3×** the
 rate the buffers had been sized from. `expected/tacit_duo_window.json`.
+
+**`scripts/12_xpurt_coloc_sweep.sh` — two networks, two harts, one schedule.** Host only, and
+every duration in it was measured on a board. Moonshine has to finish; the detector must not miss
+its 1 fps frame; the two harts hold different instruction sets, so a kernel curated for one *traps*
+on the other; and they share a memory system. 44 cells — nine heuristics and two CP-SAT paths,
+across contention on/off and a left-shift compaction post-pass on/off. Under measured DRAM
+contention that post-pass is what crosses the window: **5,412.25 → 3,992.30 ms, 1,419.95 ms
+recovered**, with `op_deadline_miss_count` 0 in both, so no detector frame was traded for it. And
+**none of the nine heuristics clears both objectives at all** — the best makespan misses three of
+the four windows, and the only policy that lands all four ends 2,076 ms past the reference. The
+lab also refuses four of its own cells: one solver path builds its model without reading the hard
+machine exclusions and placed 74 dispatches on harts whose instruction set would trap on them.
+`expected/xpurt_coloc2m_b157.json`.
 
 ## Bitstreams
 
@@ -165,6 +179,7 @@ Vivado 2023.1 and a Chipyard tree.
 | `fpga/pynq-z2/sw/` | the on-target C: the accelerator runtime, the P-ext kernels, the integer non-linearities |
 | `fpga/pynq-z2/modelblaster/` | the quantise + codegen pipeline and its curated kernels, for speech, vision and keyword spotting |
 | `fpga/pynq-z2/rtl_study/` | the Verilator testbenches and out-of-context area/timing flows behind the RTL gates |
+| `fpga/pynq-z2/xpurt/` | everything the co-location solve reads: the spec, the dispatch graphs carrying the hard machine exclusions, the board-measured per-dispatch cost tables and the DRAM contention model. XPU-RT itself is not vendored — see that directory's README |
 | `fpga/pynq-z2/sdcard/` | preparing a card, and `per_board_setup.sh`, which also scrubs the credential the stock PYNQ image leaves in `/boot/REVISION` |
 
 ## Documentation

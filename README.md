@@ -173,6 +173,7 @@ Vivado 2023.1 and a Chipyard tree.
 | `boards/chipyard/` | Zephyr board definitions, one per SoC variant and clock |
 | `patches/` | the patch series applied into Chipyard, rocket-chip, Zephyr, Spike and the TACIT decoder; `scripts/02_verify_patches.sh` reconstructs each tree byte-for-byte and reports drift |
 | `expected/` | golden outputs — what each lab's console is supposed to say |
+| `notebooks/` | the attendee notebook, and the tool that generates it from the published page. `iiswc_tutorial.ipynb` is **generated — do not hand-edit it**; edit `tools/build_notebook.py` and re-run |
 | `fpga/pynq-z2/src/`, `tcl/` | the RTL and constraints, and the Vivado build flows |
 | `fpga/pynq-z2/chipyard/` | the Chisel configs, plus the **vendored generated Verilog** for every pinned SoC — `scripts/08_gensrc.sh` unpacks it, so rebuilding a bitstream needs Vivado but not a Chipyard install |
 | `fpga/pynq-z2/host/` | what runs on the workstation to drive the board: bitstream loading, clocks, console, captures |
@@ -200,6 +201,26 @@ Comments in the code cite a larger set of design documents by name — `MEMORY_B
 the project's internal research and evidence record and are **not part of this repository**. The
 citations are left in place because they say *why* a constant is what it is, and that is worth more
 than a tidy comment; treat them as a pointer to the reasoning, not a file you are expected to open.
+
+## The attendee notebook
+
+`notebooks/iiswc_tutorial.ipynb` is the tutorial's published attendee page as a notebook, for
+the per-seat JupyterLab an attendee actually sits in front of. It is **generated** from
+`notebooks/tools/build_notebook.py` — the page is the source of truth, so a page change is a
+data edit in that file and never a hand-edit of notebook JSON. Re-run it and the notebook
+reproduces byte for byte.
+
+It is committed **without outputs**, deliberately: an executed notebook carries the instance's
+hostname. Expected output lives in markdown beside each cell instead, quoted from a bench run,
+so an attendee can tell whether theirs matched. Two units are pre-seeded in `assets/` rather
+than built live — a TACIT capture taken on silicon, because the cards do not carry the
+bitstream that can take one, and a kernel gate's expected text, because the gate takes three
+minutes and prints `FAIL` lines by design (they are its poisoned control arms).
+
+Every cell says where it runs — `lab.sh()` on the instance, `lab.board()` on the card, and
+nothing else touches a board. `notebooks/README.md` says what the board half needs that this
+repository does not ship, and why a missing transport reports itself as a stub rather than
+inventing output.
 
 `deps.lock` pins every external tree this repo builds against — Spike, the TACIT decoder, the Zephyr
 workspace — with the exact revision and the reason it is pinned there. It is the file to read when a

@@ -1,0 +1,19 @@
+mainmenu "TACIT duo -- signdet_live on hart 0, kws_live on hart 1, one traced timeline"
+
+rsource "../oled_status/src/Kconfig.oled_status"
+
+config MB_PEXT
+	bool "Build hart 0's ModelBlaster kernels against the MBP extension"
+	default y
+	help
+	  samples/signdet_live's option, for the same reason: the generated kernels.c reads
+	  CONFIG_MB_PEXT out of autoconf.h to decide whether pext.h emits real custom-0
+	  encodings or its software model.
+
+	  IN THIS IMAGE IT IS NOT THE WHOLE STORY.  CMakeLists.txt sets MB_PEXT_HW per
+	  SOURCE FILE -- 1 for the signdet tree, 0 for the kws tree -- because hart 1 has no
+	  MBP datapath and a custom-0 word there is an illegal instruction.  This symbol is
+	  the default that the per-file setting overrides, and hart 0's half is the half
+	  that must stay =y.
+
+source "Kconfig.zephyr"

@@ -1,0 +1,119 @@
+{
+  "_comment": "Golden record for samples/tacit_duo under scripts/90_b156_tacit_window.sh -- the dual-hart TACIT artefact the tutorial opens in Perfetto. Both harts run a real sensor workload (hart 0: camera -> SignDetLite -> OLED; hart 1: PDM microphone -> MFCC -> cnn_tiny keyword spotter, in the SOFTWARE P-extension model), both are traced from the reset vector into their own DMA sink, and ONE wall clock -- DUO_WINDOW_MS, measured from the reset vector -- bounds both of them. Reference run 2026-09-23 on bitstream 0x5A5A0039 'tracepanelcam', md5 54838985885eacd88c28cc38cb0c829a, FCLK0 read back 40.0000 MHz, CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=40000.",
+
+  "_why_one_clock": "The obvious way to bound two workloads is to count their units -- N camera frames and M seconds of audio. It does not work, and the failure is not a tuning problem. Frames cost ~0.97 s each and 32 ms audio blocks cost ~0.22 s each in the software model, so the two counts can only be made to agree by predicting both per-unit costs, and both move with every build. The predecessor run did exactly this and produced a 55.04 s, 48.2 MB artefact whose every structural gate passed and which was 80 % a recording of an idle hart 0: the detector stopped at 11.09 s and hart 0 spent the remaining 44 s in arch_spin_relax, uart_sifive_poll_out and console_out. Under DUO_WINDOW_MS main() BLOCKS in k_msleep() -- never k_busy_wait(), which is the spin that was found -- until a deadline measured from the reset vector, stops both encoders while both workloads are still mid-unit, and only then raises the stop flag. The two lanes therefore end at the same cycle by construction rather than by luck, and each workload finishes its last unit outside the traced window so SD_RESULT, the 8/8 replay gate and KWS_DUTY still report whole units.",
+
+  "_both_workloads_are_over_fed": "SD_FRAMES=0 is signdet_live's own unbounded live loop and KWS_SECONDS=60 is ~30x what a 13 s window can reach at the little hart's measured 0.22 s per audio block. Neither lane can finish early and leave the other one recording an idle hart. DUO_WINDOW_MS=0 keeps the old work bound exactly, so the predecessor run is still reproducible from the same sample.",
+
+  "_the_hooks_change_nothing_else": "The two workloads reach the stop flag through a second pair of default-off hooks, SD_STOP_HOOK / KWS_STOP_HOOK, beside the existing SD_NO_MAIN / KWS_NO_MAIN. Built both ways the standalone images are BYTE-IDENTICAL: samples/signdet_live zephyr.bin md5 76e7755e067fba92a267b3303bf4551f (1,005,944 B), samples/kws_live md5 c77f9abdddd39868eb2ad9d840e8ee92 (123,184 B). That is what makes the hooks safe to leave in the parents.",
+
+  "_not_checked": "Event counts, byte counts and absolute timestamps are NOT goldens and are not compared. Every TACIT packet carries a delta timestamp in core cycles, the camera and the microphone are live, and a window is closed at the next reschedule -- so all three move run to run. What is checked is structural (both lanes traced from reset, the [hw]/[sw] split, no buffer overrun, the replay gate) plus three bounds: both lanes busy throughout, both lanes ending together, and no lane predicted to outrun its region.",
+
+  "window_ms": 13000,
+  "span_cycles_measured": 532348281,
+  "span_seconds_measured": 13.3087,
+  "_overshoot": "The window overshot its 13.000 s by 309 ms (2.4 %). main() can only close the trace when a CPU next reschedules and the deadline landed inside a non-yielding stretch of hart 0's work; the 5 s calibration arm, whose deadline landed in a print, overshot by 10 ms. span_cycles is MEASURED and reported either way, and the overshoot does not touch 'both lanes stop together' -- both encoders are stopped in the same loop, microseconds apart. The mechanism is plausible and NOT isolated.",
+
+  "gates": {
+    "_comment": "Five gates are the from-reset trace gates (scripts/lib/b153_gates.py); two are this lab's own (scripts/lib/b156_lane_table.py). All seven passed on the reference run. The two lab gates both FAIL on the predecessor artefact -- that is what makes them gates rather than decoration.",
+
+    "1_LANES": {
+      "distinct_function_names_min": 10,
+      "reference_distinct": { "hart0": 179, "hart1": 103 },
+      "reference_events": { "hart0": 258393, "hart1": 109712 },
+      "hart0_signdet_symbols_min": 10,
+      "reference_hart0_signdet_symbols": 21,
+      "dominant_frame_must_not_be": "z_impl_k_busy_wait",
+      "reference_dominant_frame": "mb_pext_conv_gather.constprop.0 [hw @0x8000147c]",
+      "_hw_sw_split": "pext.h is compiled twice into this image and both copies are static, so GCC gives them ONE .constprop.0 name at two addresses. scripts/lib/b153_disambiguate.py splits them from the DISASSEMBLY, never from which lane an event landed on -- otherwise the gate would be assuming what it is meant to prove. Reference: hart 0 ran 61,568 [hw] copies and 0 [sw]; hart 1 ran 0 [hw] and 3,832 [sw]. Hart 1 never executed custom-0 and the lanes are not swapped.",
+      "_what_failure_looks_like": "A lane with two distinct function names and hundreds of thousands of events is a window opened inside a busy-wait: 419,102 calls to sys_clock_cycle_get_32 nested in ONE z_impl_k_busy_wait, zero detector symbols. Size and event count both look healthy. Count distinct names per lane and read the first event's name."
+    },
+
+    "2_BUFFERS": {
+      "_comment": "tacit.h exposes TR_SK_DMA_ADDR and TR_SK_DMA_COUNT and NO LIMIT REGISTER. The sink writes linearly from its base and neither wraps nor stops, so a lane that outruns its region silently overwrites the next one AND BOTH TRACES STILL DECODE. There is no error to look for; the arithmetic is the only check there is.",
+      "require": ["COUNT[h] <= span[h]", "base[1] >= base[0] + COUNT[0]"],
+      "reference": {
+        "hart0": { "base": "0x81000000", "bytes": 23573153, "span": 67108864, "full_pct": 35 },
+        "hart1": { "base": "0x85000000", "bytes": 15673261, "span": 150994944, "full_pct": 10 },
+        "base1_ge_end0": "0x85000000 >= 0x8267B2A1",
+        "board_self_check": "DUO_TRACE_GATE overrun=0 overlap=0"
+      }
+    },
+
+    "3_COVERAGE": {
+      "_comment": "Under from-reset tracing trace_c0 is 0, so what proves the trace starts at the reset vector is the FIRST EVENT'S FUNCTION, not its timestamp.",
+      "reference_first_slices": { "hart0": "z_prep_c @ 810675 cycles", "hart1": "boot_secondary_core @ 810674 cycles" },
+      "_offset_note": "The ~810,500 cycle offset is the Rocket bootrom.",
+      "reference_count_at_main": { "hart0": 169952, "hart1": 92976 },
+      "_count_at_main": "Non-zero on both lanes means the sink took bytes BEFORE main() -- i.e. the encoder really was armed from the reset vector and not from the application."
+    },
+
+    "4_REPLAY": {
+      "_comment": "Eight baked frames with known answers run before the live camera loop. Tracing must not perturb the result it is tracing.",
+      "require": { "decisions": "8/8", "tensors": "8/8", "max_abs_err": 0 }
+    },
+
+    "5_RATE": {
+      "_comment": "Bytes per core cycle per hart, measured off the hardware's own TR_SK_DMA_COUNT. THIS IS THE NUMBER THAT SIZES A BUFFER, and it is the one that was wrong.",
+      "reference_bytes_per_core_cycle": { "hart0": 0.0443, "hart1": 0.0294 },
+      "reference_mb_per_s": { "hart0": 1.77, "hart1": 1.18 },
+      "_the_finding": "0.0443 B/core cycle on a BUSY hart 0 is 5.3x the 0.0084 measured on the predecessor run and 1.5x what hart 1 emits. The predecessor's 0.0084 is a blend of 11 s of work and 44 s of idle, because an idle lane's arch_cpu_idle / z_smp_current_get loop is cheap in trace bytes. So 'hart 1 produces 2.3x hart 0's trace' was a property of that run, not of the pair of workloads. At the busy rates the two regions are worth 37.9 s (hart 0, 64 MiB) and 128.4 s (hart 1, 144 MiB): HART 0 IS THE BINDING LANE, and had the predecessor's hart 0 kept working for its whole 55.0 s it would have wanted ~97 MB of a 64 MiB region and would have run into hart 1's lane at ~38 s -- silently. NEVER SIZE A TACIT BUFFER FROM A RATE MEASURED OVER A WINDOW THE LANE DID NOT WORK THROUGH.",
+      "_calibration_arm": "The 5 s calibration arm measured hart 0 at 0.0334 -- 25 % under the 13 s arm, because its 5 s is boot and replay only and the live camera path, the OLED and the console are branchier. Conservative in the right direction for sizing, and recorded rather than smoothed."
+    },
+
+    "A_MODEL_WORK_IN_EVERY_PART_OF_THE_WINDOW": {
+      "_comment": "Measured as TIME with an mb_pext_conv frame on the stack, per 1.02 s bucket. A bucket with less than 0.5 % of its length inside the model is a GAP; the gate fails on a run of more than one consecutive gap bucket AFTER the lane's first model frame. The lead-in -- the buckets before that first frame -- is the boot and the sensors coming up, which this trace covers deliberately; it is reported, and failed only if it eats more than 25 % of the window.",
+      "max_consecutive_gap_buckets": 1,
+      "max_lead_in_fraction": 0.25,
+      "reference_model_time_per_bucket_pct": {
+        "hart0": [0, 0, 22, 22, 22, 22, 26, 27, 27, 14, 40, 31, 36],
+        "hart1": [82, 45, 33, 93, 82, 75, 96, 80, 77, 96, 79, 75, 70]
+      },
+      "reference_lead_in_buckets": { "hart0": 2, "hart1": 0 },
+      "_the_metric_was_wrong_first": "The first version of this gate ranked each bucket's frames by B-EVENT COUNT and called hart 1 idle in the last second of the window -- a second that lane spent inside a 1.30 s convolution. One mb_pext_conv_pixel slice is 1.3 s of timeline and ONE event; z_smp_current_get is microseconds and thousands of them. Counting events measures how BRANCHY a frame is, which is what the trace rate measures and exactly not what 'the lane is busy' means. b156_lane_table.py prints BOTH tables so the difference stays visible.",
+      "_predecessor": "0 % in ten consecutive buckets on hart 0 -- 42.34 s, 77 % of the window with no model work on either lane. Fails."
+    },
+
+    "B_BOTH_LANES_END_TOGETHER": {
+      "max_end_separation_fraction_of_window": 0.15,
+      "reference": {
+        "hart0_mb_pext_conv": "2.18 s -> 13.10 s",
+        "hart1_mb_pext_conv": "0.18 s -> 13.01 s",
+        "separation_s": 0.10,
+        "separation_pct_of_window": 0.7
+      },
+      "_close": "The two encoders close 94 and 248 cycles from the end of the traced window (2.4 and 6.2 us apart).",
+      "_predecessor": "43.75 s apart -- 79.5 % of the window. Fails."
+    }
+  },
+
+  "coverage_by_time": {
+    "_comment": "Not a gate, and worth more than one. This is the detector's own duty cycle, and the window cannot change it.",
+    "hart0": { "inside_model_pct": 22.4, "spin_console_idle_pct": 53.9 },
+    "hart1": { "inside_model_pct": 75.8, "spin_console_idle_pct": 6.1 },
+    "_predecessor_hart0": { "inside_model_pct": 4.2, "spin_console_idle_pct": 91.6 },
+    "_hart0_is_half_idle_and_that_is_the_workload": "Over the predecessor's WORKING PHASE alone (2.16-11.09 s) hart 0 was already 53.5 % top-of-stack idle and 25.6 % inside the model -- the same shape as this whole window. Its time goes to arch_cpu_idle 6.327 s, mb_pext_conv_pixel [hw] 1.912 s, i2c_sifive_transfer 1.210 s (the OLED), mb_pext_conv_gather [hw] 1.058 s, sign_pre_rgb64 0.929 s, uart_sifive_poll_out 0.813 s. It waits on the camera and on the display. Making that lane denser is a workload question -- frame cadence, OLED refresh -- not a tracing one."
+  },
+
+  "what_the_board_reported": {
+    "_comment": "Console lines from the reference run, for comparison with your own. None of these is a golden.",
+    "calibration_5000ms": { "span_cycles": 200416536, "seconds": 5.0104, "hart0_bytes": 6698033, "hart1_bytes": 5352280 },
+    "final_13000ms": { "span_cycles": 532348281, "seconds": 13.3087, "hart0_bytes": 23573153, "hart1_bytes": 15673261 },
+    "SD_RESULT": "shield=1 seq=14 live_ok=6 replay 8/8",
+    "SD_MS": "mean 248 ms (243..251)",
+    "KWS_DUTY": "blocks=77 frames=119 inferences=7",
+    "KWS_PERMILLE": "busy=957",
+    "KWS_PER_UNIT": "frame_cycles=500502 infer_cycles=57841636 (1.446 s)",
+    "DUO_TRAIL": "pin_rc=0 ready=1 spins=1",
+    "DUO_DONE": "want=2 got=2"
+  },
+
+  "artefact": {
+    "_comment": "The merged Perfetto timeline is the deliverable. It is 45,658,157 B and 368,105 events and IS NOT COMMITTED TO THIS REPOSITORY -- it is produced by the run, at out/<name>_duo/trace.merged.perfetto.json, and opened at https://ui.perfetto.dev. The predecessor's was 48.2 MB and 391,880 events over 55.04 s: 6 % more events for 4.1x the wall clock, which is the whole point.",
+    "events": 368105,
+    "bytes": 45658157,
+    "path": "out/<name>_duo/trace.merged.perfetto.json"
+  },
+
+  "_a_longer_window_needs_new_bases": "Above ~35 s with both harts working the layout must move: ADDR down and SHIFT to 27 gives hart 0 128 MiB and hart 1 80 MiB, balancing them at ~72-76 s. samples/tacit_duo/from_reset.conf carries the arithmetic. And the RATE must be re-measured for whatever the lanes are doing then -- see gate 5."
+}

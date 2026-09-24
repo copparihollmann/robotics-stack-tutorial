@@ -93,14 +93,33 @@ P-ext ALU, the RoCC engine, the OLED I²C path, the fast multiplier and the came
 simulated in the SoC's *own* RTL. Three hardware bugs in this project reached a board through RTL
 that had never been simulated; these gates are why the build scripts run them first.
 
-**B-series — on the board.** `scripts/20` … `scripts/81`. Roughly in order: bring-up and Zephyr,
-TACIT off real silicon, dual-core, the memory hierarchy, packed-SIMD kernels, the peripherals
-(microphone, LEDs, camera, OLED, buttons), then the speech stack — encoder, decoder, live
-microphone, and the accelerator A/Bs.
+**B-series — on the board.** `scripts/20` … `scripts/81`, and `scripts/90`. Roughly in order:
+bring-up and Zephyr, TACIT off real silicon, dual-core, the memory hierarchy, packed-SIMD kernels,
+the peripherals (microphone, LEDs, camera, OLED, buttons), then the speech stack — encoder,
+decoder, live microphone, and the accelerator A/Bs.
 
 Each lab writes a run directory under `out/`, a `run.json` naming the bitstream md5 and the clocks
 as read back, and a results row. `expected/` holds the golden outputs the labs check themselves
 against.
+
+### The demos
+
+Some of these are less a lab than a thing to show someone, and each stands on its own — what it
+needs, what it produces, what a correct result looks like, and how to tell a wrong one.
+
+**`scripts/90_b156_tacit_window.sh` — both harts, both busy, one wall clock.**
+`samples/tacit_duo` runs the camera → detector → OLED pipeline on hart 0 and the microphone →
+MFCC → keyword spotter on hart 1, traces *both* from the reset vector into their own DMA sinks,
+and merges them into one Perfetto timeline. The interesting part is the bound. Counting units —
+N camera frames and M seconds of audio — cannot work, because frames cost ~0.97 s and audio blocks
+~0.22 s and the two counts can only be made to agree by predicting both; the run that did it that
+way produced a 55 s, 48 MB artefact whose every structural gate passed and which was **80 % a
+recording of an idle hart 0**. `DUO_WINDOW_MS` bounds both harts with one wall clock measured from
+the reset vector and stops both encoders while both workloads are still mid-unit, so the two lanes
+end at the same cycle by construction: **0.10 s apart, 0.7 % of a 13.309 s window**, against
+43.75 s. Seven gates, two of which fail on the old artefact — that is what makes them gates. It
+also re-measures the number that sizes the trace buffers, and finds a busy lane emits **5.3×** the
+rate the buffers had been sized from. `expected/tacit_duo_window.json`.
 
 ## Bitstreams
 
@@ -126,7 +145,7 @@ all, so it is treated as the same problem.
 (`0x5A5A0035`–`0x5A5A0039`). They are the measurement builds for the speech workstream — the ones
 behind the published accelerator numbers — not tutorial content, and shipping another 20 MB of
 binaries for labs nobody runs on day one is not a good trade. The labs that want them
-(`scripts/56`, `57`, `66`, `79`, `80`, `81`) fail with the md5, the filename and where to look.
+(`scripts/56`, `57`, `66`, `79`, `80`, `81`, `90`) fail with the md5, the filename and where to look.
 To supply them, point `IISWC_BIT_DIR` at a directory holding the files, or drop them in
 `/opt/iiswc/bit`; both are searched. To rebuild one, `fpga/pynq-z2/scripts/build_*_z1.sh` with
 Vivado 2023.1 and a Chipyard tree.

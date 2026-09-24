@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+mainmenu "SignDet live -- camera, SignDetLite on the P-extension, and the 8x8x3 grid on the OLED"
+
+# oled_status.c is compiled into this image for its bus mutex, bar graph, CFB setup and
+# font, so it needs its own options.  rsourced rather than copied: one definition.
+rsource "../oled_status/src/Kconfig.oled_status"
+
+config MB_PEXT
+	bool "Build the ModelBlaster kernels against the MBP extension"
+	default y
+	help
+	  samples/modelblaster_pext's and samples/moonshine_live's option, verbatim and for
+	  the same reason: the SAME generated kernels.c reads CONFIG_MB_PEXT out of autoconf.h
+	  to decide whether pext.h emits real custom-0 encodings or its bit-identical software
+	  model.  A demo that quietly ran the software model would be the exact failure this
+	  lab is asked to rule out, so it is =y and the run record carries the custom-0 count
+	  from the image's own disassembly.
+
+	  THE EXTENSION EXISTS ON HART 0 ONLY.  Any thread that reaches a curated pext kernel
+	  must be on CPU 0 or it takes an illegal-instruction trap.  See PEXT_SPEC.md section 7.
+
+source "Kconfig.zephyr"

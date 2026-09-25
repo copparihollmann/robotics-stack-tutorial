@@ -41,6 +41,36 @@
 #ifndef KWS_SECONDS
 #define KWS_SECONDS       20      /* how long to listen */
 #endif
+
+/*
+ * KWS_STOP_HOOK -- ADDITIVE AND DEFAULT-OFF, like KWS_NO_MAIN.  Lab B156.
+ *
+ * KWS_SECONDS bounds this loop by BLOCKS CONSUMED, not by wall clock: on the little hart
+ * the software P-extension model runs ~6.9x slower than the microphone, so 8 s of audio
+ * took 55.0 s of wall time in Lab B153 and set the length of a two-hart trace whose other
+ * lane had finished at 11.1 s.  Two workloads cannot be made to end together by choosing
+ * two counts -- one wall-clock window ends both regardless of per-model speed.
+ *
+ * So the block loop asks an external predicate whether the window is still open.  Nothing
+ * defines KWS_STOP_HOOK but samples/tacit_duo; everywhere else this is `!0` and every image
+ * scripts/37 and scripts/38 build is unchanged.  The check is per BLOCK, so the loop leaves
+ * after at most one block's work (one inference, ~1.4 s measured) -- the front end is never
+ * cut mid-frame and KWS_DUTY still reports whole units.
+ */
+#ifdef KWS_STOP_HOOK
+int kws_should_stop(void);
+#else
+static inline int kws_should_stop(void) { return 0; }
+#endif
+#ifndef KWS_PIN_CPU
+/* Which hart this runs on. 0 -- the BIG hart -- is the default and the only value that
+ * works with MB_PEXT_HW=1, because the MBP datapath exists on tile 0 only. Lab B151
+ * builds this same source with KWS_PIN_CPU=1 and MB_PEXT_HW=0, which is pext.h's
+ * software model on the LITTLE hart: the same arithmetic by construction, no custom-0
+ * word anywhere in the image's hot path, and a legal instruction stream on tile 1.
+ * CMakeLists.txt refuses the one combination that would trap. */
+#define KWS_PIN_CPU       0
+#endif
 #ifndef KWS_INFER_EVERY
 /* Frames between inferences. 10 x 20 ms = 200 ms, i.e. five inferences a second.
  *
@@ -169,7 +199,33 @@ static int infer(int *margin)
 	return best;
 }
 
-int main(void)
+/*
+ * THE PIN, AND WHY IT HAS TO BE A NEW THREAD TO REACH HART 1.
+ *
+ * This function used to be main() and its first statement was
+ * `k_thread_cpu_pin(k_current_get(), 0)`. That call is a no-op dressed as a guarantee:
+ * k_thread_cpu_pin() only binds a thread that HAS NOT STARTED, so calling it on the
+ * running main thread changes nothing. It looked correct for four labs because main
+ * already runs on CPU 0 and 0 was the only value ever asked for.
+ *
+ * Lab B151 asked for 1 and got `KWS_PIN want_cpu=1 hart=0 ok=0` on silicon -- the
+ * software-model build ran on the BIG hart and would have reported the little hart's
+ * duty cycle as the big one's. The fix is the pattern samples/tacit_pext_smp and
+ * samples/signdet_live already use: create K_FOREVER, pin, then start.
+ *
+ * KWS_PIN_CPU=0 still runs the body on the main thread exactly as before, so every
+ * image scripts/38 has ever produced is unchanged. Only the non-default value pays for
+ * a second stack.
+ */
+#ifdef KWS_NO_MAIN
+/* Lab B151 links this file into samples/tacit_duo; that sample's main() owns the
+ * thread, the pin and the join. Visible there, static everywhere else. */
+int kws_body(void);
+#define KWS_BODY_LINKAGE
+#else
+#define KWS_BODY_LINKAGE static
+#endif
+KWS_BODY_LINKAGE int kws_body(void)
 {
 	const struct device *mic = DEVICE_DT_GET(DT_NODELABEL(dmic_dev));
 	struct pcm_stream_cfg stream = {
@@ -185,7 +241,6 @@ int main(void)
 	uint32_t rate;
 	int ret, blocks_wanted, since_infer = 0;
 
-	k_thread_cpu_pin(k_current_get(), 0);
 	MB_PEXT_ASSERT_BIG_HART();
 
 	printk("KWS_LIVE start arch=%s macs=%d nframes=%d ncoef=%d nclass=%d "
@@ -193,6 +248,13 @@ int main(void)
 	       KWS_ARCH, KWS_MACS, KWS_NFRAMES, KWS_NCOEF, KWS_NCLASS,
 	       KWS_INFER_EVERY, (int)MB_PEXT_HW, mb_pext_mhartid(),
 	       CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC);
+
+	/* The pin is a request; this is the answer. An image with MB_PEXT_HW=1 that landed
+	 * on the wrong hart halts on the first DOT8 and says so, but one with
+	 * MB_PEXT_HW=0 would run perfectly well on the WRONG core and report a duty cycle
+	 * for the other one -- which is the failure Lab B151 exists to not make. */
+	printk("KWS_PIN want_cpu=%d hart=%lu ok=%d\n", KWS_PIN_CPU,
+	       mb_pext_mhartid(), (int)(mb_pext_mhartid() == (unsigned long)KWS_PIN_CPU));
 
 	/* The front end is checked on this silicon before a single word is spotted. A
 	 * fast wrong front end feeds a model that was trained on a different one. */
@@ -224,6 +286,33 @@ int main(void)
 		}
 		printk("KWS_MODEL_CHECK outputs=%d max_abs_err=%d\n",
 		       MODEL_TEST_OUTPUT_LEN, err);
+
+		/* THE WHOLE OUTPUT VECTOR, not just its distance from the golden.
+		 *
+		 * max_abs_err=0 says this image agrees with the codegen's own golden.
+		 * It does not let two DIFFERENT images be compared against each other,
+		 * and that is exactly what Lab B151 needs: the MBP build on hart 0 and
+		 * the software-model build on hart 1 run the same network over the same
+		 * baked input, and the claim is that the twelve int8 logits come out
+		 * IDENTICAL -- not merely that both round to the same class. Printing
+		 * the vector makes that a diff rather than an assertion, and a diff can
+		 * fail. */
+		printk("KWS_GOLDEN_LOGITS n=%d mb_pext_hw=%d v=",
+		       MODEL_TEST_OUTPUT_LEN, (int)MB_PEXT_HW);
+		for (i = 0; i < MODEL_TEST_OUTPUT_LEN; i++) {
+			printk("%d%s", (int)chk[i],
+			       i + 1 == MODEL_TEST_OUTPUT_LEN ? "" : ",");
+		}
+		{
+			int b = 0;
+
+			for (i = 1; i < MODEL_TEST_OUTPUT_LEN; i++) {
+				if (chk[i] > chk[b]) {
+					b = i;
+				}
+			}
+			printk(" argmax=%d\n", b);
+		}
 		if (err != 0) {
 			printk("KWS_LIVE FAIL the model in this image is not the one that was "
 			       "verified -- see SPEECH_ON_ROCKET.md section 4.2\n");
@@ -253,7 +342,7 @@ int main(void)
 
 	blocks_wanted = (int)(((uint64_t)KWS_SECONDS * rate) / BLOCK_SAMPLES);
 	t_start = rdcycle();
-	while ((int)n_blocks < blocks_wanted) {
+	while ((int)n_blocks < blocks_wanted && !kws_should_stop()) {
 		void *buf;
 		size_t size;
 
@@ -358,3 +447,56 @@ int main(void)
 	printk("KWS_LIVE done\n");
 	return 0;
 }
+
+#if defined(KWS_NO_MAIN)
+
+/* samples/tacit_duo creates, pins and starts this body itself -- see the note on
+ * SD_NO_MAIN in samples/signdet_live/src/main.c. Strictly additive: nothing else
+ * defines KWS_NO_MAIN, so scripts/38's image is unchanged. */
+
+#elif KWS_PIN_CPU == 0
+
+int main(void)
+{
+	/* The historical image: the body on the main thread, on the hart it booted on.
+	 * k_thread_cpu_pin() was never doing anything here and is not pretended at. */
+	return kws_body();
+}
+
+#else
+
+K_THREAD_STACK_DEFINE(kws_stack, CONFIG_MAIN_STACK_SIZE);
+static struct k_thread kws_thread;
+
+static void kws_entry(void *p1, void *p2, void *p3)
+{
+	ARG_UNUSED(p1);
+	ARG_UNUSED(p2);
+	ARG_UNUSED(p3);
+	(void)kws_body();
+}
+
+int main(void)
+{
+	k_tid_t tid = k_thread_create(&kws_thread, kws_stack,
+				      K_THREAD_STACK_SIZEOF(kws_stack), kws_entry,
+				      NULL, NULL, NULL, 5, 0, K_FOREVER);
+	int rc = k_thread_cpu_pin(tid, KWS_PIN_CPU);
+
+	k_thread_name_set(tid, "kws_live");
+	printk("KWS_PIN_RC rc=%d want_cpu=%d\n", rc, KWS_PIN_CPU);
+	if (rc != 0) {
+		/* Refuse rather than measure the wrong core. With MB_PEXT_HW=0 the body
+		 * would run happily on hart 0 and every cycle count in this run would be
+		 * the big core's. */
+		printk("KWS_LIVE FAIL could not pin to CPU %d (rc=%d) -- refusing to "
+		       "report another hart's duty cycle as this one's\n",
+		       KWS_PIN_CPU, rc);
+		return 0;
+	}
+	k_thread_start(tid);
+	k_thread_join(tid, K_FOREVER);
+	return 0;
+}
+
+#endif /* KWS_PIN_CPU */

@@ -94,10 +94,12 @@ P-ext ALU, the RoCC engine, the OLED I²C path, the fast multiplier and the came
 simulated in the SoC's *own* RTL. Three hardware bugs in this project reached a board through RTL
 that had never been simulated; these gates are why the build scripts run them first.
 
-**B-series — on the board.** `scripts/20` … `scripts/81`, and `scripts/90`. Roughly in order:
+**B-series — on the board.** `scripts/20` … `scripts/87`, and `scripts/90`. Roughly in order:
 bring-up and Zephyr, TACIT off real silicon, dual-core, the memory hierarchy, packed-SIMD kernels,
 the peripherals (microphone, LEDs, camera, OLED, buttons), then the speech stack — encoder,
-decoder, live microphone, and the accelerator A/Bs.
+decoder, live microphone, and the accelerator A/Bs — and last the sign-detection stack:
+`scripts/82`–`87` train, lower, bake and run SignDetLite and the grey-scale classifier before it
+(`scripts/91` installs a real lowered detector; see `docs/SIGNDET_WEIGHTS.md`).
 
 Each lab writes a run directory under `out/`, a `run.json` naming the bitstream md5 and the clocks
 as read back, and a results row. `expected/` holds the golden outputs the labs check themselves
@@ -121,6 +123,23 @@ end at the same cycle by construction: **0.10 s apart, 0.7 % of a 13.309 s windo
 43.75 s. Seven gates, two of which fail on the old artefact — that is what makes them gates. It
 also re-measures the number that sizes the trace buffers, and finds a busy lane emits **5.3×** the
 rate the buffers had been sized from. `expected/tacit_duo_window.json`.
+
+> **The detector's trained weights are not in this repository, and the demo runs anyway.**
+> SignDetLite is trained on GTSDB scenes, and GTSDB's licence could not be established — its
+> canonical site does not resolve from our network and the mirrors state none — so no
+> artefact embedding those weights is published here or anywhere else by this project.
+> `./scripts/84_signdet_lower.sh` instead lowers a **deterministic random-weight model**
+> (`signdet/random_weights.py`, numpy PCG64, **seed 144**) with the same architecture, the
+> same tensor shapes and the same interface quantisation scales, so the lowering, the kernel
+> selection, the guest build, both TACIT lanes and the whole scheduling result are exactly
+> what the real model produces. What a random network cannot do is *detect*: **gate 4,
+> REPLAY, is the one gate of the seven that depends on the weights**, and in random mode it
+> is reported **not applicable** — not quietly passed, not counted as a failure — while the
+> other six still gate. The real weights ship with the tutorial image and are installed by
+> `scripts/91_signdet_install_model.sh` from a local directory, with a checksum manifest and
+> no network. `docs/SIGNDET_WEIGHTS.md` is the whole account, including which gates are
+> meaningful in which mode. GTSDB is cited in `signdet/make_data.py` and must be obtained
+> from its own source.
 
 **`scripts/12_xpurt_coloc_sweep.sh` — two networks, two harts, one schedule.** Host only, and
 every duration in it was measured on a board. Moonshine has to finish; the detector must not miss
@@ -188,6 +207,9 @@ Vivado 2023.1 and a Chipyard tree.
 The docs kept here are the ones that tell you how to *do* something:
 
 * `docs/REPRODUCING.md` — rebuilding the whole environment from nothing
+* `docs/SIGNDET_WEIGHTS.md` — the sign detector's weights: why the trained ones are not here,
+  what the random-weight default demonstrates and what it cannot, which of `scripts/90`'s
+  gates are meaningful in which mode, and how an operator installs the real ones
 * `fpga/pynq-z2/docs/BRINGUP.md` — day one with a board: card, network, SSH key, passwordless sudo
 * `fpga/pynq-z2/docs/PROGRAMMING_AND_LOADING.md` — getting bitstreams and binaries into the part
 * `fpga/pynq-z2/docs/UART.md` — console options, and what the on-board FTDI can and cannot do

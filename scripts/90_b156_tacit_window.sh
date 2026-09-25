@@ -61,16 +61,30 @@
 #      it with fpga/pynq-z2/scripts/build_*_z1.sh.  load_pl() below refuses any other md5,
 #      because a trace measured against a different PL is not a smaller problem than no trace.
 #
-#   2. THE LOWERED DETECTOR.  $SIGN_GEN is the ModelBlaster codegen tree for SignDetLite --
-#      the colour, localising, background-class detector on hart 0 -- and $BAKE holds the
-#      eight baked replay frames that are the correctness gate.  Both come out of the
-#      SignDetLite workstream (train -> lower -> bake), which is NOT part of this repository:
-#      the checkpoint and the camera captures it is baked from are research artefacts, not
-#      tutorial content.  Everything else this lab builds on IS here -- samples/kws_live and
-#      its cnn_tiny weights, samples/signdet_live, samples/oled_status, the camera and OLED
-#      drivers -- so the shape of the run, the gates and the numbers below are all checkable
-#      against your own tree; what you cannot do from this repository alone is re-lower the
-#      detector.  Point SIGN_GEN and BAKE at your own trees if you have them.
+#   2. THE DETECTOR'S TRAINED WEIGHTS -- and ONLY the weights.  Everything else this lab
+#      needs is here: samples/kws_live and its cnn_tiny weights, samples/signdet_live,
+#      samples/oled_status, the camera and OLED drivers, the SignDetLite architecture and
+#      training code (fpga/pynq-z2/modelblaster/signdet/), the lowering flow
+#      (scripts/84_signdet_lower.sh) and the eight baked replay frames, which are our own
+#      bench captures and are tracked at $BAKE below.
+#
+#      The trained weights are GTSDB-derived and are not published anywhere by this project
+#      (docs/SIGNDET_WEIGHTS.md).  So:
+#
+#        ./scripts/84_signdet_lower.sh          lowers a DETERMINISTIC RANDOM-weight model
+#                                               (seed 144) into $SIGN_GEN.  Same shapes, same
+#                                               kernels, same interface scales, no detection
+#                                               ability.  The run below works end to end.
+#        ./scripts/91_signdet_install_model.sh  installs the REAL lowered model from a local
+#                                               directory -- what the tutorial image ships.
+#
+#      WHICH GATES MEAN WHAT.  Exactly one of the seven depends on the weights: GATE 4,
+#      REPLAY.  With random weights it is reported NOT APPLICABLE and excluded from the
+#      result; it is not quietly passed and it is not counted as a failure.  The other six --
+#      lanes, buffers, from-reset coverage, rate, and B156's both-lanes-busy and
+#      both-lanes-end-together -- are statements about the TRACING MECHANISM and the
+#      SCHEDULE, and they gate in both modes.  This script reads which mode it is out of
+#      $SIGN_GEN/signdet_weights.json and prints it before it builds anything.
 #
 # WHAT A CORRECT RESULT LOOKS LIKE, AND HOW TO TELL A WRONG ONE:
 # expected/tacit_duo_window.json.  It carries the seven gates, the measured numbers of the
@@ -93,7 +107,11 @@ WANT_MTIME_HZ="${WANT_MTIME_HZ:-40000}"
 SIGN_GEN="${SIGN_GEN:-$IISWC_ROOT/out/signdet/gen}"
 KWS_GEN="${KWS_GEN:-$IISWC_ROOT/out/rocket_kws/cnn_tiny/pext/gen}"
 KWS_META="${KWS_META:-$IISWC_ROOT/fpga/pynq-z2/modelblaster/kws/weights/cnn_tiny_meta.json}"
-BAKE="${BAKE:-$IISWC_ROOT/out/b146_signdet_live/bake}"
+# THE EIGHT REPLAY FRAMES ARE TRACKED.  They are our own HM01B0 captures on our own bench
+# (a hand holding a printed prop sign under the lab's ceiling tubes), baked to C by
+# signdet/bake_live_frames.py; no third-party image is in them.  out/b146_signdet_live/bake
+# is where scripts/87 writes a freshly baked set -- point BAKE there to use your own.
+BAKE="${BAKE:-$IISWC_ROOT/fpga/pynq-z2/modelblaster/signdet/bake}"
 
 # THE ONE KNOB THAT BOUNDS THE RUN.  Milliseconds of wall clock from the reset vector.
 WINDOW_MS="${WINDOW_MS:-13000}"
@@ -134,11 +152,24 @@ RUN="$IISWC_OUT/$NAME"; mkdir -p "$RUN"
 SSH=(ssh -o BatchMode=yes -o StrictHostKeyChecking=no "${PYNQ_HOST:-}")
 KCF="-DMB_PEXT_HW=1 -falign-loops=4 -DMBXR_RT_STAGE_BLOCK=1 -DMBP_B74=1 -DMBP_B76=1 -DMBP_B86=1 -DMBP_B87=1 -DMBP_B86D=1 -DMBP_B101L=1 -DMBP_B102=1 -DMBP_B103=1 -DMBP_B101U=1"
 
-for d in "$SIGN_GEN" "$KWS_GEN" "$BAKE"; do
+[ -d "$SIGN_GEN" ] || die "no lowered detector at $SIGN_GEN.
+       Lower one:  ./scripts/84_signdet_lower.sh                        (random weights, seed 144)
+       or install: ./scripts/91_signdet_install_model.sh --from <dir>   (the real ones)
+       See docs/SIGNDET_WEIGHTS.md."
+for d in "$KWS_GEN" "$BAKE"; do
   [ -d "$d" ] || die "missing input tree: $d"
 done
 need_file "$BAKE/signdet_frames.c"
 need_file "$KWS_META"
+
+# WHICH WEIGHTS ARE ABOUT TO GO INTO THE IMAGE.  Read off the gen tree, never guessed, and
+# read BEFORE anything is built so a random-weight run is announced rather than discovered in
+# the gates.  A tree with no manifest is somebody's own lowering: it is treated as REAL, which
+# is the direction that fails loudly instead of excusing a failure.
+WMANIFEST="$SIGN_GEN/signdet_weights.json"
+read -r SIGN_WMODE SIGN_OUT_PPB SIGN_REPLAY <<EOF
+$(python3 "$IISWC_ROOT/scripts/lib/signdet_weights.py" "$WMANIFEST")
+EOF
 
 ########################################################################################
 build_duo () {
@@ -149,7 +180,7 @@ build_duo () {
       -DEXTRA_CONF_FILE="$IISWC_ROOT/samples/tacit_duo/from_reset.conf" \
       -DSIGN_MODEL_DIR="$SIGN_GEN" -DKWS_MODEL_DIR="$KWS_GEN" \
       -DKWS_FEATMAP="$RUN/kws_featmap.h" -DSD_FRAMES_DIR="$BAKE" \
-      -DSD_DEFS="SD_THR_PCT=50 SD_FRAMES=$frames SD_MCLKDIV=3 SD_AE_TARGET=0x60 SD_BUTTON=0 SD_SNAP_LINE=1 SD_DUMP_GRID=0 SD_OUT_SCALE_PPB=7874016u" \
+      -DSD_DEFS="SD_THR_PCT=50 SD_FRAMES=$frames SD_MCLKDIV=3 SD_AE_TARGET=0x60 SD_BUTTON=0 SD_SNAP_LINE=1 SD_DUMP_GRID=0 SD_OUT_SCALE_PPB=${SIGN_OUT_PPB}u" \
       -DKWS_SECONDS="$secs" -DKWS_INFER_EVERY="$KWS_INFER_EVERY" \
       -DDUO_WINDOW_MS="$win" \
       -DMODELBLASTER_KERNEL_CFLAGS="$KCF" > "$d/build.log" 2>&1 \
@@ -293,6 +324,27 @@ PY
 step "0/6  inputs"
 info "board   $BOARD          bitstream $WANT_MAGIC  $(basename "$BIT")"
 info "sign    $SIGN_GEN"
+if [ "$SIGN_REPLAY" = "not_applicable" ]; then
+  cat <<BANNER
+    ######################################################################################
+    #  WEIGHTS: $SIGN_WMODE -- THIS DETECTOR CANNOT DETECT ANYTHING.
+    #
+    #  GATE 4 (REPLAY, 8/8 decisions, max |d| = 0) is NOT APPLICABLE and is excluded from
+    #  the result.  It is not passed and it is not a failure: the board is being compared
+    #  against a host run of a DIFFERENT model.
+    #
+    #  Every other gate still gates.  What this run demonstrates is the TRACING MECHANISM
+    #  (two from-reset TACIT lanes, sized from a measured rate, neither overrunning), the
+    #  SCHEDULING RESULT (both lanes busy for the whole window) and the LANE CONVERGENCE
+    #  (both lanes end together).  None of that depends on the weights.
+    #
+    #  The real weights ship with the tutorial image.  See docs/SIGNDET_WEIGHTS.md.
+    ######################################################################################
+BANNER
+else
+  info "weights $SIGN_WMODE -- GATE 4 (REPLAY) applies and is a gate"
+fi
+info "scales  SD_OUT_SCALE_PPB=$SIGN_OUT_PPB  (from $WMANIFEST)"
 info "kws     $KWS_GEN"
 info "bound   ONE WALL CLOCK: DUO_WINDOW_MS=$WINDOW_MS from the reset vector"
 info "feed    SD_FRAMES=$SD_FRAMES (0 = unbounded live loop)   KWS_SECONDS=$KWS_SECONDS  every=$KWS_INFER_EVERY"
@@ -376,6 +428,7 @@ if [ ! -s "$d/trace.merged.perfetto.json" ]; then
 fi
 # B153's five, unchanged -- lanes, buffers, from-reset coverage, the replay gate, the rate.
 run python3 "$IISWC_ROOT/scripts/lib/b153_gates.py" --run "$d" --clk-hz "$CLK_HZ" \
+    --weights-manifest "$WMANIFEST" \
     --out "$RUN/gates.json" | tee "$RUN/gates.txt"
 # ... and B156's two, which are the ones B153 had no way to fail: is EVERY part of the
 # window busy on BOTH lanes, and do the two lanes' model work end together?

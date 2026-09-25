@@ -1,0 +1,88 @@
+{
+ "thr": 0.5,
+ "scale": 0.007874015748031496,
+ "zero_point": 0,
+ "ir_md5": "5e3ac0705fe5ef1beb7a35afc2b15138",
+ "frames": [
+  {
+   "stem": "snap_015_PRIORITY",
+   "truth": "stop",
+   "cls": 0,
+   "gx": 6,
+   "gy": 5,
+   "q": 54,
+   "pct": 43,
+   "note": "octagon, left-of-centre, partly backlit"
+  },
+  {
+   "stem": "snap_016_PRIORITY",
+   "truth": "stop",
+   "cls": 1,
+   "gx": 4,
+   "gy": 5,
+   "q": 73,
+   "pct": 57,
+   "note": "octagon, low contrast against bright wall"
+  },
+  {
+   "stem": "snap_017_PRIORITY",
+   "truth": "stop",
+   "cls": 1,
+   "gx": 4,
+   "gy": 5,
+   "q": 77,
+   "pct": 61,
+   "note": "near-duplicate of 016"
+  },
+  {
+   "stem": "snap_018_LEFT",
+   "truth": "stop",
+   "cls": 1,
+   "gx": 5,
+   "gy": 4,
+   "q": 124,
+   "pct": 98,
+   "note": "octagon RIGHT of frame centre -- a centre crop misses it"
+  },
+  {
+   "stem": "snap_020_PRIORITY",
+   "truth": "stop",
+   "cls": 1,
+   "gx": 4,
+   "gy": 4,
+   "q": 122,
+   "pct": 96,
+   "note": "octagon, largest STOP instance"
+  },
+  {
+   "stem": "snap_022_YIELD",
+   "truth": "yield",
+   "cls": 2,
+   "gx": 3,
+   "gy": 5,
+   "q": 124,
+   "pct": 98,
+   "note": "large point-down triangle, apex low"
+  },
+  {
+   "stem": "snap_024_YIELD",
+   "truth": "yield",
+   "cls": 2,
+   "gx": 4,
+   "gy": 5,
+   "q": 104,
+   "pct": 82,
+   "note": "smallest sign in the set"
+  },
+  {
+   "stem": "snap_026_PRIORITY",
+   "truth": "yield",
+   "cls": 2,
+   "gx": 4,
+   "gy": 5,
+   "q": 125,
+   "pct": 98,
+   "note": "triangle; old model called this PRIORITY at 100%"
+  }
+ ]
+}

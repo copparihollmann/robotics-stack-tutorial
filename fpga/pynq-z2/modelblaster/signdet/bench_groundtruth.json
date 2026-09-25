@@ -1,0 +1,24 @@
+{
+  "_README": [
+    "Lab B144 ground truth for the 8 HM01B0 bench captures in out/cam_snap/snaps/*.raw.",
+    "LABELLED BY EYE from the demosaiced, 180-rotated renders. The FILENAMES ENCODE THE OLD",
+    "MODEL'S WRONG GUESSES and are NOT labels -- every one of the 8 is wrong.",
+    "Coordinates are pixels in the 324x324 frame AFTER rot180 (the camera is mounted upside",
+    "down; IMAGE_ORIENTATION 0x0101 is measured not to flip this part, see CAMERA_Z1.md 9.5).",
+    "box is [x0,y0,x1,y1] drawn to the outer edge of the sign's red boundary.",
+    "Truth: 5 STOP, 3 YIELD. The props are US-style: red octagon lettered STOP, and a",
+    "point-down white triangle with a thick red border lettered YIELD."
+  ],
+  "frame": {"width": 324, "height": 324, "stride": 326, "pad_left": 2, "cfa": "BGGR", "rot180": true},
+  "classes": ["background", "stop", "yield"],
+  "images": {
+    "snap_015_PRIORITY": {"label": "stop",  "box": [137, 157, 218, 237], "note": "octagon, left-of-centre, partly backlit"},
+    "snap_016_PRIORITY": {"label": "stop",  "box": [128, 168, 195, 235], "note": "octagon, low contrast against bright wall"},
+    "snap_017_PRIORITY": {"label": "stop",  "box": [128, 168, 195, 235], "note": "near-duplicate of 016"},
+    "snap_018_LEFT":     {"label": "stop",  "box": [172, 148, 250, 228], "note": "octagon RIGHT of frame centre -- a centre crop misses it"},
+    "snap_020_PRIORITY": {"label": "stop",  "box": [148, 143, 232, 228], "note": "octagon, largest STOP instance"},
+    "snap_022_YIELD":    {"label": "yield", "box": [118, 128, 235, 250], "note": "large point-down triangle, apex low"},
+    "snap_024_YIELD":    {"label": "yield", "box": [145, 172, 218, 235], "note": "smallest sign in the set"},
+    "snap_026_PRIORITY": {"label": "yield", "box": [118, 168, 232, 258], "note": "triangle; old model called this PRIORITY at 100%"}
+  }
+}

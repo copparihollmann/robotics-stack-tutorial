@@ -22,7 +22,20 @@ The gates, in the order they are printed:
                     the trace starts at the reset vector rather than at main().
   4  REPLAY         the B151 gate, unchanged: 8/8 decisions, 8/8 tensors, max |d| = 0.
                     Tracing must not perturb the result it is tracing.
+
+                    THIS IS THE ONE GATE THAT DEPENDS ON THE MODEL'S WEIGHTS, and it is
+                    the one this repository cannot ship the weights for (GTSDB licence;
+                    docs/SIGNDET_WEIGHTS.md).  Given --weights-manifest pointing at a gen
+                    tree whose signdet_weights.json says replay_gate=not_applicable -- what
+                    scripts/84 writes when it lowered a RANDOM-weight model -- this gate
+                    still runs, still prints every row, and is reported NOT APPLICABLE
+                    rather than FAIL.  It is excluded from the overall result, and nothing
+                    else is: a random-weight run that fails gates 1, 2, 3 or 5 fails.
   5  RATE           bytes per core cycle per hart, measured.  This is what sizes a buffer.
+
+WHICH GATES MEAN WHAT IN WHICH MODE, in one line: 1, 2, 3 and 5 are statements about the
+TRACING MECHANISM and the SCHEDULE and hold whatever the weights are; 4 is the only
+statement about DETECTION and needs the real ones.
 """
 import argparse
 import collections
@@ -143,7 +156,25 @@ def main():
     ap.add_argument("--run", required=True)
     ap.add_argument("--clk-hz", type=int, default=40000000)
     ap.add_argument("--out")
+    ap.add_argument("--weights-manifest",
+                    help="a gen tree's signdet_weights.json.  Its replay_gate field decides "
+                         "whether GATE 4 is a gate or is reported NOT APPLICABLE.  Absent, "
+                         "the model is ASSUMED to be the real one and gate 4 is a gate -- "
+                         "the safe direction, because it fails loudly rather than excusing "
+                         "a failure it cannot see the cause of.")
     a = ap.parse_args()
+
+    # WHICH WEIGHTS ARE IN THE IMAGE.  Read, never inferred from the result: a detector that
+    # disagrees with the baked answers looks exactly the same whether it is random or broken,
+    # and the only thing that can tell them apart is what was lowered.
+    wm = {"weights_mode": "unknown", "replay_gate": "applicable"}
+    if a.weights_manifest and os.path.exists(a.weights_manifest):
+        try:
+            wm.update(json.load(open(a.weights_manifest)))
+        except ValueError:
+            print("  [warn] %s is not JSON -- treating the weights as real"
+                  % a.weights_manifest)
+    replay_applies = wm.get("replay_gate") != "not_applicable"
 
     merged = os.path.join(a.run, "trace.merged.perfetto.json")
     console = os.path.join(a.run, "console.txt")
@@ -161,6 +192,14 @@ def main():
     W("B153  FULL FROM-RESET TACIT TRACE -- GATES")
     W("=" * 86)
     W("artefact  %s (%.1f MB)" % (merged, os.path.getsize(merged) / 1e6))
+    W("weights   %s -- %s" % (wm["weights_mode"].upper(),
+                              "detection is meaningful, GATE 4 applies" if replay_applies
+                              else "NO DETECTION ABILITY, GATE 4 IS NOT APPLICABLE"))
+    if not replay_applies:
+        W("          %s" % wm.get("provenance", ""))
+        W("          gates 1, 2, 3 and 5 below are about the tracing mechanism and the")
+        W("          schedule; they hold whatever the weights are, and they still gate.")
+    R["weights"] = wm
     W("from_reset=%s  span_cycles=%s (%.3f s at %d Hz)"
       % (cn["from_reset"], cn["span_cycles"],
          (cn["span_cycles"] or 0) / a.clk_hz, a.clk_hz))
@@ -330,11 +369,25 @@ def main():
     W("  SD_REPLAY_END decisions_ok/tensors_ok/thr_match = %s" % (cn["replay"]["end"],))
     ok4 = (len(rows) == 8 and nd == 8 and nt == 8 and maxd == 0
            and cn["replay"]["end"] == (1, 1, 1))
-    R["gates"]["replay_ok"] = ok4
-    R["gates"]["replay"] = dict(n=len(rows), decisions=nd, tensors=nt, max_abs_err=maxd)
-    if not ok4:
-        fails.append("the replay gate did not pass with tracing on")
-    W("  => GATE 4 %s" % ("PASS" if ok4 else "FAIL"))
+    R["gates"]["replay"] = dict(n=len(rows), decisions=nd, tensors=nt, max_abs_err=maxd,
+                                applicable=replay_applies)
+    if not replay_applies:
+        # NOT a pass, NOT a failure, and it must not be allowed to read as either.  The
+        # numbers above are printed in full because they are still evidence -- that eight
+        # frames were replayed, that the board produced a 192-byte tensor for each, that
+        # nothing hung -- they just are not evidence ABOUT DETECTION.
+        R["gates"]["replay_ok"] = None
+        W("")
+        W("  => GATE 4 NOT APPLICABLE -- %s weights." % wm["weights_mode"])
+        W("     The 8 frames ran and the board answered for all 8; the answers are compared")
+        W("     against a HOST run of the REAL model, which is not the model in this image,")
+        W("     so a mismatch here is the expected result and says nothing about the board.")
+        W("     This gate needs the real weights: docs/SIGNDET_WEIGHTS.md.")
+    else:
+        R["gates"]["replay_ok"] = ok4
+        if not ok4:
+            fails.append("the replay gate did not pass with tracing on")
+        W("  => GATE 4 %s" % ("PASS" if ok4 else "FAIL"))
 
     # ---- gate 5: the measured rate -----------------------------------------------------
     W("")
@@ -363,8 +416,12 @@ def main():
 
     W("")
     W("=" * 86)
-    allok = ok1 and ok2 and ok3 and ok4
-    W("RESULT: %s" % ("ALL GATES PASS" if allok else "FAILED"))
+    allok = ok1 and ok2 and ok3 and (ok4 or not replay_applies)
+    if replay_applies:
+        W("RESULT: %s" % ("ALL GATES PASS" if allok else "FAILED"))
+    else:
+        W("RESULT: %s  (GATE 4 not applicable -- %s weights)"
+          % ("GATES 1, 2, 3, 5 PASS" if allok else "FAILED", wm["weights_mode"]))
     for f in fails:
         W("   FAIL: %s" % f)
     W("=" * 86)

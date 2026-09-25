@@ -191,15 +191,28 @@ run_cell() {
          "XPURT_CPSAT_WORKERS=$XPURT_CPSAT_WORKERS")
   [ "$comp" = "compact" ] && envs+=("XPURT_COMPACT=1")
 
-  if ! (cd "$cell" && "${envs[@]}" "$PY" "$XPURT/scripts/run_xpurt_schedule.py" \
+  # RUN THE FARM'S OWN COPY, NOT $XPURT'S.  run_xpurt_schedule.py derives its
+  # repo_base_path from the script's OWN location (:250), never from the cwd, so
+  # invoking $XPURT/scripts/... makes the base path the XPU-RT checkout -- where
+  # this lab's data is not -- and every network dies with
+  # `dispatch_deps_path not found at ''`.  The cell's symlink farm has its own
+  # scripts/ entry; naming that makes the base path the cell.  abspath() does not
+  # resolve symlinks, which is why the farm copy works at all.
+  if ! (cd "$cell" && "${envs[@]}" "$PY" "$cell/scripts/run_xpurt_schedule.py" \
         --networks-json "$SPEC" "${sargs[@]}" "${cargs[@]}") >"$log" 2>&1; then
     echo "FAILED $tag -- see $log"; return 0
   fi
-  local suf f
+  # A ZERO EXIT IS NOT A SOLVE.  The runner can exit 0 having emitted nothing,
+  # and a caller that trusts rc alone reports a makespan it never computed.
+  # Require the artifact.
+  local suf f copied=0
   for suf in "" _metrics _report; do
     f="$cell/schedules/scheduled_${BASE}_${sched}_profiled${suf}.json"
-    [ -f "$f" ] && cp "$f" "$outdir/"
+    [ -f "$f" ] && { cp "$f" "$outdir/"; [ -z "$suf" ] && copied=1; }
   done
+  if [ "$copied" != 1 ]; then
+    echo "FAILED $tag -- exited 0 but emitted no schedule; see $log"; return 0
+  fi
   echo "ok $tag $(grep -am1 '^Makespan (non-periodic)' "$log" || true)"
 }
 export -f run_cell

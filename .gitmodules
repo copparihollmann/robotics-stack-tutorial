@@ -5,7 +5,7 @@
 	ignore = untracked
 [submodule "third_party/tacit-decoder"]
 	path = third_party/tacit-decoder
-	url = https://github.com/ucb-bar/tacit_decoder.git
+	url = https://github.com/riscv-tacit/tacit_decoder.git
 	branch = misc_decoders
 [submodule "third_party/riscv-isa-sim"]
 	path = third_party/riscv-isa-sim

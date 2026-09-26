@@ -9,22 +9,55 @@
 # name                  remote                                              rev / branch
 
 zephyr-chipyard-sw      https://github.com/ucb-bar/zephyr-chipyard-sw.git   400791302d0   (rose-2-dev)
-#    ^^^ THIS PIN IS NOT FETCHABLE FROM THAT REMOTE.  Corrected 2026-09-21: the line used to
-#    read f92248ec1b4 while the gitlink in this repo said 400791302d0, so the file disagreed
-#    with the tree it claimed to pin.  The gitlink is now what is written, because the gitlink
-#    is what `git submodule update` uses -- but a fresh clone CANNOT check it out:
+#    ^^^ FETCHABLE.  This pin was blocker #1 and this comment used to say a fresh clone could
+#    not check it out.  That stopped being true and the file went on saying it; re-verified
+#    2026-09-26 (B185):
 #
-#      400791302d0  modelblaster: advance to the sub-byte weight grid
-#      bf50ca87d10  modelblaster: advance to the committed int8 Moonshine pipeline
+#      $ git ls-remote https://github.com/ucb-bar/zephyr-chipyard-sw.git refs/heads/rose-2-dev
+#      400791302d0d3aabde5fec22c3dc6eba33b51544        refs/heads/rose-2-dev
+#      $ git -C zephyr-chipyard-sw rev-list HEAD --not --remotes | wc -l
+#      0
 #
-#    are two local-only commits (`git -C zephyr-chipyard-sw rev-list HEAD --not --remotes`
-#    returns both), and they are submodule-pointer bumps onto two ModelBlaster commits that
-#    are themselves reachable from no remote -- 543437b and 99b9e84, the toolchain every
-#    board number in this programme was produced by.  Last fetchable ancestor: f92248ec1b4.
-#    Until those four commits are pushed, `git submodule update --init` fails for anyone but
-#    this machine.  docs/SELF_CONTAINED.md section 3 is the full account; it is blocker #1.
-tacit-decoder           https://github.com/ucb-bar/tacit_decoder.git        34e54441b5   (misc_decoders)
+#    The gitlink IS the branch tip, so `git submodule update --init` works from a fresh clone.
+#
+#    History, because this pin's own VALUE was once wrong too: the line read f92248ec1b4 while
+#    the gitlink said 400791302d0.  400791302d0 and bf50ca87d10 were local-only submodule-
+#    pointer bumps onto two ModelBlaster commits -- 543437b and 99b9e84, the toolchain every
+#    board number in this programme was produced by -- which were themselves on no remote.  All
+#    four are now pushed.  The ModelBlaster pair reached the remote as the base of
+#    refs/heads/ir-passes-into-pipeline, and the proof is CONTAINMENT, not a 200 from the API
+#    (GitHub serves pushed-then-unreferenced objects, so /commits/<sha> proves nothing):
+#
+#      $ git -C zephyr-chipyard-sw/modelblaster merge-base --is-ancestor 543437b \
+#            $(git ls-remote .../ModelBlaster.git refs/heads/ir-passes-into-pipeline | cut -f1)
+#      $ echo $?
+#      0                                              # and the same for 99b9e84
+#
+#    PUBLIC BUT NOT YET DURABLE: both ModelBlaster commits sit on a feature branch and neither
+#    carries a tag, so deleting that branch would un-publish them.  Tagging them, or merging
+#    that branch, is what makes this permanent.
+tacit-decoder           https://github.com/riscv-tacit/tacit_decoder.git    34e54441b5   (misc_decoders)
+#    ^^^ riscv-tacit, NOT ucb-bar.  .gitmodules asked for ucb-bar/tacit_decoder until B185: the
+#    repo was renamed, and that spelling resolved only because GitHub redirects renamed repos.
+#    Both spellings return the same 34e54441b5 for misc_decoders today; the redirect dies the
+#    moment anyone creates a new repo at the old name, and it already fails for the bare API
+#    path (301 without -L).
 riscv-isa-sim (TACIT)   https://github.com/riscv-tacit/riscv-isa-sim.git    0ee3058d33   (l_trace)
+
+# XPU-RT -- NOT a submodule, and THE ONE DEPENDENCY THIS FILE CANNOT HONESTLY PIN.
+# scripts/12_xpurt_coloc_sweep.sh needs $XPURT_ROOT to point at an XPU-RT checkout; a tutorial
+# instance gets one from a TARBALL (scripts/aws_install_xpurt.sh), never a clone.
+#
+#   remote    https://github.com/ucb-bar/XPU-RT.git   PUBLIC -- unauthenticated ls-remote works
+#   dev tip   8d9f54af88                             what a clone gets
+#   USED      30b10cfbcf, and 228c4450 below it       what every B157 number was produced with
+#
+# THOSE TWO COMMITS ARE NOT PUSHED -- `git -C <XPU-RT> rev-list HEAD --not --remotes` returns
+# both -- so a clone of `dev` is silently a DIFFERENT scheduler, and scripts/12's check (a
+# directory that has a scripts/ child) cannot tell the difference.  Pushing or tagging them is
+# the only fix; until then Unit 4 is not reproducible from a public clone.
+# The Python closure IS pinned, and it is the fragile half: fpga/pynq-z2/requirements-xpurt.txt
+# (ortools==9.15.6755, and the protobuf ortools pins with it).
 
 # NOT a submodule and NOT pinned here: $CHIPYARD_DIR is a Chipyard checkout SHARED with
 # other projects whose working bitstreams are built from it, and env.sh gives it no default

@@ -42,10 +42,18 @@ it resolves.** For ModelBlaster, and only for ModelBlaster:
   regression to chase. The other four trees (spike, decoder, zephyr, zcs) are unaffected and
   `patches/` remains the source of truth for all of them.
 
-**And the thing that makes this worse than a documentation problem:** `543437b` and `99b9e84`
-are reachable from **no remote ref**. A fresh clone cannot fetch the authoritative pin, and
-cannot reconstruct it from `patches/` either. Pushing those two commits is the single action
-that closes this — see `docs/SELF_CONTAINED.md` §3, blocker #1.
+**Where those two commits now live.** When this was written, `543437b` and `99b9e84` were
+reachable from **no remote ref**, and that was the worst of it: a fresh clone could fetch
+neither the authoritative pin nor a way to rebuild it. Re-verified 2026-09-26 (B185): **both are
+public.** They reached `ucb-bar/ModelBlaster` as the base of `refs/heads/ir-passes-into-pipeline`,
+which is `99b9e84` plus one commit (`c546ffb`), and `merge-base --is-ancestor` against that
+branch's remote sha proves containment — a 200 from the API would not, because GitHub also
+serves unreferenced objects. `git submodule update --init` now works from a fresh clone.
+
+**The other half of the problem is unchanged:** `patches/` still cannot reconstruct the
+ModelBlaster pipeline, so the clone is the only route to it. And the pin is public without yet
+being durable — both commits sit on a feature branch and neither carries a tag, so **tagging
+them is the action that still needs doing.**
 
 ## Two patches that are checked by reverse-apply only
 

@@ -35,7 +35,7 @@ a URL this repository knows about. That means all of the following are absent, d
 |---|---|
 | `signdet_b144.pt` | the trained checkpoint itself |
 | the lowered `gen/` tree's `weights.c` / `weights.h` values | the same numbers, quantised |
-| `model.c`'s baked requantisation constants | derived from the trained weights |
+| `model.c`'s baked requantisation constants | derived from the trained weights — **and from the calibration count**, see §6 |
 | `test_golden.bin` | a golden computed *by* the trained model |
 | any fetch URL for the above | a URL would be publication |
 
@@ -197,6 +197,9 @@ Optional: `--calib <file.npy>` installs the numerical control set `scripts/86` w
 1. Bake the lowered tree (`model.* kernels.* weights.* buffers.c kernel_picks.json
    footprint.json test_io.* test_input.bin test_golden.bin`, optionally `ir/graph.json` and
    `calib_X.npy`) into the image at a fixed path. **It never enters a git repository.**
+   **Lower it with `--ncal 256`** (§6): the script defaults to 64, and 64 gives a different
+   `weights.c`, `test_golden.bin` and `ir/graph.json` from the tree every lab number was
+   measured against. Check `ir/graph.json` is `5e3ac070` before baking.
 2. Generate `SHA256SUMS` beside it with `--write-manifest`, once.
 3. On the instance: `./scripts/91_signdet_install_model.sh --from <that path>`.
 4. Confirm `out/signdet/gen/signdet_weights.json` says `"weights_mode": "real"`.
@@ -211,8 +214,26 @@ If you have your own GTSDB copy and want to reproduce the real model:
 ```
 python3 fpga/pynq-z2/modelblaster/signdet/make_data.py --gtsdb <your FullIJCNN2013> --out <ds>
 python3 fpga/pynq-z2/modelblaster/signdet/train.py    --ds <ds> --out <run>
-./scripts/84_signdet_lower.sh --ckpt <run>/signdet_b144.pt --calib <run>/calib_X.npy
+./scripts/84_signdet_lower.sh --ckpt <run>/signdet_b144.pt --calib <run>/calib_X.npy --ncal 256
 ```
+
+**`--ncal 256` IS NOT OPTIONAL HERE, AND THE SCRIPT'S DEFAULT IS 64.** Until 2026-09-26 this
+recipe omitted the flag, so following it produced a *correct* lowering of the same weights on a
+**different requantisation grid** — and nothing said so. The int8 PTQ sets every activation scale
+from what it observes on the calibration frames, so the count is an input to the model, not a
+speed knob. Measured on the same checkpoint and the same `calib_X.npy`:
+
+| `--ncal` | `weights.c` | `test_golden.bin` | `ir/graph.json` | is this the tree the labs were measured against? |
+|---|---|---|---|---|
+| 64 (the script's default) | `e3143ae1` | `c7cf47fa` | `70a0ac6d` | **no** |
+| **256** | `d729a0a1` | `69727ae7` | `5e3ac070` | **yes** — 11 of 11 common files match |
+
+Why it matters beyond tidiness: install a 64-frame tree with `scripts/91`, and GATE 4 REPLAY stops
+being NOT APPLICABLE and starts comparing the board's answers against a `test_golden.bin` computed
+on a grid the board's `model.c` was not built for. **The failure is silent** — the manifest
+`signdet_weights.json` does not record `num_calibration`, and nothing in the script, the gates or
+`kernel_picks.json` mentions it. Recording and gating the count is open work; this line is the
+part that stops a reader reproducing the wrong tree today.
 
 `$SIGNDET_WORK` (default `out/signdet_work`) is where every tool in `signdet/` looks for
 training-side inputs; no tool in that directory carries an absolute path any more.

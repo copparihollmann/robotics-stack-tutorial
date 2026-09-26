@@ -33,9 +33,50 @@ zephyr-chipyard-sw      https://github.com/ucb-bar/zephyr-chipyard-sw.git   4007
 #      $ echo $?
 #      0                                              # and the same for 99b9e84
 #
-#    PUBLIC BUT NOT YET DURABLE: both ModelBlaster commits sit on a feature branch and neither
-#    carries a tag, so deleting that branch would un-publish them.  Tagging them, or merging
-#    that branch, is what makes this permanent.
+#    DURABLE SINCE B187 (2026-09-26).  Both ModelBlaster commits sat on one feature branch with
+#    no tag, so deleting refs/heads/ir-passes-into-pipeline would have un-published them.  Each
+#    now carries an annotated tag of its own on ucb-bar/ModelBlaster:
+#
+#      refs/tags/iiswc-tutorial-pin-moonshine-int8  -> 543437b50b
+#      refs/tags/iiswc-tutorial-pin-weight-grid     -> 99b9e8403c
+#
+#    Re-verified as CONTAINMENT against what the remote advertises, not as a 200 from the API:
+#
+#      $ git ls-remote .../ModelBlaster.git refs/tags/iiswc-tutorial-pin-weight-grid^{}
+#      99b9e8403c31aab5c86ac26399e3091f19712247
+#      $ git merge-base --is-ancestor 543437b 99b9e8403c31... ; echo $?
+#      0
+#
+#    Neither tag asks anyone to merge that branch, and neither claims the revision is current.
+# --- THE ZEPHYR KERNEL INSIDE THAT SUBMODULE, WHICH IS A SECOND PIN AND WAS THE REAL BLOCKER ---
+#
+# zephyr-chipyard-sw carries its OWN submodule at zephyr_ws/zephyr, and that nested gitlink --
+# not the one above -- is what 00_bootstrap.sh aborts on from a clean clone.  Three revisions
+# are involved and they are all on ucb-bar/zephyr, so nothing here is a fetchability problem:
+#
+#   4329bf61c4f  <== WHAT WE PIN.  Every patched kernel and every guest image in this programme
+#                    was built from it.  Contained in refs/heads/rose-2-dev (an ancestor of its
+#                    tip), which is the branch zephyr-chipyard-sw's own .gitmodules declares.
+#   c93d5bdb607     refs/heads/rose-2-dev TIP.  14 commits ahead of ours; patches/0003, 0011 and
+#                    0120 all still apply to it cleanly (checked, B187).  A legitimate future pin.
+#   bfd185fffb6     THE NESTED GITLINK, and it is on the WRONG BRANCH: it is the tip of
+#                    refs/heads/riskybirdv3-bringup, four commits past rose-2-dev.  One of those
+#                    four is `eacb2bcc i2c: sifive: serialize the bus with a per-controller
+#                    mutex`, which rewrites drivers/i2c/i2c_sifive.c in exactly the region
+#                    patches/0120 edits -- 347 lines becomes 366 -- so 06_patch_zephyr.sh's
+#                    `git apply --check` dies under set -e and takes the bootstrap with it.
+#
+# So the gitlink is not stale, it is CROSS-BRANCH: a bringup branch's tip recorded under a
+# submodule declared to follow rose-2-dev.  Fixing that belongs upstream in
+# ucb-bar/zephyr-chipyard-sw and is not ours to push, so scripts/00_bootstrap.sh checks out the
+# pin below explicitly after `submodule update --init zephyr_ws/zephyr`, and scripts/01_doctor.sh
+# ASSERTS it -- it used to print the revision without checking it, so a wrong-revision tree
+# passed the doctor and failed in the lab.
+#
+# Do not "upgrade" this pin to c93d5bdb607 casually.  It moves the kernel under every lab that
+# builds a guest, and the reason to move is a measurement, not tidiness.
+zephyr_ws/zephyr        https://github.com/ucb-bar/zephyr.git               4329bf61c4f  (contained in rose-2-dev)
+
 tacit-decoder           https://github.com/riscv-tacit/tacit_decoder.git    34e54441b5   (misc_decoders)
 #    ^^^ riscv-tacit, NOT ucb-bar.  .gitmodules asked for ucb-bar/tacit_decoder until B185: the
 #    repo was renamed, and that spelling resolved only because GitHub redirects renamed repos.
@@ -52,10 +93,33 @@ riscv-isa-sim (TACIT)   https://github.com/riscv-tacit/riscv-isa-sim.git    0ee3
 #   dev tip   8d9f54af88                             what a clone gets
 #   USED      30b10cfbcf, and 228c4450 below it       what every B157 number was produced with
 #
-# THOSE TWO COMMITS ARE NOT PUSHED -- `git -C <XPU-RT> rev-list HEAD --not --remotes` returns
-# both -- so a clone of `dev` is silently a DIFFERENT scheduler, and scripts/12's check (a
-# directory that has a scripts/ child) cannot tell the difference.  Pushing or tagging them is
-# the only fix; until then Unit 4 is not reproducible from a public clone.
+# SETTLED IN B187.  Both commits were pushed and TAGGED, so the pin is now honest and this file
+# carries it machine-readably (`pin xpurt` in the block at the end).  What was done:
+#
+#   refs/heads/iiswc-tutorial-pin          a NEW branch at 30b10cfbcf -- no default branch moved
+#   refs/tags/iiswc-tutorial-pin-scheduler annotated -> 30b10cfbcf  (the revision B157 ran)
+#   refs/tags/iiswc-tutorial-pin-plot-axis annotated -> 228c44503f  (its parent)
+#
+# and the ModelBlaster pair above, same reasoning, same day:
+#
+#   refs/tags/iiswc-tutorial-pin-moonshine-int8  annotated -> 543437b50b
+#   refs/tags/iiswc-tutorial-pin-weight-grid     annotated -> 99b9e8403c
+#
+# Containment is the claim, not a status code: a 200 from /commits/<sha> proves nothing, because
+# GitHub serves objects that were pushed and later left unreferenced.  What was checked, both
+# before and after, is `merge-base --is-ancestor <sha> $(ls-remote <live ref>)`.
+#
+# WHICH revision, and why it is not a guess: the checkout's reflog has exactly three entries
+# (clone 8d9f54af, then the two commits), no checkout/reset/rebase since, zero tracked files
+# with an mtime after the last commit, and all 44 B157 cell logs name that one directory.
+# `dev` is 8d9f54af88 and does NOT contain either commit, so a clone of `dev` is a DIFFERENT
+# scheduler -- which is why scripts/12_xpurt_coloc_sweep.sh now asserts the pin instead of
+# accepting any directory with a scripts/ child.
+#
+# STILL NOT REPRODUCIBLE, AND THE TAG DOES NOT FIX IT: every `data/toplevel/networks_*.json`
+# the B157 cells loaded is UNTRACKED in XPU-RT, the primary input included.  The tag pins the
+# CODE; the network definitions and profiles that produced those numbers are in no git history
+# and live in one working directory plus archive/ symlinks.  That needs its own decision.
 # The Python closure IS pinned, and it is the fragile half: fpga/pynq-z2/requirements-xpurt.txt
 # (ortools==9.15.6755, and the protobuf ortools pins with it).
 
@@ -256,3 +320,28 @@ riscv-isa-sim (TACIT)   https://github.com/riscv-tacit/riscv-isa-sim.git    0ee3
 #         definition (boards/chipyard/pynqz1_micrgb) is likewise this repo's own file.
 #     That is the point of comparison for 0011/0012 above: a PDM decimator is not a device
 #     either tree ships and a GPIO controller is. See fpga/pynq-z2/docs/RGB_LEDS.md.
+
+# ==========================================================================================
+# MACHINE-READABLE PINS
+# ==========================================================================================
+# Everything above is prose for a human.  The lines in THIS block are parsed, by
+# scripts/lib/deps_lock.sh:  `deps_pin <key>` returns the sha, `deps_assert_rev <dir> <key>`
+# refuses a checkout that is not at it.
+#
+# Format, and it is deliberately the dullest thing that works so that grep finds it and a
+# human still reads a table:
+#
+#     pin <key> <40-character sha>
+#
+# Forty characters, never an abbreviation: a short sha is ambiguous across repositories and
+# across time, and being unambiguous is this file's entire job.
+#
+# THE POINT.  B185 found that a pin nobody checks is a comment.  Unit 1 failed in the room
+# because the kernel revision was recorded in prose and asserted nowhere; Unit 4's numbers were
+# produced by a scheduler revision recorded nowhere at all, and the sweep script could not tell
+# a clone of `dev` from it.  Both failures are SILENT -- a different revision builds, runs, and
+# prints numbers with nothing saying which revision made them.  Add a key here the moment a
+# script needs to trust a revision, and make the script call deps_assert_rev.
+
+pin zephyr_kernel 4329bf61c4fe97dd11715faa138d0500694e6096
+pin xpurt         30b10cfbcf9ca1794af7ef7652fc7c5376b1568e

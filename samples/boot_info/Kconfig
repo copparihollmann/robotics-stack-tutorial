@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+mainmenu "Boot info -- the board's network identity, held on the glass"
+
+# oled_status.c is compiled in for its CFB setup, font and BUS MUTEX, so it needs its own
+# options.  rsourced rather than copied, exactly as samples/cam_snap does it: one definition.
+rsource "../oled_status/src/Kconfig.oled_status"
+
+source "Kconfig.zephyr"

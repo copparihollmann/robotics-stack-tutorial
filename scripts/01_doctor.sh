@@ -38,6 +38,24 @@ if [ -x "$TACIT_DECODER" ]; then
   then ok "decoder multi-hart" "--trace FILE:HART:LABEL, one named track per hart (Labs B7/B11)"
   else bad "decoder multi-hart" "stale build -- run scripts/05_build_tacit_tools.sh --decoder"; fi
 fi
+# The kernel REVISION, asserted and not merely printed. This check is here because the doctor
+# used to print a submodule's short HEAD and check nothing, so a tree at the wrong revision
+# passed the doctor and failed in the lab -- and the wrong revision is the DEFAULT: the nested
+# gitlink points at riskybirdv3-bringup's tip, four commits off the branch it declares, where
+# patches/0120 cannot apply. See deps.lock's zephyr_ws/zephyr entry.
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/deps_lock.sh"
+_zrev_want="$(deps_pin zephyr_kernel)"
+_zrev_have="$(git -C "$ZCS/zephyr_ws/zephyr" rev-parse HEAD 2>/dev/null || true)"
+if [ -z "$_zrev_want" ]; then
+  bad "zephyr kernel rev" "no 'pin zephyr_kernel' in deps.lock -- the revision is unchecked"
+elif [ -z "$_zrev_have" ]; then
+  bad "zephyr kernel rev" "zephyr_ws/zephyr not checked out -- run scripts/00_bootstrap.sh"
+elif [ "$_zrev_have" = "$_zrev_want" ]; then
+  ok "zephyr kernel rev" "${_zrev_want:0:12}  (deps.lock: pin zephyr_kernel)"
+else
+  bad "zephyr kernel rev" "at ${_zrev_have:0:12}, pinned ${_zrev_want:0:12} -- run scripts/00_bootstrap.sh
+        (patches/0120 does not apply at any other revision; see deps.lock)"
+fi
 # The kernel checkout is not tracked by this repo, so its patch is applied by a script and
 # can silently be missing on a tree someone re-cloned by hand.
 if grep -q 'CONFIG_STARTUP_TACIT_SINK_DMA_ADDR' "$ZCS/zephyr_ws/zephyr/arch/riscv/core/reset.S" 2>/dev/null

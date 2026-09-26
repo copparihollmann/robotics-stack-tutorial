@@ -169,6 +169,50 @@ else
   [ -d "$ZCS/tools-manual" ] || die "install_toolchain_sdk.sh installed no SDK"
 fi
 
+# --- the Zephyr kernel revision, which is a SECOND pin and was the bootstrap's real blocker ---
+# One place, after every install path, because all three of them can land on the wrong revision.
+#
+# zephyr-chipyard-sw's nested gitlink for zephyr_ws/zephyr is bfd185fffb6 -- the tip of
+# ucb-bar/zephyr's `riskybirdv3-bringup`, NOT of the `rose-2-dev` its own .gitmodules declares.
+# Four commits separate them and one of the four, `eacb2bcc i2c: sifive: serialize the bus with
+# a per-controller mutex`, rewrites drivers/i2c/i2c_sifive.c in exactly the region patches/0120
+# edits: 347 lines becomes 366, `git apply --check` fails, and 06_patch_zephyr.sh below dies
+# under set -e taking the bootstrap with it.  That is what a clean clone hit, every time.
+#
+# Fixing the gitlink belongs upstream in ucb-bar/zephyr-chipyard-sw and is not ours to push, so
+# the pin lives in deps.lock and is applied HERE.  It is an ancestor of rose-2-dev's tip, so it
+# is fetchable and durable -- and it is the revision every guest image in this programme was
+# built from, which is the reason it and not the newer tip is what we pin.
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/deps_lock.sh"
+ZEPHYR_REV="$(deps_pin_require zephyr_kernel)"
+if [ -d "$ZCS/zephyr_ws/zephyr" ] && git -C "$ZCS/zephyr_ws/zephyr" rev-parse --git-dir >/dev/null 2>&1; then
+  have="$(git -C "$ZCS/zephyr_ws/zephyr" rev-parse HEAD 2>/dev/null || true)"
+  if [ "$have" != "$ZEPHYR_REV" ]; then
+    step "Zephyr kernel -> the pinned revision  (deps.lock: pin zephyr_kernel)"
+    info "  have   ${have:-<none>}"
+    info "  want   $ZEPHYR_REV"
+    # The object is usually already in the pack `submodule update --init` fetched, since the
+    # pin is an ancestor of a branch that clone carries.  Fetch only if it is genuinely absent,
+    # so the common path stays offline.
+    if ! git -C "$ZCS/zephyr_ws/zephyr" cat-file -e "$ZEPHYR_REV^{commit}" 2>/dev/null; then
+      run git -C "$ZCS/zephyr_ws/zephyr" fetch --quiet origin
+    fi
+    git -C "$ZCS/zephyr_ws/zephyr" cat-file -e "$ZEPHYR_REV^{commit}" 2>/dev/null \
+      || die "the pinned Zephyr kernel revision is not in this checkout and origin does not
+    have it either:  $ZEPHYR_REV
+    Check deps.lock's `pin zephyr_kernel` against ucb-bar/zephyr."
+    # Refuse to discard someone's edits.  A patched tree is EXPECTED to be dirty (patches/0003,
+    # 0011 and 0120 are applied in place by 06_patch_zephyr.sh below), so a checkout that would
+    # overwrite them is a real risk -- let git's own refusal be the guard, as everywhere else.
+    run git -C "$ZCS/zephyr_ws/zephyr" checkout --detach "$ZEPHYR_REV"
+  else
+    info "zephyr kernel at the pin  $ZEPHYR_REV"
+  fi
+  # The gitlink now disagrees with the checkout ON PURPOSE. Tell git not to report it, or every
+  # `git status` in zephyr-chipyard-sw shows a modified submodule for the rest of time.
+  git -C "$ZCS" config submodule.zephyr_ws/zephyr.ignore all 2>/dev/null || true
+fi
+
 # The kernel checkout is not tracked by this repo, so everything we need from it lives in
 # patches/ and is applied from here. Idempotent -- safe on a tree that is already patched.
 run "$IISWC_ROOT/scripts/06_patch_zephyr.sh"

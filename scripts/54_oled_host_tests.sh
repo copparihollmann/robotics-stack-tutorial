@@ -17,6 +17,12 @@
 #      "not fitted" once and never touches the bus again
 #   3. the sample itself for chipyard_pynqz1_micrgb + oled.overlay, and Zephyr's hello_world
 #      for the same board, to price the display stack from the linker map
+#   4. samples/boot_info's URL layout (B181): the boot screen splits the attendee's instance
+#      address across two rows so the digits get the tallest font, and the claim it rests on --
+#      that splitting after the second dot fits EVERY IPv4 in the eight columns a 15 px font
+#      gives on a 128 px panel -- is arithmetic over the whole address space, which no single
+#      board can check.  samples/boot_info/src/aws_url.h is pure C for exactly this reason, so
+#      the test compiles the code the glass runs.  Plain cc, no Zephyr, under a second.
 #
 # Outputs under out/oled_host/: console logs, status.pgm, pattern.pgm, stock_status.pgm,
 # wire_*.txt, footprint.json. Images are NOT committed; their sha256 is (expected/).
@@ -36,7 +42,7 @@ OUT="$IISWC_OUT/oled_host"
 EXP="$IISWC_ROOT/expected/oled_status.json"
 rm -rf "$OUT"; mkdir -p "$OUT"
 
-step "1/3  host test, display present  (native_sim/native/64)"
+step "1/4  host test, display present  (native_sim/native/64)"
 run west build -p always -b native_sim/native/64 "$S/tests/host" -d "$OUT/build_present" \
   > "$OUT/build_present.log" 2>&1 || { tail -30 "$OUT/build_present.log"; die "build failed"; }
 "$OUT/build_present/zephyr/zephyr.exe" > "$OUT/present.log" 2>&1 || true
@@ -51,7 +57,7 @@ else
   info "golden hashes and init wire sequence match $EXP"
 fi
 
-step "2/3  host test, display absent"
+step "2/4  host test, display absent"
 run west build -p always -b native_sim/native/64 "$S/tests/host" -d "$OUT/build_absent" \
   -- -DCONFIG_OLED_TEST_ABSENT=y > "$OUT/build_absent.log" 2>&1 \
   || { tail -30 "$OUT/build_absent.log"; die "build failed"; }
@@ -61,7 +67,7 @@ grep -q "SUITE PASS - 100.00% \[oled_absent\]" "$OUT/absent.log" \
 info "$(grep -m1 'SUITE PASS' "$OUT/absent.log")"
 info "$(grep -m1 '^oled:' "$OUT/absent.log")"
 
-step "3/3  footprint on chipyard_pynqz1_micrgb"
+step "3/4  footprint on chipyard_pynqz1_micrgb"
 run west build -p always -b chipyard_pynqz1_micrgb "$S" -d "$OUT/build_micrgb" -- \
   -DBOARD_ROOT="$IISWC_ROOT" -DEXTRA_DTC_OVERLAY_FILE="$S/oled.overlay" \
   > "$OUT/build_micrgb.log" 2>&1 || { tail -30 "$OUT/build_micrgb.log"; die "sample build failed"; }
@@ -72,4 +78,14 @@ grep -q '^CONFIG_SSD1306=y' "$OUT/build_micrgb/zephyr/.config" || die "CONFIG_SS
 python3 "$S/tools/footprint.py" "$OUT/build_micrgb" --baseline "$OUT/build_hello" --json "$OUT/footprint.json" \
   | sed 's/^/    /'
 info "zephyr.bin: sample $(stat -c %s "$OUT/build_micrgb/zephyr/zephyr.bin") bytes, hello_world $(stat -c %s "$OUT/build_hello/zephyr/zephyr.bin") bytes"
+
+step "4/4  boot_info URL layout over the whole IPv4 space (B181)"
+BI="$IISWC_ROOT/samples/boot_info"
+run cc -Wall -Wextra -Werror -o "$OUT/aws_url_test" "$BI/tests/aws_url_test.c" -I "$BI/src"
+"$OUT/aws_url_test" > "$OUT/aws_url_test.log" 2>&1 \
+  || { sed -n '/FAIL/p' "$OUT/aws_url_test.log" | head -20; die "URL layout test failed -- see $OUT/aws_url_test.log"; }
+grep -q "AUT DONE fails=0" "$OUT/aws_url_test.log" \
+  || die "URL layout test did not reach its own verdict -- see $OUT/aws_url_test.log"
+sed -n 's/^AUT OK   /    /p' "$OUT/aws_url_test.log"
+
 info "PASS"

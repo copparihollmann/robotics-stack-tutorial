@@ -109,11 +109,31 @@
 set -euo pipefail
 
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/deps_lock.sh"
 
 XPURT="${XPURT_ROOT:-${XPURT:-}}"
 [ -n "$XPURT" ] && [ -d "$XPURT/scripts" ] || die "XPURT_ROOT is not set, or does not look
        like an XPU-RT checkout.  git clone https://github.com/ucb-bar/XPU-RT and
        export XPURT_ROOT=/path/to/XPU-RT"
+
+# ...AND IT MUST BE THE PINNED REVISION.  "A directory with a scripts/ child" was the whole of
+# this check until B187, and it cannot tell one scheduler from another: `dev` is 8d9f54af88 and
+# does NOT contain the two commits every number in B157 was produced with, so a clone of the
+# default branch passed this gate and produced different numbers under the same name.  Both
+# commits are now pushed and tagged (see deps.lock), so there is a revision to insist on.
+#
+# XPURT_ALLOW_ANY_REV=1 runs against whatever is checked out -- for deliberately re-measuring on
+# a new revision.  It WARNS every time, because a number produced that way is not comparable
+# with the archived B157 set and the output must not look as if it were.
+if [ "${XPURT_ALLOW_ANY_REV:-0}" = 1 ]; then
+  warn "XPURT_ALLOW_ANY_REV=1: the XPU-RT revision is NOT being checked.
+    pinned: $(deps_pin xpurt)
+    here:   $(git -C "$XPURT" rev-parse HEAD 2>/dev/null || echo '<not a git checkout>')
+    Results from this run are NOT comparable with expected/xpurt_coloc2m_b157.json."
+else
+  deps_assert_rev "$XPURT" xpurt "XPU-RT (\$XPURT_ROOT=$XPURT)"
+  info "XPU-RT at the pinned revision  $(deps_pin xpurt)"
+fi
 PY="${XPURT_PY:-${PY:-}}"
 [ -n "$PY" ] && [ -x "$PY" ] || die "XPURT_PY is not set to an interpreter that has ortools.
        python3 -m venv /path/to/venv

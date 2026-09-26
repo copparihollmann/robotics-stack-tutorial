@@ -201,9 +201,32 @@ if [ -d "$ZCS/zephyr_ws/zephyr" ] && git -C "$ZCS/zephyr_ws/zephyr" rev-parse --
       || die "the pinned Zephyr kernel revision is not in this checkout and origin does not
     have it either:  $ZEPHYR_REV
     Check deps.lock's `pin zephyr_kernel` against ucb-bar/zephyr."
-    # Refuse to discard someone's edits.  A patched tree is EXPECTED to be dirty (patches/0003,
-    # 0011 and 0120 are applied in place by 06_patch_zephyr.sh below), so a checkout that would
-    # overwrite them is a real risk -- let git's own refusal be the guard, as everywhere else.
+    # A PATCHED TREE IS EXPECTED TO BE DIRTY -- 06_patch_zephyr.sh applies patches/0003, 0011
+    # and 0120 in place -- and git will refuse to move HEAD out of a dirty tree, which is right.
+    # But the tree a reader hits this code with is very often HALF-patched: 0003 and 0011 apply
+    # at the gitlink and only 0120 fails, so the failed bootstrap they already ran left two
+    # patches in the working tree.  Measured, B187: without this, `checkout --detach` dies with
+    # "Your local changes to arch/riscv/core/reset.S would be overwritten" and the bootstrap can
+    # never recover on its own -- the first run fails, and so does every run after it.
+    #
+    # So account for the dirt with OUR OWN patches before moving: un-apply exactly the ones that
+    # are actually applied, then require the tree to be clean.  Anything left is somebody's edit
+    # and we stop rather than discard it.  06_patch_zephyr.sh re-applies everything below.
+    if [ -n "$(git -C "$ZCS/zephyr_ws/zephyr" status --porcelain --untracked-files=no)" ]; then
+      info "  the kernel tree is dirty -- accounting for it with patches/*-zephyr-*.patch"
+      for p in "$IISWC_ROOT"/patches/*-zephyr-*.patch; do
+        [ -e "$p" ] || continue
+        if git -C "$ZCS/zephyr_ws/zephyr" apply --reverse --check "$p" 2>/dev/null; then
+          info "    un-applying $(basename "$p")"
+          git -C "$ZCS/zephyr_ws/zephyr" apply --reverse "$p"
+        fi
+      done
+      [ -z "$(git -C "$ZCS/zephyr_ws/zephyr" status --porcelain --untracked-files=no)" ] \
+        || die "the Zephyr kernel at $ZCS/zephyr_ws/zephyr has local changes that are NOT one of
+    this repo's own patches, and moving it to the pinned revision $ZEPHYR_REV would discard them:
+$(git -C "$ZCS/zephyr_ws/zephyr" status --short --untracked-files=no | sed 's/^/      /')
+    Commit, stash or revert them and re-run.  Nothing has been changed."
+    fi
     run git -C "$ZCS/zephyr_ws/zephyr" checkout --detach "$ZEPHYR_REV"
   else
     info "zephyr kernel at the pin  $ZEPHYR_REV"

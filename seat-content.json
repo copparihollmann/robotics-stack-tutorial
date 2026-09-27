@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-27T06:42:08Z",
+  "generated_at": "2026-09-27T07:48:07Z",
   "generated_by": "content_validate.py",
-  "source_commit": "dff88a820dd1efa7874209dd45d1451fad010684+working-tree",
+  "source_commit": "f716fde3d6d961ac9cb55d46ef94ef0de0ff1922+working-tree",
   "note": "fix: camera backend",
   "files": [
     {
@@ -82,8 +82,8 @@
     },
     {
       "path": "work/.backend/ospi-camera/modules/ospi_camera/backend/README.md",
-      "bytes": 906,
-      "sha256": "2500e2becd02088b74fd52c5c1d222786a9ef6da64bd3d4a8f094982885c29cc"
+      "bytes": 1414,
+      "sha256": "0948f0d4c5cb1282150274ac4a88b6ea74fd225f717b93e8e56879e6de08bd8b"
     },
     {
       "path": "work/.backend/ospi-camera/modules/ospi_camera/backend/include/hm01b0.h",
@@ -122,8 +122,8 @@
     },
     {
       "path": "work/.backend/ospi-camera/modules/ospi_camera/host/frame-to-colour.py",
-      "bytes": 20805,
-      "sha256": "0875ad88b6c7b6cbd236b104dc0e802aabd4a4be06fa0ea5438ff998b6bd18a3"
+      "bytes": 22874,
+      "sha256": "18e176b3438da644c6ed8804d19233a0fc47780df5ed8aca9660b349e8f2c51b"
     },
     {
       "path": "work/.backend/ospi-camera/modules/ospi_camera/include/ospi_camera.h",
@@ -187,16 +187,16 @@
     },
     {
       "path": "work/iiswc_lab.py",
-      "bytes": 70922,
-      "sha256": "4b758cc3fa8c4cacdbc8102b8600faca6ef07f5bcabf57628af0a76d5d3b6d0a"
+      "bytes": 70919,
+      "sha256": "f1fa2d1bce34ef5379e195f0a8bee2f2259a7ffa5f39e4821d33e88597b79213"
     },
     {
       "path": "work/iiswc_tutorial.ipynb",
-      "bytes": 107200,
-      "sha256": "830bd800935a48ea03d564d6742e69710cb26db4412b86882a57db66ce1445b4",
+      "bytes": 107641,
+      "sha256": "332da09350389003e55606f8a1673ae1cc6a2cccf7aa6573d5ab667f621b2873",
       "cells": 149,
       "nbformat": 4,
-      "source_chars": 75642,
+      "source_chars": 76020,
       "schema_checked": true
     },
     {
@@ -269,8 +269,8 @@
     },
     {
       "path": "work/tools/build_notebook.py",
-      "bytes": 84848,
-      "sha256": "15dda1d30d71fc5bc9e5454e7a9b2248df356ecc81d5ebbadf10075443d7416f"
+      "bytes": 85226,
+      "sha256": "cc37e11a49cbab4aa308203f5f79afd79bcb64a5e9e72dce12b69a914783810a"
     }
   ],
   "repo": {

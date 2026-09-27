@@ -427,10 +427,10 @@ def camera_save_frame(raw: bytes, meta: dict, destination: Path | str = "frame.r
 
 
 def camera_render_frame(raw_path: Path, meta: dict) -> Path:
-    """Render the checked raw frame with the camera backend's host tool."""
+    """Render a colour-denoised photo with automatic Bayer order, WB, CCM and sRGB."""
     renderer = camera_source("modules/ospi_camera/host/frame-to-colour.py")
     command = [sys.executable, str(renderer), str(raw_path),
-               str(meta["width"]), "1", "--order", meta["bayer"], "--as-captured"]
+               str(meta["width"]), "1", "--ccm", "0.7", "--denoise"]
     if meta["rotate"] == 180:
         command.append("--rotate180")
     subprocess.run(command, check=True, timeout=60, capture_output=True)

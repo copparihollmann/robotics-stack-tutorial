@@ -9,6 +9,7 @@ Options:
     --order RGGB|BGGR|GRBG|GBRG   force the phase assignment
     --binned             one output pixel per 2x2 tile (quarter resolution)
     --bilinear           plain bilinear demosaic instead of gradient-corrected
+    --denoise            suppress colour speckles without smoothing luminance
     --no-wb              leave the channels raw
     --linear             skip the sRGB transfer curve
     --black N            black level in DN (default: measured from the frame)
@@ -56,9 +57,9 @@ THE PIPELINE, in the order the steps have to happen:
   3. demosaic        full resolution. Averaging each 2x2 tile into one pixel
                      (--binned, which is all this tool used to do) throws away
                      three quarters of the pixels and every edge with them.
-  4. highlight roll  a channel that clipped in the raw reads lower than it
-                     really was, so a blown highlight comes out tinted -- cyan
-                     where red clipped first. Blend to white with the overflow.
+  4. chroma denoise  optional 3x3 colour-only median, gated by luminance so it
+                     does not mix across strong brightness edges. Enabled by
+                     the notebook; does not smooth luminance or change the raw.
   5. colour matrix   the sensor's three filters overlap, so a red object puts
                      real signal into the blue pixels. White balance cannot
                      undo that -- it is a per-channel gain, and the gain that
@@ -67,7 +68,10 @@ THE PIPELINE, in the order the steps have to happen:
                      subtracts the cross-channel leak instead. Its rows sum to
                      1, so neutrals are left exactly where white balance put
                      them and only saturated colours move.
-  6. sRGB curve      the sensor is linear and displays are not. Skipping this
+  6. highlight roll  a channel that clipped in the raw reads lower than it
+                     really was, so a blown highlight comes out tinted -- cyan
+                     where red clipped first. Blend to white with the overflow.
+  7. sRGB curve      the sensor is linear and displays are not. Skipping this
                      is what makes a correct render look muddy and contrasty,
                      and it is a bigger effect on how "natural" the result
                      looks than anything else here.
@@ -108,6 +112,7 @@ is useful mainly for seeing what the correction is doing.
 import struct
 import sys
 import zlib
+from statistics import median
 
 SAT_DN = 250          # at or above this a raw sample is treated as clipped
 
@@ -167,12 +172,13 @@ def estimate_black(img, red, blue):
     With BLC off there is no pedestal to remove in principle, but the ADC still
     sits a little above zero and the demosaic's gradients are ratios above
     black. Measured rather than assumed, because it moves with analog gain.
-    The percentile is taken over the whole frame rather than a corner, so a
-    scene with no dark region simply yields a black level near zero instead of
-    subtracting the darkest thing in the picture.
+    This is a scene-based estimate, not a sensor calibration: scenes without
+    dark areas can overestimate black. --black overrides it for measurements.
+    A wholly clipped frame has no usable black reference; leave its level alone.
     """
     flat = sorted(v for row in img for v in row)
-    return float(flat[len(flat) // 200])
+    estimate = float(flat[len(flat) // 200])
+    return estimate if estimate < SAT_DN else 0.0
 
 
 def white_balance_gains(img, red, green_a, green_b, blue, black):
@@ -212,25 +218,22 @@ def plane(img, black, gains, sat_mask):
 
 def _at(m, y, x, H, W):
     """Mirrored edge access, so the 5x5 kernels need no special-casing."""
-    if y < 0:
-        y = -y
-    elif y >= H:
-        y = 2 * H - y - 2
-    if x < 0:
-        x = -x
-    elif x >= W:
-        x = 2 * W - x - 2
-    return m[y][x]
+    def reflect(i, size):
+        if size == 1:
+            return 0
+        i %= 2 * (size - 1)
+        return min(i, 2 * (size - 1) - i)
+    return m[reflect(y, H)][reflect(x, W)]
 
 
 def demosaic(m, red, green_a, green_b, blue, gradient=True):
     """Malvar-He-Cutler (or bilinear) interpolation of a Bayer mosaic.
 
     The kernels are the published ones, scaled by 1/8. Rather than four hard
-    cases they are written as: a bilinear estimate over the target channel's own
-    lattice, plus a correction proportional to the Laplacian of the channel that
-    IS sampled at this pixel. That is exactly what the gradient correction is,
-    and it makes the bilinear fallback a one-line change.
+    cases they are written as a bilinear estimate plus the correction from the
+    channel sampled at this pixel. At green sites the correction uses nine green
+    samples, including the four diagonals, not just an axial second difference.
+    See Figure 2: https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/Demosaicing_ICASSP04.pdf
     """
     H, W = len(m), len(m[0])
     greens = {green_a, green_b}
@@ -266,8 +269,11 @@ def demosaic(m, red, green_a, green_b, blue, gradient=True):
                 horiz = (n_l + n_r) / 2.0
                 vert = (n_u + n_d) / 2.0
                 if gradient:
-                    horiz += 0.625 * lap_h
-                    vert += 0.625 * lap_v
+                    diagonals = d_ul + d_ur + d_dl + d_dr
+                    horiz += (5*c - (f_l + f_r + diagonals)
+                              + 0.5*(f_u + f_d)) / 8.0
+                    vert += (5*c - (f_u + f_d + diagonals)
+                             + 0.5*(f_l + f_r)) / 8.0
                 if (y & 1) == red[0]:
                     r, b = horiz, vert
                 else:
@@ -288,6 +294,32 @@ def demosaic(m, red, green_a, green_b, blue, gradient=True):
                     r, b = other, c
 
             out[y][x] = (r, g, b)
+    return out
+
+
+def chroma_denoise(rgb):
+    """Median-filter chroma in similar-luminance neighbours; retain luminance.
+
+    Operates in linear DN before the CCM and sRGB amplify low-level colour noise.
+    A 3x3 window and an 8-DN luminance gate limit colour bleed at edges. This is
+    display processing, not hot-pixel repair or evidence of a capture defect.
+    """
+    h, w = len(rgb), len(rgb[0])
+    luma = [[0.299*r + 0.587*g + 0.114*b for r, g, b in row] for row in rgb]
+    out = []
+    for y in range(h):
+        row = []
+        for x in range(w):
+            lum = luma[y][x]
+            neighbours = [(rgb[j][i], luma[j][i])
+                          for j in range(max(0, y-1), min(h, y+2))
+                          for i in range(max(0, x-1), min(w, x+2))
+                          if abs(luma[j][i] - lum) <= 8.0]
+            r = lum + median(pixel[0] - v for pixel, v in neighbours)
+            b = lum + median(pixel[2] - v for pixel, v in neighbours)
+            g = (lum - 0.299*r - 0.114*b) / 0.587
+            row.append((r, g, b))
+        out.append(row)
     return out
 
 
@@ -397,11 +429,13 @@ def main(argv):
     binned = flag("--binned")
     rotate180 = flag("--rotate180")
     bilinear = flag("--bilinear")
+    denoise = flag("--denoise")
     wb = not flag("--no-wb")
     gamma = not flag("--linear")
     as_captured = flag("--as-captured")
     if as_captured:
         black_arg, wb, gamma, sat, ccm = 0.0, False, False, 1.0, 0.0
+        denoise = False
 
     path = argv[1] if len(argv) > 1 else "frame.raw"
     width = int(argv[2]) if len(argv) > 2 else 326
@@ -432,6 +466,8 @@ def main(argv):
               "this frame does not have Bayer geometry")
 
     black = black_arg if black_arg is not None else estimate_black(img, red, blue)
+    if not 0 <= black < SAT_DN:
+        sys.exit(f"black level must be between 0 and {SAT_DN - 1} DN")
     clipped = sum(1 for row in img for v in row if v >= SAT_DN)
     print(f"  black level {black:.1f} DN"
           f"{'' if black_arg is None else ' [--black]'}; "
@@ -464,6 +500,10 @@ def main(argv):
         print("  demosaic: "
               f"{'bilinear' if bilinear else 'gradient-corrected (Malvar-He-Cutler)'}"
               f" -> {len(out[0])}x{len(out)} full resolution")
+
+    if denoise:
+        out = chroma_denoise(out)
+        print("  denoise: 3x3 edge-gated chroma median, luminance retained")
 
     # White point: the raw clip level in GREEN, whose gain is 1.0 by
     # construction. Scaling by the largest gain instead would mean green and

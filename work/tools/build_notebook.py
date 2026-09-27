@@ -342,10 +342,17 @@ if not f.ok:
     raise RuntimeError(f"Could not fetch the camera frame: {f}")
 raw_path = lab.camera_save_frame(f.stdout, frame)
 print(f"{frame['bytes']:,} bytes, checksum {frame['sum']:,}: verified")''')
-md("""The sensor sends a BGGR Bayer mosaic: each pixel measures one colour channel.
-The renderer removes the dummy bytes, reconstructs RGB at full resolution, and
-rotates the image 180 degrees for the sensor's mounting. It applies no brightness
-or colour correction, so the display retains the captured scene's exposure.""")
+md("""The sensor sends a Bayer mosaic: each pixel measures one colour channel.
+The display cell runs the complete photo pipeline automatically:
+
+1. Remove the two dummy bytes per row and infer the Bayer colour order from the frame.
+2. Subtract the estimated black level and white-balance using unclipped pixels.
+3. Reconstruct RGB at full resolution with gradient-corrected demosaicing,
+   then suppress colour speckles without smoothing luminance detail.
+4. Apply a generic colour-correction matrix at 0.7 strength and soften clipped highlights.
+5. Apply the sRGB display curve and rotate for the sensor's mounting.
+
+Colour correction improves the display; the matrix is not a sensor calibration.""")
 code('''from IPython.display import Image, display
 
 picture = lab.camera_render_frame(raw_path, frame)
@@ -353,9 +360,9 @@ display(Image(filename=str(picture)))''')
 md("""You should see a 324 x 324 colour image for a complete 326 x 324 raw frame.
 The original bytes remain in `frame.raw`; the displayed image is `frame-colour.png`.
 
-Unit 2's detector applies its own brightness and colour correction before preparing
-64 x 64 inputs. Its preprocessing is checked between host and board; the displayed
-PNG is not the detector's input.""")
+Unit 2's detector uses separate preprocessing to prepare 64 x 64 inputs directly
+from the raw frame. Its preprocessing is checked between host and board; the
+displayed PNG is not the detector's input.""")
 
 md("""### 1.6 Inspect the hardware description and enabled drivers
 

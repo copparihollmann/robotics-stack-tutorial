@@ -975,7 +975,7 @@ def mb_preflight() -> bool:
          "an instructor runs scripts/96_seat_mb_setup.sh"),
         ("the optimizer", MB_REPO / "scripts/95_mb_kernel_llm.sh",
          "an instructor runs scripts/96_seat_mb_setup.sh"),
-        ("the key to your board", Path.home() / ".ssh/iiswc-board-agent",
+        ("the key to your board", BOARD_KEY,
          "an instructor installs the seat's board key"),
     ]
     ready = True
@@ -985,6 +985,10 @@ def mb_preflight() -> bool:
         print(f"  {'yes' if have else 'NO ':<4} {name:<26} {path}")
         if not have:
             print(f"       {fix}")
+    board = BOARD_KEY.exists() and _board_answers()
+    print(f"  {'yes' if board else 'NO ':<4} {'your board answers':<26} through its tunnel")
+    if not board:
+        print("       is it on and on the WiFi? `mb doctor` in a terminal says why; a run waits for it")
     print()
     print("This seat can run the optimizer." if ready else
           "This seat cannot run the optimizer live. The cells below read a recorded run\n"
@@ -1126,12 +1130,55 @@ def _png(fig):
     return Image(buf.getvalue())
 
 
+BOARD_KEY = Path.home() / ".ssh/iiswc-board-agent"
+MB_BOARD_WAIT = 120     # seconds a run waits for a board that does not answer
+
+
+def _board_answers() -> bool:
+    """Your board's agent answers through its reverse tunnel, or is busy with another run."""
+    lock = Path.home() / ".mb-board.lock"
+    if lock.exists():
+        import fcntl
+        with open(lock) as fh:
+            try:
+                fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError:
+                return True                 # another run holds the board; this one queues
+    cmd = ["ssh", "-p", os.environ.get("MB_BOARD_AGENT_PORT", "19022"), "-i", str(BOARD_KEY),
+           "-o", "BatchMode=yes", "-o", "IdentitiesOnly=yes", "-o", "ConnectTimeout=10",
+           "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
+           "-o", "LogLevel=ERROR", "xilinx@localhost", "ping"]
+    try:
+        return subprocess.run(cmd, stdin=subprocess.DEVNULL, capture_output=True,
+                              timeout=20).returncode == 0
+    except subprocess.TimeoutExpired:
+        return False
+
+
+def _wait_for_board(status) -> bool:
+    """Up to MB_BOARD_WAIT seconds for the board, so a run is not left on spike by a blip."""
+    from IPython.display import Pretty
+    t0 = time.time()
+    while not _board_answers():
+        if time.time() - t0 >= MB_BOARD_WAIT:
+            return False
+        status.update(Pretty(f"[{time.time() - t0:4.0f} s]  waiting for your board to answer "
+                             f"through its tunnel (up to {MB_BOARD_WAIT} s) ..."))
+        time.sleep(10)
+    return True
+
+
 def _mb(words: list[str], timeout: int) -> Path | None:
     """Run `mb <words>` on this instance: its current step prints on one line, and the chart
     of the candidates redraws in place as they are scored.  Returns the run directory."""
     import queue
     import threading
     from IPython.display import Pretty, display
+    status = display(Pretty("checking your board ..."), display_id=True)
+    if BOARD_KEY.exists() and not _wait_for_board(status):
+        print(f"YOUR BOARD DID NOT ANSWER IN {MB_BOARD_WAIT} s: this run is on spike only and nothing "
+              "runs on the FPGA.\n`mb doctor` in a terminal says why; the verdict also shows a run "
+              "recorded on a real board.")
     t0 = time.time()
     proc = subprocess.Popen([str(MB), *words], cwd=MB_REPO, env=_clean_env(), text=True,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
@@ -1139,7 +1186,7 @@ def _mb(words: list[str], timeout: int) -> Path | None:
     threading.Thread(target=lambda: [q.put(l) for l in proc.stdout], daemon=True).start()
     lines: list[str] = []
     name, last_draw = "", 0.0
-    status = display(Pretty("starting ..."), display_id=True)
+    status.update(Pretty("starting ..."))
     chart = display(Pretty(""), display_id=True)
     try:
         while True:
@@ -1187,8 +1234,9 @@ def _mb(words: list[str], timeout: int) -> Path | None:
 def mb_optimize(ready: bool, op: str = "maxpool2d_s8", rounds: int = 2, beam: int = 2,
                 expansions: int = 2, max_calls: int = 8) -> Path:
     """One optimization, with your board in the loop, or the recorded one when this seat
-    cannot run it.  `mb` itself falls back to a recorded kernel if the model does not
-    answer, and to spike alone if the board does not, and says so."""
+    cannot run it.  It waits up to MB_BOARD_WAIT seconds for the board; `mb` itself falls
+    back to a recorded kernel if the model does not answer, and to spike alone if the
+    board does not, and says so."""
     if not ready:
         run = mb_recorded_run("llm")
         print(f"reading the recorded run {run.name}")
@@ -1387,6 +1435,9 @@ def show_board_verdict(run: str | Path) -> None:
                 print(f"{name:<10}{a['cycles']:>14,}{a.get('cycles_per_output') or 0:>13.1f}"
                       f"{be['cycles'] / a['cycles']:>13.2f}x   {note}")
             print("\nspike estimate only: it does not model memory timing, so the board usually measures less")
+        rec = mb_recorded_run("try" if j.get("kernel_file") else "llm")
+        print(f"\nmeasured on a real board, the recorded run {rec.name}:\n")
+        show_board_verdict(rec)
         return
     print(f"{run.name}: {kind}, measured on {b.get('board', '?')} ({b.get('magic', '?')}, "
           f"{(b.get('fclk_hz') or 0) / 1e6:.0f} MHz)\n")

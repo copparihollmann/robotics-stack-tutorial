@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-27T09:29:54Z",
+  "generated_at": "2026-09-27T09:53:36Z",
   "generated_by": "content_validate.py",
-  "source_commit": "df1589024cb34266cf6fe5e224a3f0167308cddf+working-tree",
-  "note": "Unit 4: spike estimate without a board",
+  "source_commit": "055fe66bfd2e26e0ddda68ca618bb56cd2ab1d5a+working-tree",
+  "note": "Unit 4: wait for the board",
   "files": [
     {
       "path": "work/.backend/ospi-camera/README.md",
@@ -192,8 +192,8 @@
     },
     {
       "path": "work/iiswc_lab.py",
-      "bytes": 93029,
-      "sha256": "38cdcd081d7542938117b27672ee128c225d920988d74547f35d2cb808dd2791"
+      "bytes": 95488,
+      "sha256": "02ec9f70d8dd4ded24907add102ce75e046fafd4067ed8c53ba312081d4a2df9"
     },
     {
       "path": "work/iiswc_tutorial.ipynb",

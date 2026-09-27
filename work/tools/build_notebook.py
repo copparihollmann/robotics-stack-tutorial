@@ -1401,56 +1401,85 @@ including memory access delays.
 
 The run uses three checks:
 
-- ModelBlaster verifies each candidate on the host using four shapes with random inputs.
+- ModelBlaster verifies each candidate on the host using five shapes with random inputs.
+  An eight-byte load from an unaligned address traps there, as it does on the board.
 - Spike runs the kernel on a test tensor and compares its output with the expected values.
 - A negative control executes a `custom-0` instruction on hart 1, where MBP is unavailable.
   That instruction must trap, confirming that the core rejects it.
 
 The run requires these checks to pass before accepting a result.
 
+</details>
+
+<details>
+<summary>What the model is told about MBP</summary>
+
+ModelBlaster describes each hardware target to the model with an optimization guide and
+the headers its kernels can use. For RVV, that is a guide to the vector instructions and
+`<riscv_vector.h>`. For this board, the guide describes the four MBP instructions, the
+alignment rule, and the patterns that use them, and `pext.h` provides the instructions.
+The model decides what each candidate tries.
+
 </details>""")
 
-md("""### 4.2 Check the optimizer setup
+md("""### 4.2 See what MBP.MAX8 computes
 
-The next cell checks for four required files: the model credentials, the development
-environment settings, the Spike build with MBP support, and the optimizer script.""")
+`MBP.MAX8` treats two 64-bit registers as eight signed 8-bit lanes and keeps the larger
+value in each lane. A 2×2 max pool uses it twice: once across two input rows, and once
+across neighbouring columns after shifting the result by one lane.""")
+code('''lab.show_max8(seed=7)''')
+md("""Check that the four outputs match the reference kernel's. In the figure, the orange
+lanes of the last row are those outputs.""")
+
+md("""### 4.3 Check the optimizer setup
+
+The next cell checks for five required files: the model credentials, the development
+environment settings, the Spike build with MBP support, the optimizer script, and the
+key your instance uses to reach the board.""")
 code('''ready = lab.mb_preflight()''')
-md("""Check that all four lines say `yes`. If any says `NO`, the next cell skips the
-optimization and looks for a saved run on your instance. Ask the instructor for help
-with the missing setup.""")
+md("""Check that all five lines say `yes`. If any says `NO`, the next cell skips the
+optimization and reads a run recorded on a real board instead. Ask the instructor for
+help with the missing setup.""")
 
-md("""### 4.3 Run the search
+md("""### 4.4 Run the search
 
 The next cell requests two rounds of optimization for `maxpool2d_s8` and limits the
-search to eight model calls with `--max-calls 8`. The search can stop early if a round
+search to eight model calls with `max_calls=8`. The search can stop early if a round
 finds no improvement.""")
-code('''if ready:
-    r = lab.sh("cd ~/iiswc-tutorial && . ~/.config/iiswc/dev.env && . ./env.sh && "
-               "./scripts/95_mb_kernel_llm.sh --op maxpool2d_s8 --where board --board-loop "
-               "--beam 2 --expansions 2 --rounds 2 --max-calls 8",
-               timeout=3600, head=0, tail=18)
-run = lab.mb_latest_run()
-print("reading", run)''')
-md("""Allow several minutes for the script to complete its seven steps and print a verdict.
-Building and simulating the candidates accounts for much of that time.
+code('''run = lab.mb_optimize(ready, "maxpool2d_s8", rounds=2, beam=2, expansions=2, max_calls=8)''')
+md("""Allow several minutes for the run to finish. The line under the cell shows the current
+step, and the chart below it redraws as the candidates are scored. Building and
+simulating the candidates accounts for much of that time.
 
-Check the path after `reading` to see which run the remaining cells will inspect. If
-it prints `reading None`, ask the instructor for a saved run before continuing.""")
+Check the path after `run:` to see which run the remaining cells will inspect.
 
-md("""### 4.4 Inspect the model calls
+<details>
+<summary>If the model or the board does not answer</summary>
 
-The `--beam`, `--expansions`, and `--rounds` settings control how many candidates the
+If the model does not answer, the run replays a kernel the model wrote in an earlier
+run. If the board does not answer, the run measures on Spike only. The cell prints
+which fallback it used.
+
+</details>""")
+
+md("""### 4.5 Inspect the model calls
+
+The `beam`, `expansions`, and `rounds` settings control how many candidates the
 search can explore. Read the call log below to see how many calls it actually made.
-The table gives each call's round, phase, input and output token counts, and time in
-seconds.""")
+The table gives each call's round, phase, input and output token counts, time in
+seconds, and what the candidate tried.""")
 code('''lab.show_search_shape(run)''')
 md("""The `phase` column distinguishes `synth` calls, which request an initial kernel,
 from `optimize` calls, which request improvements.
 
 Compare the `in` column between rounds. The prompt includes board measurements once
 they are available, so later calls may use more input tokens.""")
+code('''lab.show_model_inputs(run)''')
+md("""Check that every call used the MBP optimization guide, and that the board's numbers
+appear from round 2. Open a call below the lines to read its prompt and the model's
+answer.""")
 
-md("""### 4.5 Read the board feedback
+md("""### 4.6 Read the board feedback
 
 The optimizer writes the board measurements to a feedback file and adds them to the
 next round's system prompt. Read the file below to see what information the model
@@ -1469,16 +1498,20 @@ board's cycle totals.
 
 </details>""")
 
-md("""### 4.6 Inspect the generated kernel
+md("""### 4.7 Inspect the generated kernel
 
-The next cell shows a loop from a kernel saved during the search.""")
-code('''lab.show_llm_kernel(run, around="for (")''')
+The next cell shows the loop that uses MBP from the kernel the search kept. The lines
+marked `>>` use it.""")
+code('''lab.show_llm_kernel(run)''')
 md("""The recorded kernel loads eight bytes at a time into a register and calls
 `mb_pext_max8` to compare the packed values. Your generated kernel may differ.
 Follow one loop iteration to see which input values it compares and which outputs
 it writes.""")
+code('''lab.show_on_accelerator(run)''')
+md("""Check that the kernel contains `MBP.MAX8`, that the same instruction trapped on hart 1,
+and that no MBP instruction is left in the build with MBP disabled.""")
 
-md("""### 4.7 Compare the board results
+md("""### 4.8 Compare the board results
 
 The board runs three builds with the same input data:
 
@@ -1498,8 +1531,8 @@ of using the hardware instruction within that packed loop.
 <details>
 <summary>Interpret the speedup ratios</summary>
 
-The recorded ratios were about 1.7× from `before` to `mbpoff`, 9.1× from `mbpoff` to
-`after`, and 15.3× overall. The first comparison measures the combined effect of
+The recorded ratios were about 1.7× from `before` to `mbpoff`, 10.5× from `mbpoff` to
+`after`, and 17.6× overall. The first comparison measures the combined effect of
 packed loads and software SIMD emulation. It cannot isolate the loop rewrite's
 contribution.
 
@@ -1508,6 +1541,35 @@ A separate bench experiment disabled the MBP path entirely. That version ran
 makes `MBP.MAX8` usable, and the instruction provides most of the measured speedup.
 
 </details>""")
+code('''lab.optimizer_figure(run)''')
+md("""The chart shows every candidate the search tried: blue bars are Spike, orange bars
+are your board, and the dashed outline is the same kernel with MBP disabled. Compare
+the gap between Spike and the board for the reference and for the generated kernel.""")
+
+md("""### 4.9 Optional: write the kernel yourself
+
+Try writing the MBP kernel by hand. Each attempt takes about two minutes on the board,
+and the rest of the tutorial does not depend on this step.
+
+The next cell copies the reference kernel to a file you can edit. The comment at the
+top of the file gives the rules and four hints.""")
+code('''kernel = lab.mb_start("maxpool2d_s8")''')
+md("""Open the file in the file browser, edit it, and save it. The next cell checks your
+kernel on Spike first, so an incorrect kernel never reaches the board. A correct
+kernel then runs on your board with MBP enabled and disabled. Each attempt takes
+about two minutes.""")
+code('''mine = lab.mb_try(kernel)
+lab.show_board_verdict(mine)''')
+md("""Aim for `MBP.MAX8` in your kernel and fewer than 10 cycles per output.
+
+<details>
+<summary>See a solution</summary>
+
+Uncomment the next line to print a kernel that reaches about 15× on the board.
+
+</details>""")
+code('''# lab.show_source(lab.MB_REPO / "fpga/pynq-z2/modelblaster/mb_ops/exercises/maxpool2d_s8_solution.c", "for (", lines=40)''')
+
 
 md("""---
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""The live terminal view of one lab run: every kernel the LLM tried, its cycles on spike and,
-with --board-loop, on the FPGA, as bars that grow shorter as the kernel gets better.
+"""Live terminal view of one lab run: each kernel the LLM tried, with its cycles on spike and,
+with --board-loop, on the FPGA, drawn as bars on a log scale.
 
     python3 scripts/lib/mb_progress.py out/mb_lab/<run> [--width 72]
 
-Prints one frame and exits; `mb` on the board redraws it every few seconds.  It reads only
-what the lab already writes, while the lab writes it:
+Prints one frame and exits; `mb` on the board calls it every few seconds. It reads only the
+files the lab writes, and tolerates them being written concurrently:
     before/spike.json                 the reference's cycles (spike)
     after/transcript.jsonl            every LLM call, in order (the tap appends per call)
     after/round<R>.trajectory.jsonl   each finished round's candidates (ModelBlaster)
@@ -30,7 +30,7 @@ def jl(p):
                 try:
                     out.append(json.loads(line))
                 except ValueError:
-                    pass                    # a line being written right now
+                    pass                    # partial line, still being written
     except OSError:
         pass
     return out
@@ -47,8 +47,8 @@ IDEA = re.compile(r"(?://|/\*)\s*idea\s*:\s*(.+?)(?:\*/)?\s*$", re.I | re.M)
 
 
 def idea_of(resp):
-    """The candidate's own one-line summary (the lab asks for `// idea: ...`), else its first
-    comment that says something."""
+    """Return the candidate's `// idea: ...` line (the lab asks for one), else its first
+    nontrivial comment."""
     if not resp:
         return ""
     m = IDEA.search(resp)
@@ -62,8 +62,8 @@ def idea_of(resp):
 
 
 def collect(run: Path) -> dict:
-    """Everything the chart shows, as data: the terminal frame below and the notebook's SVG
-    (notebooks/mb_lab/mb_lab.py) both draw from this.  rows: (label, spike cycles, FPGA cycles, idea, ok);
+    """Collect the chart data for a run; frame() and the tutorial notebook's Unit 4 (iiswc_lab.py)
+    both draw from it. rows: (label, spike cycles, FPGA cycles, idea, ok);
     mbpoff: {row label: FPGA cycles with the MBP switched off}."""
     st = js(run / "status.json") or {}
     before = js(run / "before" / "spike.json") or {}
@@ -104,7 +104,7 @@ def collect(run: Path) -> dict:
                          None, idea if ok else f"{h.get('result')}: {idea}", ok))
         b = board.get(r)
         if b and b.get("after_cycles"):
-            # the FPGA measured this round's best: put it on that row
+            # attach the FPGA cycles to this round's best spike row
             best = min((k for k, x in enumerate(rows) if x[0].startswith(f"round {r} ") and x[1]),
                        key=lambda k: rows[k][1], default=None)
             if best is not None:
@@ -113,8 +113,8 @@ def collect(run: Path) -> dict:
                 if b.get("mbpoff_cycles"):
                     mbpoff[lab] = b["mbpoff_cycles"]
     if not trajs and not synth:
-        # replay / your kernel / the curated kernel: one "after" row, from spike and, once the
-        # board has run it, from board.json (which also has the reference's FPGA cycles)
+        # Replay, attendee kernel or curated kernel: a single "after" row from spike.json and,
+        # once the board has run, board.json (which also holds the reference's FPGA cycles).
         r = js(run / "run.json") or {}
         a = js(run / "after" / "spike.json") or {}
         bj = js(run / "board.json") or {}

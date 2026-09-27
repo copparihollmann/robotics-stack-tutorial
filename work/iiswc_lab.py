@@ -859,18 +859,111 @@ def compare_backends(a: Lowering, b: Lowering,
 
 
 # --------------------------------------------------------------------------------------
-# Reading an LLM kernel-optimization run (Unit 4).
+# Unit 4: an LLM kernel-optimization run.
 #
-# The run directory is the whole record: what the model was asked, what it answered, what
-# each candidate scored on spike, and what the board measured.  These read it.
+# The optimizer is the lab in the repository on this instance (`mb`, which runs
+# scripts/95_mb_kernel_llm.sh).  Its run directory is the whole record: what the model was
+# asked, what it answered, what each candidate scored on spike, and what the board
+# measured.  The helpers below start a run and read one; facts print as text and pictures
+# are figures, in the same style as the rest of this notebook.
 # --------------------------------------------------------------------------------------
-MB_RUNS = Path.home() / "iiswc-tutorial" / "out" / "mb_lab"
+MB_REPO = Path.home() / "iiswc-tutorial"
+MB_RUNS = MB_REPO / "out" / "mb_lab"
+MB = MB_REPO / "fpga/pynq-z2/host/mb"
+MB_KERNELS = Path.home() / "work/modelblaster-llm-lab/your-kernel"   # where `mb start` copies to
+MB_RECORDED = "mb_recorded_runs.tar.gz"     # in assets/: a live LLM run and a `mb try`, both on a board
+MB_GOAL = 10.0                              # cycles per output to aim for in 4.9
+_NO_ANSI = __import__("re").compile(r"\x1b\[[0-9;]*[A-Za-z]")
+
+
+def _jsonf(p):
+    try:
+        return json.loads(Path(p).read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def _blank(v) -> bool:
+    """A value the attendee has not filled in yet (`...`, or a list containing it)."""
+    return v is Ellipsis or (isinstance(v, (list, tuple)) and any(x is Ellipsis for x in v))
+
+
+def _s8(x: int) -> int:
+    x &= 0xFF
+    return x - 256 if x > 127 else x
+
+
+def _max8(a, b) -> list[int]:
+    """MBP.MAX8 in Python: eight int8 lanes, the larger of each pair."""
+    return [max(_s8(x), _s8(y)) for x, y in zip(a, b)]
+
+
+def _lanes_figure(rows, marks: dict, title: str):
+    """Rows of eight int8 lanes as boxes; marks: {(row, lane): colour} for the lanes to fill."""
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(9.6, 0.52 * len(rows) + 0.7))
+    for r, (label, vals) in enumerate(rows):
+        y = len(rows) - 1 - r
+        ax.annotate(label, (-0.25, y), ha="right", va="center", fontsize=8.5, color=INK)
+        for i, v in enumerate(vals):
+            fill = marks.get((r, i))
+            ax.add_patch(plt.Rectangle((i + 0.04, y - 0.36), 0.92, 0.72, facecolor=fill or "#fcfcfb",
+                                       edgecolor=fill or GRID, lw=0.8, zorder=2))
+            ax.annotate(f"{v}", (i + 0.5, y), ha="center", va="center", fontsize=9,
+                        color="white" if fill else INK, weight="bold" if fill else "normal",
+                        family="monospace", zorder=3)
+    for i in range(8):
+        ax.annotate(f"lane {i}", (i + 0.5, len(rows) - 0.45), ha="center", va="bottom", fontsize=7, color=INK2)
+    ax.set_xlim(-3.2, 8.1)
+    ax.set_ylim(-0.6, len(rows) - 0.1)
+    ax.axis("off")
+    ax.set_title(title, fontsize=10, color=INK, loc="left", pad=6)
+    plt.close(fig)
+    return fig
+
+
+def show_max8(seed: int | None = None):
+    """How MBP.MAX8 does a 2x2 max pool: four outputs from two instructions, on random bytes."""
+    import random
+    rnd = random.Random(seed)
+    r0 = [rnd.randint(-128, 127) for _ in range(8)]
+    r1 = [rnd.randint(-128, 127) for _ in range(8)]
+    v = _max8(r0, r1)
+    shifted = v[1:] + [0]                           # (uint64_t)v >> 8: every lane moves down one
+    m = _max8(v, shifted)
+    outs = [m[0], m[2], m[4], m[6]]
+    ref = [max(r0[2 * k], r0[2 * k + 1], r1[2 * k], r1[2 * k + 1]) for k in range(4)]
+    print(f"outputs, lanes 0 2 4 6   {outs}")
+    print(f"the reference kernel     {ref}   {'identical' if outs == ref else 'DIFFERENT'}")
+    print("cost: 2 loads and 2 MAX8, where the reference kernel does 16 loads and 16 compares")
+    rows = [("input row 2·oh", r0), ("input row 2·oh+1", r1), ("v = MAX8(row0, row1)", v),
+            ("v >> 8", shifted), ("m = MAX8(v, v >> 8)", m)]
+    return _lanes_figure(rows, {(4, i): S2 for i in (0, 2, 4, 6)},
+                         "A 2×2 max pool with MBP.MAX8: the orange lanes are the four outputs")
+
+
+def check_max8(row0, row1, prediction):
+    """Your prediction of MBP.MAX8(row0, row1), lane by lane."""
+    def int8s(v):
+        return (isinstance(v, (list, tuple)) and len(v) == 8
+                and all(isinstance(x, int) and -128 <= x <= 127 for x in v))
+    for name, v in (("row0", row0), ("row1", row1), ("prediction", prediction)):
+        if _blank(v) or not int8s(v):
+            print(f"{name} needs eight whole numbers between -128 and 127, e.g. "
+                  f"[12, -7, 100, 3, -128, 55, 0, 9]; replace the ... and run the cell again.")
+            return None
+    got = _max8(row0, row1)
+    wrong = [i for i in range(8) if prediction[i] != got[i]]
+    print(f"{8 - len(wrong)} of 8 lanes correct" + (f"; wrong: lane {', '.join(map(str, wrong))}" if wrong else ""))
+    rows = [("row0", list(row0)), ("row1", list(row1)), ("MBP.MAX8(row0, row1)", got), ("your prediction", list(prediction))]
+    marks = {(3, i): BAD for i in wrong} | {(3, i): GOOD for i in range(8) if i not in wrong}
+    return _lanes_figure(rows, marks, "Your prediction: green lanes are right, red ones are not")
 
 
 def mb_preflight() -> bool:
     """What this seat needs to run the optimizer live, and which pieces it has.
 
-    Four separate things, because they fail separately and the message that says
+    Five separate things, because they fail separately and the message that says
     "not provisioned" is useless when only one of them is missing.
     """
     checks = [
@@ -880,8 +973,10 @@ def mb_preflight() -> bool:
          "an instructor runs scripts/96_seat_mb_setup.sh"),
         ("the spike that knows MBP", Path.home() / "mb-tools/bin/spike",
          "an instructor runs scripts/96_seat_mb_setup.sh"),
-        ("the optimizer", Path.home() / "iiswc-tutorial/scripts/95_mb_kernel_llm.sh",
+        ("the optimizer", MB_REPO / "scripts/95_mb_kernel_llm.sh",
          "an instructor runs scripts/96_seat_mb_setup.sh"),
+        ("the key to your board", Path.home() / ".ssh/iiswc-board-agent",
+         "an instructor installs the seat's board key"),
     ]
     ready = True
     for name, path, fix in checks:
@@ -892,9 +987,25 @@ def mb_preflight() -> bool:
             print(f"       {fix}")
     print()
     print("This seat can run the optimizer." if ready else
-          "This seat cannot run the optimizer live. The cells below read a finished run\n"
+          "This seat cannot run the optimizer live. The cells below read a recorded run\n"
           "instead, and every number in this unit came from one.")
     return ready
+
+
+def mb_recorded_run(kind: str = "llm") -> Path:
+    """A finished run shipped with this notebook: `llm` (a live LLM run) or `try` (the
+    solution kernel run with `mb try`), both measured on a board.  Unpacked once."""
+    import tarfile
+    dest = Path.home() / "work" / ".mb_recorded"
+    if not dest.exists():
+        src = Path(MB_RECORDED) if Path(MB_RECORDED).exists() else ASSETS / MB_RECORDED
+        with tarfile.open(src) as tar:
+            tar.extractall(dest, **({"filter": "data"} if hasattr(tarfile, "data_filter") else {}))
+    for p in sorted(p for p in dest.iterdir() if (p / "run.json").exists()):
+        mine = bool(json.loads((p / "run.json").read_text()).get("kernel_file"))
+        if mine == (kind == "try"):
+            return p
+    raise FileNotFoundError(f"no recorded {kind} run in {dest}")
 
 
 def mb_latest_run(name: str = "") -> Path | None:
@@ -909,6 +1020,204 @@ def mb_latest_run(name: str = "") -> Path | None:
     return runs[-1] if runs else None
 
 
+def _progress():
+    """scripts/lib/mb_progress.py, which turns a run directory into the rows of its chart: the
+    repository's copy when the repository is on this instance, else the one beside this module."""
+    for lib in (MB_REPO / "scripts/lib", Path(__file__).resolve().parent):
+        if (lib / "mb_progress.py").exists():
+            if str(lib) not in sys.path:
+                sys.path.insert(0, str(lib))
+            break
+    import mb_progress  # noqa: PLC0415
+    return mb_progress
+
+
+def _board(run) -> dict:
+    b = _jsonf(Path(run) / "board.json") or (_jsonf(Path(run) / "run.json") or {}).get("board")
+    return b if isinstance(b, dict) else {}
+
+
+def _compared(sp: float) -> str:
+    """'16.2x faster on your FPGA', 'about as fast on your FPGA', or '2.0x slower on your FPGA'."""
+    if sp >= 1.05:
+        return f"{sp:.1f}x faster on your FPGA"
+    if sp > 0.95:
+        return "about as fast on your FPGA"
+    return f"{1 / sp:.1f}x slower on your FPGA"
+
+
+def _total(run) -> str:
+    """'16.2x faster on your FPGA (11.0x of it the MBP)', or '' before the board has run."""
+    b = _board(run)
+    if not b.get("speedup"):
+        return ""
+    s = _compared(b["speedup"])
+    return s + (f" ({b['speedup_accel']:.1f}x of it the MBP)" if b.get("speedup_accel") else "")
+
+
+def optimizer_figure(run: str | Path, title: str = "Every kernel the search tried"):
+    """Every kernel the search produced, in cycles per output: spike for each candidate,
+    and the FPGA for the round's best, with and without the MBP."""
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+    from matplotlib.patches import Patch
+    from matplotlib.ticker import FixedLocator, NullLocator
+    run = Path(run)
+    d = _progress().collect(run)
+    n = d["n"] or 1
+    rows = [r for r in d["rows"] if r[1] or r[2]] + [r for r in d["rows"] if not (r[1] or r[2])]
+    b = _board(run)
+    if rows and rows[0][0] == "reference" and not rows[0][2] and (b.get("before") or {}).get("op_cycles"):
+        rows[0] = rows[0][:2] + (b["before"]["op_cycles"],) + rows[0][3:]
+    fig, ax = plt.subplots(figsize=(9.6, 0.5 * max(len(rows), 1) + 1.2))
+    ys = list(range(len(rows)))[::-1]
+    fpga = [r[2] for r in rows[1:] if r[2]]
+    best = min(fpga) if fpga else None
+    for y, (label, spike, fc, idea, ok) in zip(ys, rows):
+        if spike:
+            ax.barh(y + 0.17, spike / n, height=0.3, color=S1, zorder=3)
+            ax.annotate(f"{spike / n:,.1f}", (spike / n, y + 0.17), textcoords="offset points", xytext=(4, 0),
+                        va="center", fontsize=7.5, color=S1)
+        off = d["mbpoff"].get(label)
+        if off:
+            ax.barh(y - 0.17, off / n, height=0.3, fill=False, edgecolor=S2, ls="--", lw=0.8, zorder=2)
+            ax.annotate(f"{off / n:,.1f} MBP off", (off / n, y - 0.17), textcoords="offset points", xytext=(4, 0),
+                        va="center", fontsize=7.5, color=S2)
+        if fc:
+            ax.barh(y - 0.17, fc / n, height=0.3, color=S2, zorder=3)
+            ax.annotate(f"{fc / n:,.1f}" + ("  best on the FPGA" if fc == best else ""), (fc / n, y - 0.17),
+                        textcoords="offset points", xytext=(4, 0), va="center", fontsize=7.5, color=S2,
+                        weight="bold" if fc == best else "normal", zorder=4,
+                        bbox=dict(facecolor="#fcfcfb", edgecolor="none", pad=0.6))
+        ax.annotate(idea[:80], (1.01, y), xycoords=("axes fraction", "data"), va="center", fontsize=7.5,
+                    color=INK2 if ok else BAD)
+    ax.axvline(MB_GOAL, color=GOOD, ls=":", lw=1, zorder=1)
+    ax.set_xscale("log")
+    ticks = [t for t in (1, 2, 5, 10, 20, 50, 100, 200, 500, 1000)]
+    ax.xaxis.set_major_locator(FixedLocator(ticks))
+    ax.xaxis.set_minor_locator(NullLocator())
+    ax.set_xticklabels([str(t) for t in ticks])
+    lo = min([v / n for r in rows for v in (r[1], r[2]) if v] + [MB_GOAL]) / 1.5
+    hi = max([v / n for r in rows for v in (r[1], r[2]) if v] + [v / n for v in d["mbpoff"].values()] + [MB_GOAL]) * 1.6
+    ax.set_xlim(lo, hi)
+    ax.set_yticks(ys)
+    ax.set_yticklabels([r[0] for r in rows], fontsize=8.5)
+    ax.set_xlabel("cycles per output (log scale)", fontsize=8, color=INK2)
+    ax.legend(handles=[Patch(color=S1, label="spike"), Patch(color=S2, label="your FPGA"),
+                       Patch(fill=False, edgecolor=S2, ls="--", label="FPGA, MBP off"),
+                       Line2D([], [], color=GOOD, ls=":", label=f"goal, {MB_GOAL:g} per output")],
+              fontsize=7.5, frameon=False, loc="upper left", bbox_to_anchor=(0, -0.5 / max(len(rows), 1) - 0.12),
+              ncol=4, handlelength=1.6)
+    st = d.get("status") or {}
+    total = _total(run)
+    ax.set_title(f"{title}  ({st.get('step', '')})" if st.get("state") == "running"
+                 else f"{title}: {total}" if total else title, fontsize=10, color=INK, loc="left", pad=8)
+    _axes_style(ax)
+    fig.subplots_adjust(left=0.14, right=0.6)
+    plt.close(fig)
+    return fig
+
+
+def _png(fig):
+    import io
+    from IPython.display import Image
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=100, bbox_inches="tight")
+    return Image(buf.getvalue())
+
+
+def _mb(words: list[str], timeout: int) -> Path | None:
+    """Run `mb <words>` on this instance: its current step prints on one line, and the chart
+    of the candidates redraws in place as they are scored.  Returns the run directory."""
+    import queue
+    import threading
+    from IPython.display import Pretty, display
+    t0 = time.time()
+    proc = subprocess.Popen([str(MB), *words], cwd=MB_REPO, env=_clean_env(), text=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1)
+    q: "queue.Queue[str]" = queue.Queue()
+    threading.Thread(target=lambda: [q.put(l) for l in proc.stdout], daemon=True).start()
+    lines: list[str] = []
+    name, last_draw = "", 0.0
+    status = display(Pretty("starting ..."), display_id=True)
+    chart = display(Pretty(""), display_id=True)
+    try:
+        while True:
+            while not q.empty():
+                ln = _NO_ANSI.sub("", q.get()).rstrip()
+                if ln.strip().startswith("run: "):
+                    name = ln.strip()[5:].strip()
+                if ln.strip():
+                    lines.append(ln)
+            st = (_jsonf(MB_RUNS / name / "status.json") or {}) if name else {}
+            status.update(Pretty(f"[{time.time() - t0:4.0f} s]  {st.get('step') or (lines[-1].strip() if lines else '')}"))
+            if name and (MB_RUNS / name).is_dir() and time.time() - last_draw > 10:
+                try:
+                    chart.update(_png(optimizer_figure(MB_RUNS / name, "The search so far")))
+                    last_draw = time.time()
+                except Exception:           # the run directory is still being written
+                    pass
+            if proc.poll() is not None and q.empty():
+                break
+            if time.time() - t0 > timeout:
+                proc.kill()
+                print(f"[timed out after {timeout} s -- killed]")
+                break
+            time.sleep(2)
+    except KeyboardInterrupt:
+        proc.kill()
+        raise
+    run = MB_RUNS / name if name else None
+    total = _total(run) if run else ""
+    status.update(Pretty(f"[rc={proc.returncode}  {time.time() - t0:.0f} s]  run: {run}"
+                         + (f"\n{total}, bit exact" if total and _exact(run) else f"\n{total}" if total else "")))
+    for ln in lines:
+        if "does not answer" in ln and ("spike only" in ln or "replaying" in ln):
+            print("fallback:", ln.strip())
+    if run and (run / "run.json").exists():
+        try:
+            chart.update(_png(optimizer_figure(run)))
+        except Exception:
+            pass
+    else:
+        print("\n".join(lines[-25:]))
+    return run
+
+
+def mb_optimize(ready: bool, op: str = "maxpool2d_s8", rounds: int = 2, beam: int = 2,
+                expansions: int = 2, max_calls: int = 8) -> Path:
+    """One optimization, with your board in the loop, or the recorded one when this seat
+    cannot run it.  `mb` itself falls back to a recorded kernel if the model does not
+    answer, and to spike alone if the board does not, and says so."""
+    if not ready:
+        run = mb_recorded_run("llm")
+        print(f"reading the recorded run {run.name}")
+        from IPython.display import display
+        display(_png(optimizer_figure(run)))
+        return run
+    return _mb(["go", op, "--rounds", str(rounds), "--beam", str(beam),
+                "--expansions", str(expansions), "--max-calls", str(max_calls)], timeout=3600)
+
+
+def mb_start(op: str = "maxpool2d_s8") -> Path:
+    """Copy the starting kernel (ModelBlaster's reference) to a file you can edit."""
+    r = sh(f"{MB} start {op}", timeout=60, quiet=True)
+    path = MB_KERNELS / f"{op}.c"
+    print(next((l.strip() for l in _NO_ANSI.sub("", r.stdout).splitlines() if "<-" in l), r.stdout.strip()))
+    print(f"\nopen it in the file browser on the left, edit it, save it: {path}")
+    return path
+
+
+def mb_try(path: str | Path | None = None, op: str = "maxpool2d_s8") -> Path | None:
+    """Your kernel: checked on spike first, then run on your board with and without the MBP."""
+    return _mb(["try", op] + ([str(path)] if path else []), timeout=1200)
+
+
+def _calls(run) -> list[dict]:
+    p = Path(run) / "after/transcript.jsonl"
+    return [json.loads(l) for l in p.read_text().splitlines() if l.strip()] if p.exists() else []
+
+
 def show_search_shape(run: str | Path) -> None:
     """How big the search was: rounds, phases, calls, and what each call cost.
 
@@ -916,18 +1225,17 @@ def show_search_shape(run: str | Path) -> None:
     what was ASKED for and the log says what happened -- a round that found no
     improvement stops early, and then the two disagree.
     """
-    run = Path(run)
-    log = next((p for p in (run / "after/calls.jsonl", run / "llm-calls.jsonl") if p.exists()), None)
-    if log is None:
-        print(f"no call log under {run} -- this run did not call the model")
+    rows = _calls(run)
+    if not rows:
+        print(f"no calls in {Path(run).name}: a replayed or hand-written kernel calls no model")
         return
-    rows = [json.loads(l) for l in log.read_text().splitlines() if l.strip()]
     print(f"{len(rows)} calls to {rows[0].get('model', '?')}\n")
-    print(f"  {'call':>4}  {'round':>5}  {'phase':<26}{'in':>8}{'out':>7}{'s':>7}")
+    print(f"  {'call':>4}  {'round':>5}  {'phase':<26}{'in':>8}{'out':>7}{'s':>7}   what it tried")
     for i, r in enumerate(rows, 1):
+        idea = _progress().idea_of(r.get("response")) or ""
         print(f"  {i:>4}  {r.get('round', '?'):>5}  {str(r.get('phase', '')):<26}"
               f"{r.get('input_tokens') or 0:>8,}{r.get('output_tokens') or 0:>7,}"
-              f"{r.get('latency_s') or 0:>7.1f}")
+              f"{r.get('latency_s') or 0:>7.1f}   {idea[:60]}")
     ti = sum(r.get("input_tokens") or 0 for r in rows)
     to = sum(r.get("output_tokens") or 0 for r in rows)
     print(f"\n  {'total':>4}{'':>9}{'':<26}{ti:>8,}{to:>7,}"
@@ -936,35 +1244,177 @@ def show_search_shape(run: str | Path) -> None:
     print(f"  errors: {errs if errs else 'none'}")
 
 
+# What a recorded system prompt carried: ModelBlaster's target guide for the op's target,
+# and what the lab appends to it.  Runs recorded before the MBP guide was the target guide
+# appended an earlier version of it instead.
+_GUIDES = (("# MBP (pext) kernel optimization guide", "the MBP optimization guide"),
+           ("# Kernel optimization guide", "ModelBlaster's scalar guide"))
+_ADDED = (("packed-SIMD integer extension (MBP)", "an earlier MBP guide, appended"),
+          ("One more output rule: say what this version tries", "the idea-line rule"),
+          ("### Measured on the real FPGA", "the board's numbers"),
+          ("### Measured on the FPGA", "the board's numbers"),
+          ("### Hardware in the loop feedback", "the board's numbers"))
+
+
+def _feedback_text(system: str) -> str:
+    at = min((system.find(m) for m, name in _ADDED if name == "the board's numbers" and m in system), default=-1)
+    return system[at:].strip() if at >= 0 else ""
+
+
+def show_model_inputs(run: str | Path) -> None:
+    """What each call's system prompt held besides ModelBlaster's own instructions, and
+    every prompt and answer, one collapsible entry per call."""
+    import html
+    calls = _calls(run)
+    if not calls:
+        print(f"no calls in {Path(run).name}: a replayed or hand-written kernel calls no model")
+        return
+    for c in calls:
+        system = c.get("system") or ""
+        guide = next((name for mark, name in _GUIDES if mark in system), "none")
+        added = list(dict.fromkeys(name for mark, name in _ADDED if mark in system))
+        print(f"  #{c.get('n')}  round {c.get('round')}  {c.get('phase', ''):<24} target guide: {guide};"
+              f"  appended: {', '.join(added) or 'nothing'}")
+    print(f"\nthe MBP optimization guide: {MB_REPO / 'fpga/pynq-z2/modelblaster/prompts/optimization_guide_pext.md'}")
+    from IPython.display import HTML, display
+    box = "font:12px/1.5 monospace;white-space:pre-wrap;border:1px solid #888;padding:6px;margin:4px 0 8px 0"
+    parts = []
+    for c in calls:
+        hil = _feedback_text(c.get("system") or "")
+        parts.append(
+            f"<details style='margin:2px 0'><summary style='cursor:pointer;font:12px monospace'>#{c.get('n')}  "
+            f"round {c.get('round')}  {html.escape(str(c.get('phase')))}: the prompt and the answer</summary>"
+            + (f"<div style='{box}'>{html.escape(hil)}</div>" if hil else "")
+            + f"<div style='{box}'>{html.escape((c.get('user') or '').strip())}</div>"
+            f"<div style='{box}'>{html.escape((c.get('response') or c.get('error') or '').strip())}</div></details>")
+    display(HTML("".join(parts)))
+
+
 def show_board_feedback(run: str | Path) -> None:
     """What the board told the model between rounds -- the hardware in the loop.
 
     Spike scores every candidate and has no memory timing, so this file is the only
-    thing in the loop that knows what the silicon actually did.
+    thing in the loop that knows what the silicon actually did.  A run that kept only its
+    prompts has the same text in the last round's system prompt.
     """
     run = Path(run)
-    fb = next((p for p in (run / "after/board_feedback.md", run / "fpga-feedback.md")
-               if p.exists()), None)
-    if fb is None:
-        print(f"no board feedback under {run} -- this run was scored on spike alone")
-        return
-    print(fb.read_text().rstrip())
+    fb = next((p for p in (run / "after/board_feedback.md", run / "fpga-feedback.md") if p.exists()), None)
+    text = fb.read_text().rstrip() if fb else next(
+        (t for t in (_feedback_text(c.get("system") or "") for c in reversed(_calls(run))) if t), "")
+    print(text or f"no board feedback in {run.name}: it was scored on spike alone")
 
 
-def show_llm_kernel(run: str | Path, around: str = "", lines: int = 22) -> None:
-    """The kernel the model wrote, as it was compiled.
+def _kernel_file(run: Path):
+    j = _jsonf(run / "run.json") or {}
+    after = Path(j.get("after_kernel") or "")
+    if str(after) and not after.is_absolute():
+        after = run / after
+    elif str(after) and not after.exists() and run.name in after.parts:    # a run unpacked elsewhere
+        after = run.joinpath(*after.parts[after.parts.index(run.name) + 1:])
+    if not after.is_file():
+        cands = (sorted(run.glob("after/round*.kernel.c")) or sorted(run.glob("**/cache/*.c"))
+                 or sorted(run.glob("kernels_replay/*/*.c")))
+        after = cands[-1] if cands else None
+    return after
 
-    Anchored on a line you name so the window lands on the loop rather than the
-    licence header; with no anchor it shows the top of the function.
-    """
-    run = Path(run)
-    cands = sorted(run.glob("after/round*.kernel.c")) or sorted(run.glob("**/cache/*.c"))
-    if not cands:
+
+def show_llm_kernel(run: str | Path, around: str = "", lines: int = 24) -> None:
+    """The kernel the model wrote, as it was compiled, opened on the loop that uses the MBP.
+    The lines that call it are marked with >>."""
+    src = _kernel_file(Path(run))
+    if src is None:
         print(f"no kernel source under {run}")
         return
-    src = cands[-1]
-    print(f"{src}\n")
-    show_source(src, around or "for (", lines=lines)
+    text = src.read_text(errors="replace").splitlines()
+    uses = [i for i, l in enumerate(text) if "mb_pext_" in l or "MB_PEXT_LD8" in l]
+    anchor = next((i for i, l in enumerate(text) if around and around in l), None)
+    start = max((anchor if anchor is not None else (uses[0] - 4 if uses else next(
+        (i for i, l in enumerate(text) if "for (" in l), 0))), 0)
+    print(f"{src}\n(the lines marked >> use the MBP: its 8-byte loads and mb_pext_max8)\n")
+    for i in range(start, min(start + lines, len(text))):
+        mark = ">>" if ("mb_pext_" in text[i] or "MB_PEXT_" in text[i]) else "  "
+        print(f"{mark}{i + 1:>4}  {text[i]}")
+
+
+def show_on_accelerator(run: str | Path) -> None:
+    """The evidence that the kernel ran on the MBP, from the images the board ran."""
+    b = _board(run)
+    if not b:
+        print(f"no board run in {Path(run).name}: it was scored on spike alone")
+        return
+    img = (b.get("after") or {}).get("image") or {}
+    ops = {}
+    for fn, n in (img.get("mbp_by_function") or {}).items():
+        if fn != "neg_worker":
+            for k, v in n.items():
+                ops[k] = ops.get(k, 0) + v
+    used = ", ".join(f"MBP.{k.upper()} x{v}" for k, v in ops.items() if v) or "no MBP instruction"
+    print(f"  compiled into the new kernel:   {used}")
+    neg = (b.get("after") or {}).get("neg") or {}
+    if neg:
+        print(f"  the same instruction on hart 1: {'trapped' if neg.get('trapped') else 'DID NOT TRAP'}"
+              f" (mcause {neg.get('mcause')}), so hart 0 really executes it")
+    off = (b.get("mbpoff") or {}).get("image") or {}
+    if off:
+        print(f"  MBP instructions left in the MBP-off image: {off.get('mbp_outside_negtest')}")
+
+
+def _exact(run) -> bool:
+    b = _board(run)
+    arms = [b.get(a) for a in ("before", "after", "mbpoff") if isinstance(b.get(a), dict)]
+    return bool(arms) and all((a.get("run") or {}).get("max_abs_err", 0) == 0 for a in arms)
+
+
+def show_board_verdict(run: str | Path) -> None:
+    """The three board arms of an optimizer run, and each arm's correctness gate.
+
+    Three images, one bitstream, same data: the reference kernel, the new kernel, and the
+    new kernel with the MBP instruction replaced by a C model of it.
+    """
+    run = Path(run)
+    b = _board(run)
+    j = _jsonf(run / "run.json") or {}
+    kind = ("your kernel" if j.get("kernel_file") else "a recorded LLM kernel, replayed (no model call)"
+            if j.get("replay") else "a live LLM run")
+    if not (b.get("before") or {}).get("op_cycles"):
+        print(f"{run.name}: {kind}, scored on spike alone (the board step did not run)")
+        return
+    print(f"{run.name}: {kind}, measured on {b.get('board', '?')} ({b.get('magic', '?')}, "
+          f"{(b.get('fclk_hz') or 0) / 1e6:.0f} MHz)\n")
+    sp = b.get("speedup")
+    if sp:
+        than = "as" if 0.95 < sp < 1.05 else "than"
+        print(f"total: {_compared(sp)} {than} the reference kernel"
+              f"{', bit exact' if _exact(run) else ', OUTPUT DIFFERS'}\n")
+    print(f"{'arm':<10}{'cycles':>14}{'per output':>13}{'vs reference':>14}   correctness")
+    ref = None
+    for name in ("before", "after", "mbpoff"):
+        a = b.get(name)
+        if not isinstance(a, dict) or a.get("op_cycles") is None:
+            continue
+        cyc = a["op_cycles"]
+        per = cyc / a["out_len"] if a.get("out_len") else cyc
+        ref = ref or cyc
+        err = (a.get("run") or {}).get("max_abs_err")
+        note = "-" if err is None else ("bit-exact" if err == 0 else f"max |d| = {err}")
+        print(f"{name:<10}{cyc:>14,}{per:>13.1f}{ref / cyc:>13.2f}x   {note}")
+    if b.get("speedup_accel"):
+        print(f"\nof the total, the MBP instruction: {b['speedup_accel']:.1f}x  (the same kernel, MBP on against off)")
+    if j.get("speedup"):
+        print(f"spike estimated {j['speedup']:.1f}x; it does not model memory timing")
+
+
+def compare_guess(guess, run: str | Path) -> None:
+    """Your guess against what the board measured."""
+    if _blank(guess) or not isinstance(guess, (int, float)) or isinstance(guess, bool):
+        print("my_guess needs a number, e.g. my_guess = 10; set it and run the cell again.")
+        return
+    got = _board(run).get("speedup")
+    if not got:
+        print("no board measurement in this run to compare against")
+        return
+    word = "higher than" if got > guess * 1.1 else "lower than" if got < guess * 0.9 else "close to"
+    print(f"you guessed {guess}x; the board measured {got:.1f}x, {word} your guess")
 
 # --------------------------------------------------------------------------------------
 # Reading a recorded board run (Unit 2).
@@ -1007,38 +1457,6 @@ def show_board_arms(board: dict, fast: str = "pext", slow: str = "scalar") -> No
               f'{arm["custom0_instructions_in_elf"]:>3}   '
               f'output vs golden: {arm["gate"]["board_vs_golden_bytes_differ"]} of 192 bytes '
               f'differ, max |d| = {arm["gate"]["max_abs_err"]}')
-
-
-def show_board_verdict(run: str | Path) -> None:
-    """The three board arms of an optimizer run, and each arm's correctness gate.
-
-    Three images, one bitstream, same data: the reference kernel, the new kernel, and the
-    new kernel with the MBP instruction replaced by a C model of it.
-    """
-    run = Path(run)
-    jf = run / "board.json"
-    if not jf.exists():
-        print(f"no board.json under {run} -- this run was scored on spike alone")
-        return
-    b = json.loads(jf.read_text())
-    arms = b.get("arms", b)
-    print(f"{'arm':<10}{'cycles':>14}{'per output':>13}{'vs reference':>14}   correctness")
-    ref = None
-    for name in ("before", "after", "mbpoff"):
-        a = arms.get(name)
-        if not isinstance(a, dict):
-            continue
-        cyc = a.get("cycles", {}).get("median") if isinstance(a.get("cycles"), dict) else a.get("cycles")
-        per = a.get("cycles_per_output")
-        if cyc is None:
-            continue
-        if ref is None:
-            ref = cyc
-        gate = a.get("gate", {})
-        ok = gate.get("board_vs_golden_bytes_differ")
-        note = ("bit-exact" if ok == 0 else f"{ok} bytes differ") if ok is not None else "-"
-        print(f"{name:<10}{cyc:>14,}{(per if per else cyc):>13.1f}"
-              f"{ref / cyc:>13.2f}x   {note}")
 
 
 def show_model_shapes(asset: str = "moonshine_shape.json") -> None:

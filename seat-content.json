@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-27T07:48:07Z",
+  "generated_at": "2026-09-27T08:00:11Z",
   "generated_by": "content_validate.py",
-  "source_commit": "f716fde3d6d961ac9cb55d46ef94ef0de0ff1922+working-tree",
-  "note": "fix: camera backend",
+  "source_commit": "1968f222e59295050d0543431256ae265cef4779+working-tree",
+  "note": "Unit 4: the ModelBlaster lab",
   "files": [
     {
       "path": "work/.backend/ospi-camera/README.md",
@@ -152,8 +152,8 @@
     },
     {
       "path": "work/README.md",
-      "bytes": 9104,
-      "sha256": "c2af96f377db7292085df5c8fdc25980347188c240e5c967f8bfa530a0e69f9c"
+      "bytes": 9310,
+      "sha256": "cd93166fdcbe1ac05b720db951eb05f49a0689d8f860e96fe52769a9d80a72a8"
     },
     {
       "path": "work/assets/kernel_gate.expected.txt",
@@ -164,6 +164,11 @@
       "path": "work/assets/lane_timeline.json",
       "bytes": 9076,
       "sha256": "df256ced2f259fc2cf833e503edba402458f475a65ddce34d97e67803bb1166a"
+    },
+    {
+      "path": "work/assets/mb_recorded_runs.tar.gz",
+      "bytes": 151218,
+      "sha256": "67b625fb866ef8b31de346bc790414b73a0c3a7296b1a11fa1fd9875001a4cee"
     },
     {
       "path": "work/assets/moonshine_shape.json",
@@ -187,90 +192,27 @@
     },
     {
       "path": "work/iiswc_lab.py",
-      "bytes": 70919,
-      "sha256": "f1fa2d1bce34ef5379e195f0a8bee2f2259a7ffa5f39e4821d33e88597b79213"
+      "bytes": 92323,
+      "sha256": "29666de9284a4abb714174f511d60868dcc06d085d0e45befe98a135ecedd0fd"
     },
     {
       "path": "work/iiswc_tutorial.ipynb",
-      "bytes": 107641,
-      "sha256": "332da09350389003e55606f8a1673ae1cc6a2cccf7aa6573d5ab667f621b2873",
-      "cells": 149,
+      "bytes": 112581,
+      "sha256": "d6e8d0d019b8d6447095eeebe4764e0130d756928e6acec47b425a032d2df816",
+      "cells": 164,
       "nbformat": 4,
-      "source_chars": 76020,
+      "source_chars": 78762,
       "schema_checked": true
     },
     {
-      "path": "work/mb_lab/README.md",
-      "bytes": 2144,
-      "sha256": "4ed610c403cde375b0b0ece26506e57fdedc8b6c093fcf280b4dd6cfc4a1cef0"
-    },
-    {
-      "path": "work/mb_lab/assets/solved_runs.tar.gz",
-      "bytes": 133888,
-      "sha256": "73cf99505c2b15660f229e7ee62c958490acf403e3a123446a0b243287061e80"
-    },
-    {
-      "path": "work/mb_lab/mb_lab.ipynb",
-      "bytes": 9929,
-      "sha256": "5ad10a626f1d4f8545e7be07dfd77d7d395ce471ac28d80022b6e79a5fd9e871",
-      "cells": 24,
-      "nbformat": 4,
-      "source_chars": 6022,
-      "schema_checked": true
-    },
-    {
-      "path": "work/mb_lab/mb_lab.py",
-      "bytes": 30810,
-      "sha256": "bbdc92d59f86f8d8ad81f57e21d0c03c09ce10e36fc8f82cf88981e3f193c1c3"
-    },
-    {
-      "path": "work/mb_lab/mb_lab_solved.ipynb",
-      "bytes": 8327,
-      "sha256": "9d6dee8940301675243a38a18d2d111c4572141dacd831bcb8042be3ecc1b65a",
-      "cells": 18,
-      "nbformat": 4,
-      "source_chars": 5156,
-      "schema_checked": true
-    },
-    {
-      "path": "work/mb_lab/mb_progress.py",
-      "bytes": 8270,
-      "sha256": "efe744b8838fda699ccd718841a616262cd2e067b0144592e5b84afdeb67d701"
-    },
-    {
-      "path": "work/mb_lab/mb_report.py",
-      "bytes": 10453,
-      "sha256": "fb591b6e80085d6746f5f64b5c584fe353a57d1a1b15da6691860c9074eaa569"
-    },
-    {
-      "path": "work/mb_lab/seat/README.md",
-      "bytes": 999,
-      "sha256": "42a0aa5e491f07549ea9d3edda007832e5e5a99d59f78f786144ce2cf92f1944"
-    },
-    {
-      "path": "work/mb_lab/seat/walkthroughs/README.md",
-      "bytes": 430,
-      "sha256": "1105fd388374bda3e6e72bfe4b1bf4b37b271941888dec6e04a629fb2997d15e"
-    },
-    {
-      "path": "work/mb_lab/seat/your-kernel/README.md",
-      "bytes": 518,
-      "sha256": "d7166ab7664cf73c6b0d8ec3890e373a327faeb95ac906c20d83a36c432332ed"
-    },
-    {
-      "path": "work/mb_lab/tools/build_notebooks.py",
-      "bytes": 10433,
-      "sha256": "ae3a55060dfb3c513e400edbfe537e5233a2b4d2ee6f35b981fdbaacad17d54f"
-    },
-    {
-      "path": "work/mb_lab/tools/pack_solved_runs.py",
-      "bytes": 2471,
-      "sha256": "a0de44395520545afb31771efbbe83d6853df5807fdbeab83b4d702667babc02"
+      "path": "work/mb_progress.py",
+      "bytes": 8229,
+      "sha256": "284b5f6dbea4a42bd0ab77fc73fb7e38aefc9698140795a7c75e7167afef508c"
     },
     {
       "path": "work/tools/build_notebook.py",
-      "bytes": 85226,
-      "sha256": "cc37e11a49cbab4aa308203f5f79afd79bcb64a5e9e72dce12b69a914783810a"
+      "bytes": 88152,
+      "sha256": "1442cb4c35911f6ef1006dd262f32572859a92d6a1e21e7fd8190b091ab404b3"
     }
   ],
   "repo": {

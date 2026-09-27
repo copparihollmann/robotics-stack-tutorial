@@ -130,9 +130,10 @@ Read your board's own address from the bottom row of its OLED display. If it sho
 Run the two cells below. The first identifies your AWS instance. The second checks
 whether your board is connected.""")
 
-code('''import sys, pathlib
+code('''import sys, pathlib, importlib
 sys.path.insert(0, str(pathlib.Path.cwd()))
 import iiswc_lab as lab
+lab = importlib.reload(lab)          # a re-run picks up an updated helper file
 
 lab.where_am_i()''')
 
@@ -362,8 +363,7 @@ md("""Check that the two sums agree. This recorded frame produced:
 
 The next cell converts the raw frame into a colour image. It removes the two padding
 bytes at the start of each row, combines each 2x2 pixel group, and rotates the image
-180 degrees to account for the sensor's mounting. It then adjusts the colour balance
-by scaling each channel.
+180 degrees to account for the sensor's mounting.
 
 <details>
 <summary>How the sensor values become RGB pixels</summary>
@@ -373,8 +373,9 @@ even rows and even columns, red samples occupy odd rows and odd columns, and gre
 samples occupy the other two positions in each 2x2 group.
 
 The code takes the red and blue samples and averages the two green samples to make
-one RGB pixel. This produces a 162 x 162 image from the 324 x 324 sensor area. It then
-scales each colour channel toward a mean of 110 and clips values at 255.
+one RGB pixel. This produces a 162 x 162 image from the 324 x 324 sensor area. The
+bytes are displayed as the sensor delivered them, with no brightness or colour
+correction.
 
 </details>""")
 code('''import numpy as np, matplotlib.pyplot as plt
@@ -386,23 +387,20 @@ G = (m[0::2, 1::2].astype(np.uint16) + m[1::2, 0::2]) // 2
 R = m[1::2, 1::2].astype(np.uint16)
 rgb = np.rot90(np.dstack([R, G, B]).astype(np.uint8), 2)          # sensor mounted inverted
 
-for ch in range(3):                                               # each channel to one mean
-    v = rgb[:, :, ch].astype(np.uint32)
-    mean = max(int(v.mean()), 1)
-    rgb[:, :, ch] = np.minimum((v * 110 + mean // 2) // mean, 255)
-
 plt.figure(figsize=(4, 4))
 plt.imshow(rgb)
 plt.axis("off")
 plt.title(f"{rgb.shape[1]}x{rgb.shape[0]} from your card", fontsize=9)
 plt.show()''')
-md("""You should see a 162 x 162 colour image of the scene in front of the camera. Isolated
-bright or coloured pixels may be the sensor's hot pixels.
+md("""You should see a 162 x 162 colour image of the scene in front of the camera. The frame
+is shown exactly as the sensor delivered it, so it will look as bright or as dim as the
+light in the room. Isolated bright or coloured pixels are the sensor's hot pixels.
 
-The detector in Unit 2 uses the same colour-filter pattern, rotation, and channel
-scaling to prepare 64 x 64 inputs. The deployment tools check that host and board
-preprocessing produce identical bytes. The detector needs consistent preprocessing
-during training and deployment.""")
+The detector in Unit 2 uses the same colour-filter pattern and rotation, and adds a
+brightness and colour correction of its own before scaling the image to 64 x 64. The
+deployment tools check that the host and board versions of that correction produce
+identical bytes, because the detector needs the same preprocessing during training and
+deployment.""")
 
 md("""### 1.6 Inspect the hardware description and enabled drivers
 

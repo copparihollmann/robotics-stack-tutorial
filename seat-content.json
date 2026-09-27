@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-27T05:31:20Z",
+  "generated_at": "2026-09-27T06:11:44Z",
   "generated_by": "content_validate.py",
-  "source_commit": "6a094d187a68",
-  "note": "Merge Lux's prose rewrite: their wording, our cells, the camera driver and the board screen corrected",
+  "source_commit": "59b65a3fdab8",
+  "note": "camera section: display the frame as captured; setup cell reloads the helper module",
   "files": [
     {
       "path": "work/README.md",
@@ -47,11 +47,11 @@
     },
     {
       "path": "work/iiswc_tutorial.ipynb",
-      "bytes": 109491,
-      "sha256": "85f725150a2bb35124a36a6f812f99bddc902ad678fe3fcb8710ffef22080cad",
+      "bytes": 109470,
+      "sha256": "3896baf7b12c1be468e4d1d3f1d4cc45aea33becce9498bc472589c88f9d756d",
       "cells": 150,
       "nbformat": 4,
-      "source_chars": 77399,
+      "source_chars": 77396,
       "schema_checked": true
     },
     {
@@ -124,8 +124,8 @@
     },
     {
       "path": "work/tools/build_notebook.py",
-      "bytes": 86682,
-      "sha256": "72ecd294171f23fa1730e2a1c6f09b2f56217d2d51783c999a9c58c75d93ece0"
+      "bytes": 86679,
+      "sha256": "61965f47667701d17ef5ef57a228be28b45ffe347e6c8194a019ff2766feceb8"
     }
   ],
   "repo": {

@@ -45,10 +45,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
-#include <zephyr/drivers/i2c.h>
 #include <zephyr/sys/printk.h>
 #include <errno.h>
-#include "ospi_cam.h"
+#include "ospi_camera.h"
 
 #ifndef CAM_MCLKDIV
 #define CAM_MCLKDIV 2          /* 34.4828 MHz / 6 = 5.747 MHz: the datasheet's 8-bit QVGA@60fps point is 6 MHz */
@@ -57,13 +56,34 @@
 #define CAM_STREAM_MS 1000
 #endif
 
-#define OSPI      ((uintptr_t)DT_REG_ADDR(DT_ALIAS(camera0)))
-/* mtime runs at the SoC clock / 1000 on every chipyard board in this tree, so this follows
- * the board rather than nailing 0x5A5A001E's 34.4828 MHz into the source: 0x5A5A0038 is
- * 40 MHz and its MCLK would otherwise be reported wrong. */
-#define FCLK0_HZ  ((uint32_t)CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC * 1000u)
+/*
+ * THE CAMERA IS A ZEPHYR DEVICE, and this line is the whole of what this sample has to know
+ * about where the hardware is.  `camera0` is the alias the board puts on ospi@10080000; the
+ * driver behind it is modules/ospi_camera, an out-of-tree Zephyr module, and it is switched
+ * on by CONFIG_OSPI_HM01B0, which is default-y from the devicetree -- so prj.conf below does
+ * not mention it, in the same way it does not mention CONFIG_I2C_SIFIVE for the controller
+ * the sensor's control port is on.
+ *
+ * What used to be here instead, and what each line has become:
+ *
+ *   #define OSPI ((uintptr_t)DT_REG_ADDR(DT_ALIAS(camera0)))          the driver's `reg`
+ *   static const struct device *i2c = DEVICE_DT_GET(DT_ALIAS(camera_i2c));
+ *                                     the driver's `sensor-i2c` phandle, which is what that
+ *                                     phandle was put in the node for
+ *   z_write / z_write_read / struct cam_i2c bus                       the driver's
+ *   hm_set()'s grouped-parameter-hold dance                           the driver's
+ *   sleep_1ms()                                                       the driver's
+ *   FCLK0_HZ and the MCLK arithmetic                     ospi_camera_set_mclk_div()
+ *   l2_evict()                                           ospi_camera_flush_to_dram()
+ */
+static const struct device *const cam = DEVICE_DT_GET(DT_ALIAS(camera0));
 
-static const struct device *const i2c = DEVICE_DT_GET(DT_ALIAS(camera_i2c));
+/* REGISTER-LEVEL DIAGNOSTICS STAY AT REGISTER LEVEL, on purpose.  This sample dumps every
+ * capture register at reset and then deliberately arms a transfer with no pixel clock to show
+ * what a hung transfer looks like from the console.  Neither is an operation a driver should
+ * offer, and both need the base address, which the device carries.  Code that captures frames
+ * uses the API and never this. */
+#define OSPI      ospi_camera_reg_base(cam)
 
 /*
  * THE FRAME BUFFER, AND WHY IT IS THIS BIG AND WHY THERE ARE TWO.
@@ -106,25 +126,6 @@ static uint8_t frame[2][CAM_CAP_BYTES] __aligned(64);
 #define HM_AE_CTRL       0x2100
 #define HM_AE_TARGET     0x2101
 #define HM_GRP_HOLD      0x0104
-
-static int z_write(void *ctx, uint8_t addr, const uint8_t *buf, uint32_t len)
-{
-	ARG_UNUSED(ctx);
-	return i2c_write(i2c, buf, len, addr);
-}
-static int z_write_read(void *ctx, uint8_t addr, const uint8_t *w, uint32_t wl, uint8_t *r, uint32_t rl)
-{
-	ARG_UNUSED(ctx);
-	return i2c_write_read(i2c, addr, w, wl, r, rl);
-}
-static const struct cam_i2c bus = { z_write, z_write_read, NULL };
-
-static int sleep_1ms(void *ctx)
-{
-	ARG_UNUSED(ctx);
-	k_msleep(1);
-	return 0;
-}
 
 static void print_regs(const char *tag, const struct ospi_regs *r)
 {
@@ -213,7 +214,7 @@ static void dump_sensor_regs(const char *tag)
 
 		for (unsigned j = i; j < i + 4 && j < ARRAY_SIZE(sregs); j++) {
 			uint8_t v = 0;
-			int rc = hm01b0_read(&bus, sregs[j].reg, &v);
+			int rc = ospi_camera_sensor_read(cam, sregs[j].reg, &v);
 
 			if (rc) {
 				n += snprintk(line + n, sizeof line - n, " %s@%04x=ERR%d",
@@ -375,22 +376,13 @@ static void compare_frames(const uint8_t *a, const uint8_t *b, uint32_t w, uint3
  */
 static int hm_set(uint16_t reg, uint8_t val, uint8_t *readback)
 {
-	int rc = hm01b0_write(&bus, HM_GRP_HOLD, 1);
+	struct ospi_camera_sensor_write res;
+	int rc = ospi_camera_sensor_set(cam, reg, val, &res);
 
-	if (rc == 0) {
-		rc = hm01b0_write(&bus, reg, val);
-	}
-	int rel = hm01b0_write(&bus, HM_GRP_HOLD, 0);
-
-	if (rc == 0) {
-		rc = rel;
-	}
-	*readback = 0xff;
-	int rrc = hm01b0_read(&bus, reg, readback);
-
-	printk("CAM_SET reg=0x%04x wrote=0x%02x rc=%d readback=0x%02x read_rc=%d\n", reg, val, rc,
-	       *readback, rrc);
-	return rc ? rc : rrc;
+	*readback = res.readback;
+	printk("CAM_SET reg=0x%04x wrote=0x%02x rc=%d readback=0x%02x read_rc=%d\n", reg, val,
+	       res.write_rc, res.readback, res.read_rc);
+	return rc;
 }
 
 /*
@@ -408,21 +400,18 @@ static int hm_set(uint16_t reg, uint8_t val, uint8_t *readback)
  */
 static void l2_evict(void)
 {
-	volatile const uint64_t *p = (const uint64_t *)0x88000000UL;
 	uint64_t acc = 0;
 
-	for (uint32_t i = 0; i < (4u * 1024u * 1024u) / 8u; i += 8) {
-		acc += p[i];
-	}
+	(void)ospi_camera_flush_to_dram(cam, &acc);
 	printk("CAM_EVICT read_mib=4 from=0x88000000 acc_low=%u "
 	       "why=the_dma_writes_through_the_l2_and_the_ps_reads_dram\n", (uint32_t)acc);
 }
 
-/* One frame into buffer `idx`, bounded by DMA_LEN.  Returns the driver's rc. */
-static int capture_into(unsigned idx, struct ospi_frame_result *fr)
+/* One frame into buffer `idx`, bounded at the end of that array by the DMA's own length
+ * register.  Returns the driver's rc. */
+static int capture_into(unsigned idx, struct ospi_camera_frame *fr)
 {
-	return ospi_dma_capture_raw(OSPI, (uint32_t)(uintptr_t)frame[idx], sizeof frame[idx],
-				    3000, sleep_1ms, NULL, fr);
+	return ospi_camera_capture(cam, frame[idx], sizeof frame[idx], fr);
 }
 
 static uint32_t phys_of(unsigned idx)
@@ -433,7 +422,7 @@ static uint32_t phys_of(unsigned idx)
 }
 
 static void print_frame_line(const char *tag, unsigned idx, uint32_t w, uint32_t h, int rc,
-			     const struct ospi_frame_result *fr, const struct fstats *st)
+			     const struct ospi_camera_frame *fr, const struct fstats *st)
 {
 	uint64_t sum = (uint64_t)st->mean_x100 * (uint64_t)(w * h) / 100u;
 	uint64_t s2 = 0;
@@ -449,20 +438,22 @@ static void print_frame_line(const char *tag, unsigned idx, uint32_t w, uint32_t
 	       "sum=%llu saweof=%u\n", tag, rc == 0, rc, (uint32_t)(uintptr_t)frame[idx],
 	       phys_of(idx), w, h, fr->bytes, fr->attempts, fr->polls, fr->dma_status, fr->flags,
 	       fr->framecnt, st->mn, st->mx, st->mean_x100, s2,
-	       !!(fr->dma_status & OSPI_DMA_ST_SAWEOF));
+	       fr->saw_eof);
 }
 
 static int with_shield(void)
 {
 	uint16_t id = 0;
-	int rc = hm01b0_model_id(&bus, &id);
+	int rc = ospi_camera_sensor_id(cam, &id);
 	int ok = (rc == 0 && id == HM01B0_MODEL_ID);
 
 	printk("CAM_SENSOR rc=%d model_id=0x%04x ok=%d\n", rc, id, ok);
 
-	ospi_wr(OSPI, OSPI_MCLKDIV, CAM_MCLKDIV);
-	printk("CAM_MCLK mclkdiv=%u readback=%u hz=%u\n", CAM_MCLKDIV, ospi_rd(OSPI, OSPI_MCLKDIV),
-	       FCLK0_HZ / (2u * (CAM_MCLKDIV + 1u)));
+	uint8_t mclk_back = 0;
+	uint32_t mclk_hz = 0;
+
+	(void)ospi_camera_set_mclk_div(cam, CAM_MCLKDIV, &mclk_back, &mclk_hz);
+	printk("CAM_MCLK mclkdiv=%u readback=%u hz=%u\n", CAM_MCLKDIV, mclk_back, mclk_hz);
 
 	dump_sensor_regs("asfound");
 
@@ -484,28 +475,119 @@ static int with_shield(void)
 	 */
 	uint8_t rb0 = 0;
 
-	(void)hm01b0_write(&bus, HM_GRP_HOLD, 0);        /* apply anything left pending */
+	(void)ospi_camera_sensor_write(cam, HM_GRP_HOLD, 0);        /* apply anything left pending */
 	k_msleep(200);
 	(void)hm_set(HM_AE_CTRL, 0x00, &rb0);
 	(void)hm_set(HM_ANA_GAIN, 0x00, &rb0);
 	(void)hm_set(HM_INTEG_H, 0x00, &rb0);
 	(void)hm_set(HM_INTEG_L, 0x78, &rb0);
 	(void)hm_set(HM_IMAGE_ORIENT, 0x00, &rb0);
+
+	/*
+	 * ---- B161: the upstream (lorenshung/ospi-camera @ 638ca4c) sensor settings ------------
+	 *
+	 * OPT-IN AND OFF BY DEFAULT, so the arm above is byte-for-byte the frame B27 and every
+	 * run since has measured.  Each value below is 0/absent unless the build asks for it.
+	 *
+	 * WHAT UPSTREAM CHANGES AND WHY IT IS NOT A STRAIGHT PORT.  Its driver raises
+	 * FRAME_LEN 562 -> 4000 and MAX_INTG 340 -> 3900 to lift an EXPOSURE CEILING: on its
+	 * bench auto-exposure ran out of integration time, pegged the gain and returned a
+	 * near-black frame (99.6% at zero).  THAT MECHANISM NEEDS AE RUNNING.  This sample
+	 * deliberately holds AE OFF at a fixed INTEG (above), so raising FRAME_LEN alone moves
+	 * the frame PERIOD and not one DN of brightness -- exposure here is INTEG x line time,
+	 * and FRAME_LEN only bounds how large INTEG may be.  Porting the register writes without
+	 * that distinction would look like a fix and change nothing.  So exposure is moved by
+	 * CAM_INTEG, with FRAME_LEN raised to make room for it.
+	 *
+	 * BLC_CFG is the change that applies here unaltered: upstream measured the black-level
+	 * clamp leaving 101,641 of 102,690 pixels BIT-IDENTICAL.  Ours is not that degenerate
+	 * (B161 baseline: 57 distinct levels, floor at 91) but the clamp is on and the floor is
+	 * the shape it makes.  0xff leaves the register alone, matching upstream's own escape.
+	 */
+#ifndef CAM_BLC_CFG
+#define CAM_BLC_CFG 0xff        /* 0xff = leave alone; 0x00 = clamp off (upstream default) */
+#endif
+#ifndef CAM_FRAME_LEN
+#define CAM_FRAME_LEN 0         /* 0 = leave alone; upstream uses 4000 */
+#endif
+#ifndef CAM_MAX_INTG
+#define CAM_MAX_INTG 0          /* 0 = leave alone; upstream uses 3900. Only bites with AE on. */
+#endif
+#ifndef CAM_INTEG
+#define CAM_INTEG 0             /* 0 = keep the 0x78 set above (the historical exposure) */
+#endif
+/*
+ * DPC IS NOT UPSTREAM'S -- IT IS THE GAP BOTH CODEBASES LEAVE.  Neither this tree nor
+ * lorenshung/ospi-camera ever writes DPC_CTRL, so the part's own defect-pixel correction has
+ * only ever run at its power-up default of 0x00, i.e. OFF, and B161 measured the result: a
+ * regular grid of hot pixels, 1,196 samples more than 40 DN off their same-plane neighbours,
+ * plainly visible in the dark half of every frame.  Upstream's postprocessing does not remove
+ * them either (it has no defect or denoise stage) -- its demosaic SPREADS each one and its
+ * sRGB curve lifts it, so the speckle gets worse, not better, downstream.  Fixing it in the
+ * sensor is the cheap place.  0xff leaves the register alone.
+ */
+#ifndef CAM_DPC_CTRL
+#define CAM_DPC_CTRL 0xff
+#endif
+#if (CAM_BLC_CFG != 0xff) || (CAM_DPC_CTRL != 0xff) || CAM_FRAME_LEN || CAM_MAX_INTG || CAM_INTEG
+	{
+		/* FRAME_LEN first: MAX_INTG and INTEG past the frame length do nothing, because
+		 * the sensor cannot integrate for longer than a frame lasts. */
+		static const struct { uint16_t reg; uint8_t val; const char *name; } up[] = {
+#if CAM_FRAME_LEN
+			{ 0x0340, (uint8_t)((CAM_FRAME_LEN >> 8) & 0xffu), "FRAME_LEN_H" },
+			{ 0x0341, (uint8_t)(CAM_FRAME_LEN & 0xffu),        "FRAME_LEN_L" },
+#endif
+#if CAM_MAX_INTG
+			{ 0x2105, (uint8_t)((CAM_MAX_INTG >> 8) & 0xffu),  "MAX_INTG_H" },
+			{ 0x2106, (uint8_t)(CAM_MAX_INTG & 0xffu),         "MAX_INTG_L" },
+#endif
+#if CAM_INTEG
+			{ HM_INTEG_H, (uint8_t)((CAM_INTEG >> 8) & 0xffu), "INTEG_H" },
+			{ HM_INTEG_L, (uint8_t)(CAM_INTEG & 0xffu),        "INTEG_L" },
+#endif
+#if (CAM_BLC_CFG != 0xff)
+			{ 0x1000, (uint8_t)(CAM_BLC_CFG & 0xffu),          "BLC_CFG" },
+#endif
+#if (CAM_DPC_CTRL != 0xff)
+			{ 0x1008, (uint8_t)(CAM_DPC_CTRL & 0xffu),         "DPC_CTRL" },
+#endif
+		};
+
+		/* Read back every one.  A frame-timing register that is ACKed and then ignored
+		 * looks exactly like one that took, and the whole point of moving these is to
+		 * know what was really bought. */
+		for (unsigned i = 0; i < ARRAY_SIZE(up); i++) {
+			uint8_t back = 0xffu;
+			int wrc = hm_set(up[i].reg, up[i].val, &back);
+
+			printk("CAM_UPSTREAM_SET reg=0x%04x name=%s wrote=0x%02x readback=0x%02x "
+			       "rc=%d stuck=%d\n", up[i].reg, up[i].name, up[i].val, back, wrc,
+			       back == up[i].val ? 1 : 0);
+		}
+		printk("CAM_UPSTREAM_CFG blc_cfg=0x%02x dpc_ctrl=0x%02x frame_len=%u max_intg=%u "
+		       "integ=%u src=lorenshung/ospi-camera@638ca4c\n", (unsigned)CAM_BLC_CFG,
+		       (unsigned)CAM_DPC_CTRL, (unsigned)CAM_FRAME_LEN, (unsigned)CAM_MAX_INTG,
+		       (unsigned)CAM_INTEG);
+	}
+#endif
 	k_msleep(500);
 
-	rc = hm01b0_write(&bus, HM01B0_REG_MODE_SELECT, 1);
+	rc = ospi_camera_sensor_write(cam, HM01B0_REG_MODE_SELECT, 1);
 	uint8_t mode = 0xff;
-	int rc2 = hm01b0_read(&bus, HM01B0_REG_MODE_SELECT, &mode);
+	int rc2 = ospi_camera_sensor_read(cam, HM01B0_REG_MODE_SELECT, &mode);
 
 	k_msleep(200);
-	uint32_t p0 = ospi_rd(OSPI, OSPI_PCLKCNT), f0 = ospi_rd(OSPI, OSPI_FVLDCNT),
-		 l0 = ospi_rd(OSPI, OSPI_LVLDCNT);
+	struct ospi_camera_counters c0, c1;
+
+	(void)ospi_camera_counters(cam, &c0);
 	int64_t t0 = k_uptime_get();
 
 	k_msleep(CAM_STREAM_MS);
-	uint32_t p1 = ospi_rd(OSPI, OSPI_PCLKCNT), f1 = ospi_rd(OSPI, OSPI_FVLDCNT),
-		 l1 = ospi_rd(OSPI, OSPI_LVLDCNT);
+	(void)ospi_camera_counters(cam, &c1);
 	int64_t ms = k_uptime_get() - t0;
+	uint32_t p0 = c0.pclk, f0 = c0.fvld, l0 = c0.lvld;
+	uint32_t p1 = c1.pclk, f1 = c1.fvld, l1 = c1.lvld;
 	uint32_t df = f1 - f0;
 	uint32_t lines_pf = df ? (l1 - l0) / df : 0;
 	uint32_t pclk_pf = df ? (p1 - p0) / df : 0;
@@ -516,8 +598,7 @@ static int with_shield(void)
 	       rc, mode, rc2, ms, p1 - p0, df, l1 - l0,
 	       ms ? (uint64_t)(p1 - p0) * 1000u / (uint64_t)ms : 0,
 	       ms ? (uint64_t)df * 1000000u / (uint64_t)ms : 0,
-	       lines_pf, pclk_pf, (l1 - l0) ? (p1 - p0) / (l1 - l0) : 0,
-	       ospi_rd(OSPI, OSPI_FLAGS));
+	       lines_pf, pclk_pf, (l1 - l0) ? (p1 - p0) / (l1 - l0) : 0, c1.flags);
 	if (p1 == p0) {
 		printk("CAM_FRAME ok=0 reason=no_pclk_after_mode_select\n");
 		return 0;
@@ -531,21 +612,23 @@ static int with_shield(void)
 	 * NINE BITS WIDE in the RTL (pixCol/rowCnt are UInt(9.W)), so anything above 511 reads
 	 * back modulo 512 -- which is why DMA_BYTES, a 32-bit count, is the primary number here.
 	 */
-	struct ospi_frame_result pr;
+	struct ospi_camera_frame pr;
 	int prc = capture_into(0, &pr);
+	struct ospi_camera_counters pc;
 
+	(void)ospi_camera_counters(cam, &pc);
 	printk("CAM_PROBE rc=%d bytes=%u saweof=%u dma_status=0x%02x lastwidth_mod512=%u "
 	       "lastheight_mod512=%u framecnt=%u flags=0x%02x capcount=%u lastpix=%u polls=%u "
-	       "cap=%u\n", prc, pr.bytes, !!(pr.dma_status & OSPI_DMA_ST_SAWEOF), pr.dma_status,
-	       pr.width, pr.height, pr.framecnt, pr.flags, ospi_rd(OSPI, OSPI_CAPCOUNT),
-	       ospi_rd(OSPI, OSPI_LASTPIX), pr.polls, (unsigned)sizeof frame[0]);
+	       "cap=%u\n", prc, pr.bytes, pr.saw_eof, pr.dma_status,
+	       pr.width, pr.height, pr.framecnt, pr.flags, pc.capcount, pc.lastpix, pr.polls,
+	       (unsigned)sizeof frame[0]);
 
 	/* Rows from the RTL's own LASTHEIGHT when it divides the byte count, else from the LVLD
 	 * counter, else give up and say so rather than invent a width. */
 	uint32_t bytes = pr.bytes, rows = 0, w = 0, h = 0;
 	const char *src = "none";
 
-	if (prc == 0 && (pr.dma_status & OSPI_DMA_ST_SAWEOF) && bytes) {
+	if (prc == 0 && pr.saw_eof && bytes) {
 		if (pr.height && bytes % pr.height == 0 && bytes / pr.height <= MAX_W) {
 			rows = pr.height;
 			src = "lastheight";
@@ -564,8 +647,8 @@ static int with_shield(void)
 	       pclk_pf ? (uint32_t)((uint64_t)bytes * 100u / pclk_pf) : 0);
 	if (!rows) {
 		printk("CAM_FRAME ok=0 rc=%d reason=geometry_not_resolved bytes=%u saweof=%u\n",
-		       prc, bytes, !!(pr.dma_status & OSPI_DMA_ST_SAWEOF));
-		(void)hm01b0_write(&bus, HM01B0_REG_MODE_SELECT, 0);
+		       prc, bytes, pr.saw_eof);
+		(void)ospi_camera_sensor_write(cam, HM01B0_REG_MODE_SELECT, 0);
 		return 0;
 	}
 
@@ -575,7 +658,7 @@ static int with_shield(void)
 	frame_stats(frame[0], w, h, &s0);
 	print_frame_line("CAM_FRAME", 0, w, h, prc, &pr, &s0);
 	print_stats("base", &s0);
-	ok = ok && prc == 0 && (pr.dma_status & OSPI_DMA_ST_SAWEOF) && bytes == w * h;
+	ok = ok && prc == 0 && pr.saw_eof && bytes == w * h;
 
 	/*
 	 * DO THE BYTES FOLLOW THE SENSOR?  Two controlled changes, in an order that keeps them
@@ -589,7 +672,7 @@ static int with_shield(void)
 	 *     bytes came out of the sensor's own readout order -- the strongest evidence
 	 *     available without anybody at the bench to move the lens.
 	 */
-	struct ospi_frame_result fr1;
+	struct ospi_camera_frame fr1;
 	struct fstats s1;
 	static const uint8_t gains[] = { 0x10, 0x20, 0x30, 0x00 };
 	int rc3 = -1;
@@ -623,7 +706,7 @@ static int with_shield(void)
 
 	uint8_t orient0 = 0, rb = 0;
 
-	(void)hm01b0_read(&bus, HM_IMAGE_ORIENT, &orient0);
+	(void)ospi_camera_sensor_read(cam, HM_IMAGE_ORIENT, &orient0);
 	int wr = hm_set(HM_IMAGE_ORIENT, (uint8_t)(orient0 ^ 0x03u), &rb);
 
 	k_msleep(800);
@@ -666,7 +749,7 @@ static int with_shield(void)
 		}
 	}
 	dump_sensor_regs("after");
-	(void)hm01b0_write(&bus, HM01B0_REG_MODE_SELECT, 0);
+	(void)ospi_camera_sensor_write(cam, HM01B0_REG_MODE_SELECT, 0);
 	l2_evict();
 	return ok;
 }
@@ -678,27 +761,36 @@ int main(void)
 	printk("CAM_BOOT sample=cam_capture board=%s ospi=0x%08lx mclkdiv=%u\n", CONFIG_BOARD,
 	       (unsigned long)OSPI, CAM_MCLKDIV);
 
-	ospi_read_regs(OSPI, &r);
+	(void)ospi_camera_read_regs(cam, &r);
 	print_regs("CAM_REGS", &r);
 	int regs_ok = r.capacity == 512 && r.geom == ((244u << 16) | 324u) && r.ctrl == 0 &&
 		      r.dma_ctrl == 0 && r.dma_status == 0 && r.mclkdiv == 0;
 	printk("CAM_REGS_CHECK ok=%d capacity=%u geom=0x%08x dma_status=0x%02x\n", regs_ok, r.capacity,
 	       r.geom, r.dma_status);
 
-	if (!device_is_ready(i2c)) {
-		printk("CAM_RESULT shield=unknown ok=0 reason=i2c_not_ready\n");
+	/* ONE READINESS CHECK, NOT TWO.  The driver's init fails if the I2C controller its
+	 * sensor-i2c phandle names is not ready, so device_is_ready() on the camera covers the
+	 * control port as well -- and the sample no longer has to know that the camera has a
+	 * control port on another controller at all. */
+	if (!device_is_ready(cam)) {
+		printk("CAM_RESULT shield=unknown ok=0 reason=camera_not_ready\n");
 		return 0;
 	}
 
-	uint32_t p0 = ospi_rd(OSPI, OSPI_PCLKCNT), f0 = ospi_rd(OSPI, OSPI_FVLDCNT), l0 = ospi_rd(OSPI, OSPI_LVLDCNT);
+	struct ospi_camera_counters d0, d1;
+
+	(void)ospi_camera_counters(cam, &d0);
 	k_msleep(500);
-	uint32_t p1 = ospi_rd(OSPI, OSPI_PCLKCNT), f1 = ospi_rd(OSPI, OSPI_FVLDCNT), l1 = ospi_rd(OSPI, OSPI_LVLDCNT);
+	(void)ospi_camera_counters(cam, &d1);
+	uint32_t p0 = d0.pclk, f0 = d0.fvld, l0 = d0.lvld;
+	uint32_t p1 = d1.pclk, f1 = d1.fvld, l1 = d1.lvld;
+
 	printk("CAM_DIAG pclkcnt0=%u fvldcnt0=%u lvldcnt0=%u pclkcnt1=%u fvldcnt1=%u lvldcnt1=%u sensor_int=%u\n",
-	       p0, f0, l0, p1, f1, l1, !!(ospi_rd(OSPI, OSPI_FLAGS) & OSPI_FLAG_SENSORINT));
+	       p0, f0, l0, p1, f1, l1, !!(d1.flags & OSPI_FLAG_SENSORINT));
 
 	uint8_t id_h = 0;
 	int64_t t0 = k_uptime_get();
-	int prc = hm01b0_read(&bus, HM01B0_REG_MODEL_ID_H, &id_h);
+	int prc = ospi_camera_sensor_read(cam, HM01B0_REG_MODEL_ID_H, &id_h);
 	printk("CAM_I2C_PROBE addr=0x24 rc=%d nack=%d model_id_h=0x%02x ms=%lld\n", prc, prc == -EIO, id_h,
 	       k_uptime_get() - t0);
 

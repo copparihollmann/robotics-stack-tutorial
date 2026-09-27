@@ -32,7 +32,7 @@ It goes on top of `0x5A5A0010` and nothing else:
 - **`ospi.WithOspiCaptureDma(frameBufferDepth = 512)`** adds the capture core, a 1024-deep CDC
   FIFO, a **line-sized** 512-beat frame buffer, and the DMA engine with its TileLink client.
   - A whole-frame buffer is 324 × 324 + 1 beats. The 200T measured it at **44 RAMB36**
-    (a separate Artix-7 implementation run's `rb_impl_utilization_hier.txt`, `frameBuffer`), which is
+    (the implementation utilization-by-hierarchy report, `frameBuffer`), which is
     a third of this part's 140.
   - The price of the small buffer is a software rule (§5.3): a DMA transfer must already be running
     when a frame starts.
@@ -479,7 +479,7 @@ Written 2026-09-17, before any Vivado run of this variant. Base: `0x5A5A0010` as
 
 Two bodies of evidence set the numbers.
 - **Measured camera cost.** The 200T's routed, hierarchical cost of the same capture core
-  (that same Artix-7 utilization report, xc7a200t, same 7-series
+  (the implementation utilization-by-hierarchy report, xc7a200t, same 7-series
   primitives):
   - `ospiLM` without DMA and with the whole-frame buffer: 1,302 LUT (472 LUTRAM), 1,116 FF,
     44 RAMB36. Of that, `capture` is 575 LUT / 745 FF (its AsyncFifo 362 LUT, 256 of them LUTRAM),
@@ -634,11 +634,25 @@ retrofit to this one.
   - The defconfig is micrgb's plus `CONFIG_I2C=y`. `CONFIG_I2C_SIFIVE` is default-y on the node, and
     its prescaler is `34483000 / (5·100000) − 1 = 67`.
   - A new board rather than an overlay: micrgb's UART line is the I²C controller's interrupt here.
-- **The driver** is `fpga/pynq-z2/sw/cam/ospi_cam.{h,c}`: the register map, HM01B0 register
-  helpers over two I²C callbacks, and `ospi_dma_capture_frame()` (§5.3).
-- **The sample** is `samples/cam_capture`. It uses Zephyr's stock `i2c_sifive` through `i2c_write()`
-  and `i2c_write_read()`, from the main thread only, and never calls `i2c_configure` (the driver
-  configures from the DTS at init).
+- **The register-level driver** is `fpga/pynq-z2/sw/cam/ospi_cam.{h,c}`: the register map, HM01B0
+  register helpers over two I²C callbacks, and `ospi_dma_capture_frame()` (§5.3). It takes a bare
+  `uintptr_t base` and knows nothing about Zephyr, because half its callers are not Zephyr —
+  `samples/cam_rtl_sim` builds it for Verilator (§3.4).
+- **The Zephyr driver** is `modules/ospi_camera`, an out-of-tree Zephyr module added 2026-09-26
+  (B198). It binds `ucbbar,ospi-hm01b0` with `DEVICE_DT_INST_DEFINE` and calls the file above
+  rather than reimplementing any of it, so there is still one copy of every register sequence.
+  `CONFIG_OSPI_HM01B0` is `default y` gated on `DT_HAS_UCBBAR_OSPI_HM01B0_ENABLED`, exactly as
+  `CONFIG_I2C_SIFIVE` is gated on `DT_HAS_SIFIVE_I2C0_ENABLED`, so no `prj.conf` names it. What
+  the device carries comes from the node: `reg` is the base, `sensor-i2c` is the controller the
+  sensor's 0x24 control port is reached through — resolved with `DEVICE_DT_GET`, which is what
+  that phandle was put in the node for — and `frame-buffer-depth` is the 512-beat capacity.
+  **Init writes no register**, because `samples/cam_capture` asserts the whole register file is at
+  its reset values before anything touches it.
+- **The sample** is `samples/cam_capture`. It takes the camera as
+  `DEVICE_DT_GET(DT_ALIAS(camera0))` and captures with `ospi_camera_capture()`; the I²C transfers
+  to the sensor, the grouped-parameter-hold dance, the MCLK divider and the L2 eviction are the
+  driver's. Register-level reads stay in the sample where they are the point: the reset register
+  dump, and the deliberately hung transfer the no-shield path demonstrates.
   - **Without the shield:** registers, idle diagnostics, a MODEL_ID read that must NACK, and an
     armed DMA that must stay BUSY for a second.
   - **With the shield:** MODEL_ID, MCLKDIV, `MODE_SELECT = 1`, PCLK Hz and fps from the counters, one
@@ -827,7 +841,7 @@ measurements, and the first thing to do if pixels arrive corrupted is to lower M
 
 ### 9.4 First contact with a sensor, and the prediction for the second run
 
-**2026-09-21, garden (`xilinx@<board-ip>`), `0x5A5A001E`, md5 `659c6db6`,
+**2026-09-21, garden (`xilinx@192.168.2.99`), `0x5A5A001E`, md5 `659c6db6`,
 `out/cam_bringup_garden.log`.** The sensor answered and streamed, and then the guest went
 silent:
 
@@ -901,7 +915,7 @@ a geometry before `CAM_PROBE` has measured one.
 
 ### 9.5 Three frames out of real silicon, on two bitstreams, and what blocked the first one
 
-**2026-09-21, garden (`xilinx@<board-ip>`), three sessions under `scripts/with_board.sh`.**
+**2026-09-21, garden (`xilinx@192.168.2.99`), three sessions under `scripts/with_board.sh`.**
 `archive/runs/rocket_cam@20260921T1421`, `rocket_cam@20260921T1427`,
 `rocket_cam@20260921T1431`, `rocket_cam_all_f40`. Predictions in §9.4, commit `67085c2`.
 
@@ -1084,8 +1098,8 @@ one, and `run.json` now carries `board` and `pynq_host` so a row cannot silently
 | FCLK0 | 34.4828 MHz | 40.0000 MHz |
 | ospi PLIC source | 9 | 13 |
 | MCLK / PCLK | 5.747 / 2.833 MHz | 5.000 / 2.500 MHz |
-| board A | frame, `sawEof`, checksum match | frame, `sawEof`, checksum match |
-| board B | frame, `sawEof`, checksum match | frame, `sawEof`, checksum match |
+| **garden** (`192.168.2.99`) | frame, `sawEof`, checksum match | frame, `sawEof`, checksum match |
+| **illixr** (`10.44.159.154`) | frame, `sawEof`, checksum match | frame, `sawEof`, checksum match |
 | geometry, every run | `DMA_BYTES` 105,624 = 326 x 324 | `DMA_BYTES` 105,624 = 326 x 324 |
 | mosaic statistics (lag1 > lag2 both ways) | yes on both boards | yes on both boards |
 | gain sweep monotone | garden: saturated count only; illixr: **both** | **mean and saturated count**, both boards |

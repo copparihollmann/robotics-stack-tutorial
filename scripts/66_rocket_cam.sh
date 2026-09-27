@@ -104,12 +104,25 @@ CAM_ACCEPTED="${CAM_ACCEPTED:-$VARIANT_ACCEPTED}"
 BIT_ACCEPTED="$CAM_ACCEPTED"
 
 step "1/4  build the guest ($BOARD, MCLKDIV $MCLKDIV)"
+# B161: CAM_EXTRA_DEFS passes opt-in sensor settings straight through to CMake, e.g.
+# CAM_EXTRA_DEFS="-DCAM_BLC_CFG=0x00 -DCAM_FRAME_LEN=4000".  Unset = the historical arm.
+# Deliberately unquoted: it is a list of -D flags, not one argument.
+# shellcheck disable=SC2086
 run west build -p always -b "$BOARD" "$SAMPLE" -d "$RUN/build" -- -DBOARD_ROOT="$IISWC_ROOT" \
-  -DCAM_MCLKDIV="$MCLKDIV" > "$RUN/build.log" 2>&1 || { tail -30 "$RUN/build.log"; die "build failed"; }
+  -DCAM_MCLKDIV="$MCLKDIV" ${CAM_EXTRA_DEFS:-} > "$RUN/build.log" 2>&1 || { tail -30 "$RUN/build.log"; die "build failed"; }
 need_file "$RUN/build/zephyr/zephyr.bin" "build produced no raw image"
 cp "$RUN/build/zephyr/zephyr.elf" "$RUN/build/zephyr/zephyr.bin" "$RUN/build/zephyr/zephyr.dts" "$RUN/"
 grep -q '^CONFIG_I2C_SIFIVE=y' "$RUN/build/zephyr/.config" \
   || die "CONFIG_I2C_SIFIVE is not set: the i2c@10040000 node did not match sifive,i2c0 (boards/chipyard/pynqz1_cam)"
+# THE CAMERA DRIVER BOUND, and nothing in prj.conf asked it to.  CONFIG_OSPI_HM01B0 is
+# `default y` gated on DT_HAS_UCBBAR_OSPI_HM01B0_ENABLED (modules/ospi_camera/Kconfig), so it
+# is y here for exactly one reason: this board declares an enabled ospi@10080000 node whose
+# compatible the driver claims.  If the module were missed, or the node disabled, or the
+# compatible misspelled on either side, this line is n or absent -- and the guest would then
+# build against a NULL device and reach main with a camera it cannot talk to, which on a
+# console looks like a board fault rather than a build one.
+grep -q '^CONFIG_OSPI_HM01B0=y' "$RUN/build/zephyr/.config" \
+  || die "CONFIG_OSPI_HM01B0 is not set: the ospi@10080000 node did not bind modules/ospi_camera"
 HZ=$(grep -E '^CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=' "$RUN/build/zephyr/.config" | cut -d= -f2)
 [ "${HZ:-0}" = "$WANT_MTIME_HZ" ] || die "CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=$HZ, expected $WANT_MTIME_HZ"
 # The PLIC numbers 0x5A5A001E's generated DTS gives (the I2C took source 1, so the UART is 2).
@@ -137,7 +150,7 @@ for node, (src, prio) in want.items():
 print("    devicetree: uart 2, i2c 1, ospi %s -- %s" % (sys.argv[2], "ok" if not bad else "MISMATCH %s" % bad))
 sys.exit(1 if bad else 0)
 PY
-info "image: $(fsize "$RUN/zephyr.bin")   mtime: $HZ Hz   i2c_sifive: in"
+info "image: $(fsize "$RUN/zephyr.bin")   mtime: $HZ Hz   i2c_sifive: in   ospi_hm01b0: bound"
 [ "$DO_BOARD" -eq 1 ] || { info "--build-only"; exit 0; }
 
 step "2/4  identify the bitstream, load the PL, read the clocks back"

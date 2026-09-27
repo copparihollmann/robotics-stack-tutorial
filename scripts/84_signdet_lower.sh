@@ -67,6 +67,7 @@ OUTROOT="$IISWC_OUT"
 # seed, so two clones get byte-identical weights whatever their torch build.
 SEED=144
 FORCE_RANDOM=0
+SCALAR=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -77,6 +78,7 @@ while [ $# -gt 0 ]; do
     --seed)  SEED="${2:?}"; shift 2 ;;
     --random-weights) FORCE_RANDOM=1; shift ;;
     --per-tensor) PERCHANNEL=0; shift ;;
+    --scalar) SCALAR=1; shift ;;
     -h|--help) sed -n '2,45p' "$0"; exit 0 ;;
     *) die "unknown option: $1" ;;
   esac
@@ -164,6 +166,15 @@ info "installed $DST"
 
 step "2/5  curated kernel tree (scripts/lib/sign_gen.sh, the same tree the grey arm uses)"
 sign_compose_kernels "$CUR"
+if [ "$SCALAR" = 1 ]; then
+  for f in pext/pext_conv2d_s8_pc_pext_patch_dot8_pc.c \
+           pext_nl/pext_nl_permute4_s8_pext_block.c \
+           pext_nl/pext_nl_softmax_s8_pext_int_memo2.c; do
+    need_file "$CUR/$f" "the scalar arm removes $f, and it is not in the composed tree"
+    rm -f "$CUR/$f"
+  done
+  info "scalar arm: three curated kernels removed from the tree"
+fi
 info "$(find "$CUR" -name '*.c' | wc -l) curated kernels"
 
 step "3/5  extract_graph (int8 PTQ, calibrated on $NCAL frames)"
@@ -188,7 +199,7 @@ step "4/5  generate_skeleton + generate_kernels"
 need_file "$GEN/kernels.c" "codegen produced no kernels"
 
 step "5/5  op coverage, the guest's two scales, and the manifest"
-"$PY" - "$IR/graph.json" "$GEN/kernel_picks.json" <<'PYEOF'
+"$PY" - "$IR/graph.json" "$GEN/kernel_picks.json" "$SCALAR" <<'PYEOF'
 import json, sys
 g = json.load(open(sys.argv[1])); p = json.load(open(sys.argv[2]))["picks"]
 mac = 0
@@ -198,16 +209,21 @@ for n in g["ops"]:
         mac += s["OH"] * s["OW"] * s["OC"] * s["IC"] * s["KH"] * s["KW"]
 for k in sorted(p):
     print("    %-18s %-20s %s" % (k, p[k].get("source"), p[k].get("algorithm")))
-bad = [k for k in p if p[k].get("source") == "reference"]
+scalar = sys.argv[3] == "1"
+bad = [k for k in p if (p[k].get("source") == "reference") != scalar]
 print("    MAC %d   est %.2f M cycles   est %.1f ms @ 40 MHz  (1.2755 cyc/MAC, Lab B121)"
       % (mac, mac * 1.2755 / 1e6, mac * 1.2755 / 40e6 * 1e3))
 if mac * 1.2755 / 40e6 * 1e3 > 350.0:
     sys.exit("BUDGET: %.1f ms exceeds the ~350 ms the XPU-RT co-location schedule leaves"
              % (mac * 1.2755 / 40e6 * 1e3))
+if bad and scalar:
+    sys.exit("--scalar, but these ops still took a curated kernel: %s -- the arm would be "
+             "compared with itself" % ", ".join(sorted(bad)))
 if bad:
     sys.exit("reference-C fallback for: %s -- every op in this graph must be curated"
              % ", ".join(sorted(bad)))
-print("    all ops curated, no reference-C fallback")
+print("    every op is reference C" if scalar else
+      "    all ops curated, no reference-C fallback")
 PYEOF
 
 # THE TWO SCALES THE GUEST IS COMPILED WITH ARE NOT PRIVATE TO THE GRAPH.  sign_pre.c

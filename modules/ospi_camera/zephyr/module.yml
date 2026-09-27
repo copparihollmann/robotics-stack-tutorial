@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# This directory is a Zephyr MODULE, which is how a driver that is not part of the Zephyr
+# tree still takes part in the device model.  A module contributes three things to a build:
+# its Kconfig is merged into the configuration tree, its CMakeLists.txt into the build, and
+# its devicetree bindings into the binding search path.  Nothing in boards/ or in the Zephyr
+# tree has to change for any of it.
+#
+# Both paths below are relative to the module root (modules/ospi_camera) and both have to be
+# written out, because the defaults are zephyr/CMakeLists.txt and zephyr/Kconfig and these
+# files sit at the root instead.
+#
+# An application asks for the module by naming it in ZEPHYR_EXTRA_MODULES before
+# find_package(Zephyr) -- see samples/cam_capture/CMakeLists.txt.
+#
+# THERE IS DELIBERATELY NO `settings: dts_root:` AND NO dts/bindings/ HERE, and adding one is
+# not a small mistake.  The binding for ucbbar,ospi-hm01b0 already ships with each board that
+# declares the node (boards/chipyard/pynqz1_{cam,all_f40,trace_f40}/dts/bindings/), and it
+# already declares `sensor-i2c` and `frame-buffer-depth` -- everything this driver reads.  A
+# second file with the same `compatible:` is a HARD BUILD FAILURE, not a shadowing rule.
+# Measured, 2026-09-26, by putting a copy here and building:
+#
+#   devicetree error: both .../modules/ospi_camera/dts/bindings/ucbbar,ospi-hm01b0.yaml and
+#   .../boards/chipyard/pynqz1_all_f40/dts/bindings/ucbbar,ospi-hm01b0.yaml have
+#   'compatible: ucbbar,ospi-hm01b0'
+#
+# (edtlib's _register_binding() refuses a duplicate compatible/on-bus pair outright.)  So a
+# board that gets this camera must carry the binding, and this module must not.
+build:
+  cmake: .
+  kconfig: Kconfig

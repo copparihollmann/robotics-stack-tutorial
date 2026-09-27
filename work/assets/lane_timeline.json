@@ -1,5 +1,5 @@
 {
-  "trace": "/scratch/dima/iiswc-tutorial/out/b156_duo/trace.merged.perfetto.json",
+  "trace": "out/two_hart_window/trace.merged.perfetto.json",
   "lanes": {
     "0": {
       "name": "hart 0 (BIG, MBP) signdet_live",

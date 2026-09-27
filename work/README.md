@@ -1,7 +1,7 @@
 # Attendee notebooks
 
 `iiswc_tutorial.ipynb` is the published attendee page —
-`/scratch/dima/iiswc-site/src/data/instructions.ts` — as a notebook, for the per-seat
+the published site's `instructions.ts` — as a notebook, for the per-seat
 JupyterLab interface of `docs/TUTORIAL_INTERFACE_NOTES.md` §4e.
 
 **It runs on the attendee's own AWS instance.** That is the whole point of the interface:
@@ -27,7 +27,7 @@ saying they are already on the instance, and 0.5 lists the verbs the card accept
 attendee needs the flow in front of them, not its history.
 
 **The page needs the same correction and has not had it.** It lives in a different
-repository (`/scratch/dima/iiswc-site`) and this lab did not edit it. The problem is bigger
+repository (the site's own checkout) and this lab did not edit it. The problem is bigger
 than step 0.2: the page is served from the router at `10.42.0.1` and written to survive the
 uplink dying, which assumes an attendee *on the room network* — and under §4e nobody is. So
 its delivery mechanism is superseded along with its step 0.2. That is the page owner's call,

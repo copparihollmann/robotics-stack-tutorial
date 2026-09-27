@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-26T17:15:02Z",
+  "generated_at": "2026-09-27T05:31:20Z",
   "generated_by": "content_validate.py",
-  "source_commit": "6cc9af96b4d4",
-  "note": "Unit 4 runs the optimizer",
+  "source_commit": "6a094d187a68",
+  "note": "Merge Lux's prose rewrite: their wording, our cells, the camera driver and the board screen corrected",
   "files": [
     {
       "path": "work/README.md",
-      "bytes": 9120,
-      "sha256": "3cb47eda361b47f014ee7b6e47aea4dcc3cb43c1799871306e59cd376ec6fee1"
+      "bytes": 9104,
+      "sha256": "c2af96f377db7292085df5c8fdc25980347188c240e5c967f8bfa530a0e69f9c"
     },
     {
       "path": "work/assets/kernel_gate.expected.txt",
@@ -17,8 +17,8 @@
     },
     {
       "path": "work/assets/lane_timeline.json",
-      "bytes": 9098,
-      "sha256": "e7c61c7334b5aaed67d5b15848fb56c257f81507c17a0a4db958e12ab9a93523"
+      "bytes": 9076,
+      "sha256": "df256ced2f259fc2cf833e503edba402458f475a65ddce34d97e67803bb1166a"
     },
     {
       "path": "work/assets/moonshine_shape.json",
@@ -42,16 +42,16 @@
     },
     {
       "path": "work/iiswc_lab.py",
-      "bytes": 51305,
-      "sha256": "4837cf9d2cfcb668939991ad2e4c5f3f349d550462042740753023c096c45d2e"
+      "bytes": 66272,
+      "sha256": "6fe90ca1bfcda62bc8905b999499a0a51fc0cbce52bc309f18797881521d7cab"
     },
     {
       "path": "work/iiswc_tutorial.ipynb",
-      "bytes": 97081,
-      "sha256": "ae2e0dc8c4ac5a9124380bfd735208d54a1ebea59b5f5ffc207d0c75e9d76bec",
-      "cells": 148,
+      "bytes": 109491,
+      "sha256": "85f725150a2bb35124a36a6f812f99bddc902ad678fe3fcb8710ffef22080cad",
+      "cells": 150,
       "nbformat": 4,
-      "source_chars": 67740,
+      "source_chars": 77399,
       "schema_checked": true
     },
     {
@@ -124,14 +124,14 @@
     },
     {
       "path": "work/tools/build_notebook.py",
-      "bytes": 76859,
-      "sha256": "26c611e059d07e03c681921c57702de679c45564e22029e84989935966aa204d"
+      "bytes": 86682,
+      "sha256": "72ecd294171f23fa1730e2a1c6f09b2f56217d2d51783c999a9c58c75d93ece0"
     }
   ],
   "repo": {
     "url": "https://github.com/ucb-bar/robotics-stack-tutorial.git",
     "ref": "main",
-    "commit": "5bb524cfd836ce8b6838c944150663a212fb80e8",
+    "commit": "942764d6d31b31e29c1391b1456affce68f1e379",
     "mount": "repo",
     "guide": [
       [

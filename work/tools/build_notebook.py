@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate `notebooks/iiswc_tutorial.ipynb` from the published attendee page.
 
-The page -- `/scratch/dima/iiswc-site/src/data/instructions.ts` -- is the source of
+The page -- the published site's `instructions.ts` -- is the source of
 truth for what the units are, what they run, and what the screen should say. This
 script is the transcription of it, so a page change is a data edit here and not a
 hand-edit of notebook JSON. **Edit this file, re-run it, commit both.**
@@ -118,8 +118,8 @@ includes board output from a rerun on `pynq-13` on 2026-09-24.
 
 md("""### Find your seat
 
-Read the IP address on your board's OLED display. If it shows `10.42.0.13`, your seat
-number is 13. The table below uses `N` for your seat number.
+Read your board's own address from the bottom row of its OLED display. If it shows
+`10.42.0.13`, your seat number is 13. The table below uses `N` for your seat number.
 
 | Device | Address or name |
 |---|---|
@@ -127,14 +127,12 @@ number is 13. The table below uses `N` for your seat number.
 | Its hostname | `pynq-{N}` |
 | Your instance | `aws-{N}.iiswc` |
 
-Enter your seat number in `SEAT` below, then run the two cells. The first identifies
-your AWS instance. The second checks whether your board is connected.""")
+Run the two cells below. The first identifies your AWS instance. The second checks
+whether your board is connected.""")
 
 code('''import sys, pathlib
 sys.path.insert(0, str(pathlib.Path.cwd()))
 import iiswc_lab as lab
-
-SEAT = "N"          # <-- put your seat number here, from the OLED
 
 lab.where_am_i()''')
 
@@ -152,16 +150,31 @@ is connected to your AWS instance.""")
 
 md("""### 0.1 Check the board's display
 
-The OLED should show the board's IP address, network name, and uptime:
+The OLED shows the address of your AWS instance, your board's own address, and an uptime
+counter:
 
-""" + fence("10.42.0.{N}\niiswc-robotics-tutorial\nup 4:17") + """
+""" + fence("https://\n198.51.\n100.197/\n10.42.0.{N} up 4:17") + """
 
-Watch the `up M:SS` line for a few seconds. It counts minutes and seconds since the
-SoC's last boot and should keep advancing.
+The top three rows are one web address, in the tallest font the panel has. It is the
+address of your instance, and the digits carry on from the first row to the second: the
+split falls after the second dot, and the dot left hanging at the end of a row is the
+continuation cue. Read the rows together, keep the closing slash, and that is the address
+to open in your browser.
+
+The bottom row is your board's own address on the room network, followed by the time since
+the SoC last booted. Your seat number is the last part of that address: a board showing
+`10.42.0.13` is seat 13.
+
+Watch the `up M:SS` field for a few seconds. It counts minutes and seconds since the SoC's
+last boot and should keep advancing.
+
+A board that has no instance address to show uses a shorter layout instead: its own
+address, the network it joined, and the line `no instance addr` above the uptime counter.
 
 """ + fixes_table([
     ("`up M:SS` stops advancing", "Turn the board off and on again. The counter should restart at `up 0:00`."),
     ("The display shows `NO ADDRESS` or `wlan0 DOWN`.", "Turn the board off and on again, then wait for an IP address to appear."),
+    ("The display shows `no instance addr`.", "Your board found the network but not your instance. Turn the board off and on again; it looks for the instance while it boots."),
     ("The display is blank and the board started less than two minutes ago.", "Wait for the display to update. Network startup takes about 37 seconds."),
 ]))
 
@@ -248,7 +261,7 @@ md("""The board reports the application it ran and the number of console bytes i
 
 The board saves the console output in `console.out`. Fetch it with the next cell.""")
 code('''c = lab.board("get", "console.out", binary=True, verbose=False)
-print(c.stdout.decode("utf-8", "replace") if c.ok else c)''')
+print(lab.console_text(c) or c)''')
 md("""Card 13 produced this 373-byte console output on 2026-09-24:
 
 """ + fence(
@@ -264,17 +277,7 @@ md("""Card 13 produced this 373-byte console output on 2026-09-24:
 
 Check for `soc_magic=0x5A5A0038` and `BI_DONE`. The magic value identifies the FPGA
 configuration used in this unit. Your `nonce` will differ, and the OLED's uptime
-counter should restart at `up 0:00`.
-
-""" + fixes_table([
-    ("`console_bytes: 0`", "Stop and tell an instructor. Do not retry and do not reboot."),
-    ("`another console reader is already on /dev/ttyPS1`", "Stop the process with the exact PID shown in the message."),
-    ("The output contains the boot banner but no `BI_` lines.", "The reader started late. Read the full text in `console.out` on the board."),
-]) + """
-
-This sequence has been tested twice on a bench board. Boards prepared through the
-imaging flow still need verification, so an empty console may reflect a board setup
-issue.""")
+counter should restart at `up 0:00`.""")
 
 md("""### 1.4 Take a picture with the board's camera
 
@@ -289,21 +292,19 @@ west build -p always -b chipyard_pynqz1_all_f40 \\
     -- -DBOARD_ROOT=/home/ubuntu/tut -DCAM_MCLKDIV=2""", timeout=900)''')
 md("The camera build reports its memory use:\n\n" + fence(
     "Memory region         Used Size  Region Size  %age Used\n"
-    "             RAM:      594216 B       256 MB      0.22%\n"
+    "             RAM:      595768 B       256 MB      0.22%\n"
     "        IDT_LIST:           0 B         4 KB      0.00%") + """
 
 Upload the image and run it. The application measures the sensor's pixel clock for a
 second, captures a frame, and reports the result.""")
 code('''lab.board_put("/home/ubuntu/out/cam_capture/zephyr/zephyr.bin")
 lab.board("run", "zephyr", timeout=300)''')
-md("""The recorded run uploaded 52,720 bytes and returned about 7,700 console bytes after
+md("""The recorded run uploaded 54,096 bytes and returned about 7,700 console bytes after
 roughly forty seconds. The next cell extracts the lines that describe the capture.""")
 code('''c = lab.board("get", "console.out", binary=True, verbose=False)
-console = c.stdout.decode("utf-8", "replace")
-for line in console.splitlines():
-    if line.startswith(("CAM_SHIELD", "CAM_SENSOR", "CAM_STREAM", "CAM_GEOM",
-                        "CAM_FRAME ", "CAM_RESULT")):
-        print(line)''')
+console = lab.console_text(c)
+lab.show_console_lines(console, "CAM_SHIELD", "CAM_SENSOR", "CAM_STREAM", "CAM_GEOM",
+                       "CAM_FRAME ", "CAM_RESULT")''')
 md("""Card 3 reported the following capture. Your pixel values and frame sum will depend
 on what the camera sees.
 
@@ -313,7 +314,7 @@ on what the camera sees.
     "CAM_STREAM mode_rc=0 mode_select=1 readback_rc=0 ms=1001 pclk=3336669 fvld=17 "
     "lvld=5197 pclk_hz=3333335 fps_x1000=16983 lines_per_frame=305 ...\n"
     "CAM_GEOM src=lastheight width=326 height=324 bytes=105624 lines_per_frame=305 ...\n"
-    "CAM_FRAME ok=1 rc=0 addr=0x8000ce80 phys=0x1000ce80 width=326 height=324 "
+    "CAM_FRAME ok=1 rc=0 addr=0x8000d480 phys=0x1000d480 width=326 height=324 "
     "bytes=105624 ... min=0 max=255 mean_x100=8696 sum=9185093 saweof=1\n"
     "CAM_RESULT shield=1 ok=1") + """
 
@@ -353,8 +354,7 @@ f = lab.board("get", "frame.raw", binary=True, verbose=False)
 raw = f.stdout
 open("frame.raw", "wb").write(raw)
 
-said = int([l for l in console.splitlines() if l.startswith("CAM_FRAME ")][0]
-           .split("sum=")[1].split()[0])
+said = lab.console_field(console, "CAM_FRAME ", "sum", int)
 print(f"{len(raw):,} bytes here, guest said sum={said:,}, these bytes sum to {sum(raw):,}")''')
 md("""Check that the two sums agree. This recorded frame produced:
 
@@ -434,17 +434,32 @@ md("The command prints the camera node followed by the start of the button defin
     "        btn0: btn0 {\n"
     "                gpios = < &gpio0 0x6 0x0 >;") + """
 
-The camera sample reads and polls the capture registers directly. This checkout has
-no Zephyr driver for `compatible = "ucbbar,ospi-hm01b0"`. The node records the register
-address in `reg`, the interrupt in `interrupts`, and the sensor's control bus in
-`sensor-i2c`.
+A driver claims that `compatible` string: `modules/ospi_camera`. Every field in the node
+is something the driver reads. `reg` gives the register block's address.
+`frame-buffer-depth` is the capture unit's 512-beat buffer, which holds one line rather
+than one frame. `interrupts` records the interrupt the unit raises, which this driver does
+not connect because it polls. `sensor-i2c` points at the I2C controller the sensor's
+control port is on, and the driver resolves that phandle with `DEVICE_DT_GET`, so no
+source file names the controller.
+
+The application you ran in 1.4 takes the camera as a Zephyr device:
+
+```c
+const struct device *cam = DEVICE_DT_GET(DT_ALIAS(camera0));
+struct ospi_camera_frame f;
+ospi_camera_capture(cam, frame, sizeof frame, &f);
+```
+
+The driver is not part of Zephyr. It is an out-of-tree module: a directory holding a
+`Kconfig` and a `CMakeLists.txt` that the application names before the build starts.
+Nothing in `boards/` and nothing in the Zephyr tree changed to add it.
 
 <details>
 <summary>How the sensor and buttons use the hardware description</summary>
 
 The sensor uses I2C address `0x24` on the controller it shares with the OLED at `0x3c`.
-The sample accesses the sensor through that controller. The sensor's control port has
-no separate node.
+The driver reaches the sensor through that controller, and the sensor's control port has
+no node of its own.
 
 The board declares four buttons as `gpio-keys` with aliases `sw0` to `sw3`. An
 application can use `GPIO_DT_SPEC_GET(DT_ALIAS(sw0), gpios)` to obtain BTN0's pin and
@@ -453,28 +468,103 @@ includes the `gpio-keys` input driver.
 
 </details>
 
-The next cell reads the generated `.config` file to show which I2C, GPIO, display,
-and input options the camera image enabled.""")
-code('''lab.sh("grep -E '^CONFIG_(I2C|I2C_SIFIVE|GPIO|GPIO_SIFIVE|DISPLAY|INPUT|SSD1306)=' "
+The next cell reads the generated `.config` file. It prints the I2C, GPIO, display, input
+and camera options this build set, the devicetree symbols behind them, and the options it
+left unset.""")
+code('''lab.sh("grep -E '^(CONFIG|# CONFIG)_(I2C|I2C_SIFIVE|GPIO|GPIO_SIFIVE|DISPLAY|INPUT|"
+       "SSD1306|OSPI_HM01B0|DT_HAS_SIFIVE_I2C0_ENABLED|DT_HAS_SOLOMON_SSD1306FB_ENABLED|"
+       "DT_HAS_UCBBAR_OSPI_HM01B0_ENABLED)[ =]' "
        "~/out/cam_capture/zephyr/.config | sort")''')
-md("The camera image enables these four options:\n\n" + fence(
-    "CONFIG_GPIO_SIFIVE=y\nCONFIG_GPIO=y\nCONFIG_I2C_SIFIVE=y\nCONFIG_I2C=y") + """
+md("Eight of these symbols are set and two are not:\n\n" + fence(
+    "# CONFIG_DISPLAY is not set\n"
+    "# CONFIG_INPUT is not set\n"
+    "CONFIG_DT_HAS_SIFIVE_I2C0_ENABLED=y\n"
+    "CONFIG_DT_HAS_SOLOMON_SSD1306FB_ENABLED=y\n"
+    "CONFIG_DT_HAS_UCBBAR_OSPI_HM01B0_ENABLED=y\n"
+    "CONFIG_GPIO=y\n"
+    "CONFIG_GPIO_SIFIVE=y\n"
+    "CONFIG_I2C=y\n"
+    "CONFIG_I2C_SIFIVE=y\n"
+    "CONFIG_OSPI_HM01B0=y") + """
 
-Compare these options with the hardware nodes above. The camera image enables I2C
-and GPIO support. It leaves `CONFIG_DISPLAY` and `CONFIG_INPUT` disabled.
+`CONFIG_I2C` and `CONFIG_GPIO` are subsystems, and the board's `_defconfig` sets them.
+`CONFIG_I2C_SIFIVE`, `CONFIG_GPIO_SIFIVE` and `CONFIG_OSPI_HM01B0` are drivers, and no
+file in this checkout names any of the three: the camera sample's `prj.conf` asks for none
+of them. The three `CONFIG_DT_HAS_*` lines are symbols the build generated from the
+devicetree, and they are what turned the drivers on.
 
-Why can the board describe an OLED while this image omits its driver?
+The board describes an OLED, its symbol is `y`, and this image still carries no display
+driver. Read those three facts together and predict how Kconfig reached that result. The
+next cell shows both steps of the mechanism in the files where they happen.""")
+
+code('''lab.sh("""Z=/home/ubuntu/tut/zephyr-chipyard-sw/zephyr_ws/zephyr && \\
+grep -B2 -A2 '^config DT_HAS_SIFIVE_I2C0_ENABLED' ~/out/cam_capture/Kconfig/Kconfig.dts && \\
+echo "... one of $(grep -c '^config DT_HAS_' ~/out/cam_capture/Kconfig/Kconfig.dts) \\
+such symbols, one per compatible" && \\
+echo --- && sed -n '/^config I2C_SIFIVE/,/help/p' $Z/drivers/i2c/Kconfig.sifive && \\
+echo --- && grep -nE '^menuconfig I2C$|^if I2C$|Kconfig.sifive' $Z/drivers/i2c/Kconfig && \\
+echo --- && sed -n '/^config OSPI_HM01B0/,/^$/p' \\
+    /home/ubuntu/tut/modules/ospi_camera/Kconfig""")''')
+md("Each block is one step of the same mechanism:\n\n" + fence(
+    "DT_COMPAT_SIFIVE_I2C0 := sifive,i2c0\n"
+    "\n"
+    "config DT_HAS_SIFIVE_I2C0_ENABLED\n"
+    "\tdef_bool $(dt_compat_enabled,$(DT_COMPAT_SIFIVE_I2C0))\n"
+    "\n"
+    "... one of 2871 such symbols, one per compatible\n"
+    "---\n"
+    "config I2C_SIFIVE\n"
+    '\tbool "Sifive I2C driver"\n'
+    "\tdefault y\n"
+    "\tdepends on DT_HAS_SIFIVE_I2C0_ENABLED\n"
+    "\thelp\n"
+    "---\n"
+    "9:menuconfig I2C\n"
+    "14:if I2C\n"
+    '157:source "drivers/i2c/Kconfig.sifive"\n'
+    "---\n"
+    "config OSPI_HM01B0\n"
+    '\tbool "HM01B0 parallel-video capture unit (ucbbar,ospi-hm01b0)"\n'
+    "\tdefault y\n"
+    "\tdepends on DT_HAS_UCBBAR_OSPI_HM01B0_ENABLED\n"
+    "\tdepends on I2C\n"
+    "\thelp") + """
+
+**The build turns the devicetree into Kconfig symbols.** `Kconfig/Kconfig.dts` in the
+build directory is generated, with one entry per compatible string Zephyr knows -- 2,871
+of them in this build. `dt_compat_enabled` is true when the devicetree just compiled holds
+at least one node with that compatible and `status = "okay"`. So
+`DT_HAS_SIFIVE_I2C0_ENABLED` is `y` here because `i2c@10040000` is in the devicetree and
+enabled, and it is `n` on a board whose devicetree declares no such controller.
+
+**Each driver's own Kconfig depends on that symbol.** `drivers/i2c/Kconfig.sifive`
+declares `I2C_SIFIVE` as `default y` with `depends on DT_HAS_SIFIVE_I2C0_ENABLED`. The
+third block shows where Kconfig reads that file from: inside `if I2C`. The board's
+`CONFIG_I2C=y` is what makes the driver symbol exist, and the devicetree is what makes it
+`y`. Two conditions in two files, and nobody typed `CONFIG_I2C_SIFIVE`. `GPIO_SIFIVE` and
+`gpio@10010000` are the same pair.
+
+The fourth block is the camera driver, in the same shape and outside the Zephyr tree:
+`default y`, `depends on DT_HAS_UCBBAR_OSPI_HM01B0_ENABLED`, and a second `depends on
+I2C` because it talks to the sensor over the controller its `sensor-i2c` phandle names. A
+board whose devicetree has no `ucbbar,ospi-hm01b0` node generates no such symbol, so
+`CONFIG_OSPI_HM01B0` does not appear in its `.config` at all and none of this code is
+linked. An application can name the module on every build without costing the boards that
+carry no camera anything.
 
 <details>
-<summary>How the board and application select drivers</summary>
+<summary>Why the display driver is absent</summary>
 
-The board's `_defconfig` enables shared components such as `CONFIG_I2C`, `CONFIG_GPIO`,
-and the console. The SiFive drivers default to enabled when the devicetree contains
-matching enabled nodes, which selects `CONFIG_I2C_SIFIVE` and `CONFIG_GPIO_SIFIVE`.
+`CONFIG_DT_HAS_SOLOMON_SSD1306FB_ENABLED=y` says the panel has an enabled node, so the
+first step made its symbol true, and `SSD1306` is `default y` depending on exactly that
+symbol. But `drivers/display/Kconfig` sources the driver inside `if DISPLAY`, and
+`CONFIG_DISPLAY` is not set, so Kconfig never reaches the driver symbol.
+`CONFIG_INPUT is not set` keeps the button driver out the same way, on a devicetree with
+four enabled `gpio-keys` nodes.
 
-An application enables additional components in its `prj.conf`. The display sample
-enables `CONFIG_DISPLAY` there. The camera sample leaves display and input support
-disabled, so its image omits those drivers even though the board describes the devices.
+An application enables the subsystems it needs in its `prj.conf`. The display sample sets
+`CONFIG_DISPLAY` there. The camera sample sets neither, so its image omits both drivers
+even though the board describes both devices.
 
 </details>""")
 
@@ -513,6 +603,12 @@ Spike simulator. This setting disables the trace sink that writes to DRAM:
 
 Zephyr picks up this fragment for the Spike target, so the application can use the
 same source with a different trace sink.
+
+The fragment's other two settings hold the same line. Spike starts one hart, so the
+fragment turns SMP off rather than waiting for a second core that never arrives. And it
+restates `CONFIG_SPEED_OPTIMIZATIONS=y`, which the board's defconfig sets and Spike's does
+not, so both builds compile the kernels at the same optimisation level and the two
+instruction streams stay comparable.
 
 <details>
 <summary>Why the cache flush depends on the target</summary>
@@ -920,11 +1016,11 @@ md("""Compare the `frame` totals, then check that both outputs match the referen
     "permute  permute4_s8             2,117          9,697    4.58x\n"
     "softmax  softmax_s8             51,859        889,603   17.15x\n"
     "frame                        9,508,851    163,923,052   17.24x\n"
-    "ms at 40 MHz                     237.72       4,098.08\n"
+    "ms at 40 MHz                    237.72       4,098.08\n"
     "\n"
-    "pext      custom-0 instructions in the image  49   output vs golden: 0 of 192 "
+    "pext           custom-0 instructions in the binary  49   output vs golden: 0 of 192 "
     "bytes differ, max |d| = 0\n"
-    "scalar    custom-0 instructions in the image   1   output vs golden: 0 of 192 "
+    "scalar         custom-0 instructions in the binary   1   output vs golden: 0 of 192 "
     "bytes differ, max |d| = 0") + """
 
 The accelerated image completes inference 17.24 times faster in this measurement.
@@ -1038,13 +1134,13 @@ checked row and uses ordinary instructions to look up each result.
 <details>
 <summary>How model weights affect image updates</summary>
 
-The build carrying both models contains 1.0 MB of code and 62.8 MB of read-only data.
-The image transferred to the board is 63.9 MB.
+The image carrying both models is 67.0 MB: 1.1 MB of code and 65.9 MB of read-only data.
 
-A recorded kernel update modified 15 KB of code and relocated 65.5 MB of weight
-symbols without changing their contents. A binary delta that accounts for relocation
-was 257 KB. The experiment reported 261 times less transferred data than resending
-the full image.
+A recorded kernel update modified 15 KB of code. That gave every weight a new address
+without changing any weight's contents, so 65.5 MB of weight symbols are identical and
+merely relocated. A delta that re-anchors after the shift is 257 KB, 260 times smaller than
+sending the image again. A 4 KB block diff over the same two images re-anchors on nothing:
+it calls 99.8% of the blocks changed and saves nothing at all.
 
 </details>
 
@@ -1184,10 +1280,8 @@ md("""In the recorded run, the 1,096,544-byte upload took about eight seconds. L
 the bitstream took fourteen seconds, and the run operation took seventy-five.
 The next cell reads the console and prints the capture checks.""")
 code('''c = lab.board("get", "console.out", binary=True, verbose=False)
-for line in c.stdout.decode("utf-8", "replace").splitlines():
-    if line.startswith(("DUO_TRACE_ARM", "DUO_TRACE_HART", "DUO_TRACE_GATE", "SD_REPLAY_END",
-                        "DUO_DONE")):
-        print(line)''')
+lab.show_console_lines(lab.console_text(c), "DUO_TRACE_ARM", "DUO_TRACE_HART",
+                       "DUO_TRACE_GATE", "SD_REPLAY_END", "DUO_DONE")''')
 md("""Card 3 reported the following capture. Compare `DUO_TRACE_GATE` and `DUO_DONE`
 with your result:
 
@@ -1233,15 +1327,7 @@ The next cell reads both traces from board memory. The `drain` operation uses th
 addresses and lengths reported by the board and compresses the files before transfer.
 The recorded capture compressed from about 39 MB to 3 MB.""")
 code('''d = lab.board("drain", timeout=900, verbose=False)
-import json
-drain = json.loads(d.stdout)
-print(f'{drain["lanes"]} lanes, {drain["bytes"]:,} bytes of trace, '
-      f'{drain["gz_bytes"]:,} bytes compressed')
-for lane in drain["drained"]:
-    got = lab.board("get", lane["name"], binary=True, verbose=False).stdout
-    open(lane["name"], "wb").write(got)
-    print(f'  hart {lane["hart"]}: {lane["name"]}, {len(got):,} B '
-          f'(the card declared {lane["gz_bytes"]:,})')''')
+lab.fetch_drained_lanes(d)''')
 md("""Allow about a minute for the download. Check that each file's size matches the
 size declared by the board:
 
@@ -1269,26 +1355,19 @@ md("""### 3.5 Compare both cores on a shared timeline
 This section reads supplied lane statistics from `assets/lane_timeline.json`. Each
 lane represents one core in a capture decoded before the session. The next cell
 summarizes the work recorded on each lane.""")
-code('''import json
-lanes = json.load(open("assets/lane_timeline.json"))
-for pid, lane in lanes["lanes"].items():
-    print(f'pid {pid}  {lane["name"]}')
-    print(f'    {lane["events"]:>7,} events, {lane["distinct"]} distinct frames')
-    print(f'    in the model {lane["model_time_pct"]:5.1f}% of the window, '
-          f'spin/console/idle {lane["idle_time_pct"]:5.1f}%')
-print(f'\\nmodel work on the two lanes ends {lanes["ends_together_s"]:.2f} s apart '
-      f'= {lanes["ends_together_pct"]:.1f}% of the window')
-print("gates:", lanes["gates"])''')
+code('''lanes = lab.lane_table()
+lab.show_lane_table(lanes)''')
 md("""Compare how much of the capture window each hart spends in model functions:
 
 """ + fence(
     "pid 0  hart 0 (BIG, MBP) signdet_live\n"
-    "        258,393 events, 179 distinct frames\n"
-    "        in the model  22.4% of the window, spin/console/idle  53.9%\n"
+    "    258,393 events, 179 distinct frames\n"
+    "    in the model  22.4% of the window, spin/console/idle  53.9%\n"
     "pid 1  hart 1 (LITTLE, scalar) kws_live\n"
-    "        109,712 events, 103 distinct frames\n"
-    "        in the model  75.8% of the window, spin/console/idle   6.1%\n\n"
-    "model work on the two lanes ends 0.10 s apart = 0.7% of the window") + """
+    "    109,712 events, 103 distinct frames\n"
+    "    in the model  75.8% of the window, spin/console/idle   6.1%\n\n"
+    "model work on the two lanes ends 0.10 s apart = 0.7% of the window\n"
+    "checks: busy_ok pass, ends_together_ok pass -- 0 failures") + """
 
 Both lanes share a 13.309-second window from reset, containing 368,105 events. The
 trace records encoder stop times 94 and 248 cycles from the end of that window.
@@ -1497,15 +1576,10 @@ describes the schedule's duration using operator timings measured on the board.
 For the same profiles and optimal solution, a faster host changes the solve time
 while the schedule duration stays the same. Use the next cell to check the saved
 `makespan_us` value against 237.87.""")
-code("""import json, os
-root = os.environ.get("XPURT_ROOT", "/opt/xpurt/XPU-RT")
-m = json.load(open(os.path.join(
-    root, "schedules/scheduled_networks_b154_gate_cpsat_profiled_metrics.json")))
-lab.expect("makespan_us", round(m["makespan_us"], 2), 237.87)""")
+code("lab.check_solved_makespan(237.87)")
 md("""Open the schedule plot and follow the operators across the device lanes. Each
 operator's position shows when it runs and which device executes it.""")
-code("""from IPython.display import Image
-Image(filename=os.path.join(root, "plots/networks_b154_gate_cpsat_profiled.png"))""")
+code("lab.schedule_plot()")
 md(fixes_table([
     ("The log stays quiet while the cell runs", "Python may buffer its output. Allow time for startup; the full command took about three seconds in the recorded run. Ask the instructor for help if it remains quiet for minutes."),
 ]))
@@ -1521,9 +1595,9 @@ the **4,000 ms** reference time. You will compare scheduling methods and examine
 compaction, a pass that moves dispatches into earlier free time slots while preserving
 the schedule's constraints.
 
-The next cells read saved results from `expected/xpurt_coloc2m_b157.json` and draw a
-comparison. They do not run XPU-RT. If the file is missing from your checkout, follow
-the printed example and discussion below.
+The next cells read the recorded results of that sweep and draw a comparison. They run
+no solver, no XPU-RT and no board. If your checkout does not ship the recorded sweep, the
+cell says so, and the printed example and the discussion below still follow.
 
 <details>
 <summary>How the experiment covers 44 configurations</summary>
@@ -1540,33 +1614,19 @@ These choices give 11 × 2 × 2 = 44 configurations, each with 2,285 dispatches.
 Section 5.3 lets you rerun one of them.
 
 </details>""")
-code('''import json
-golden_path = lab.repo_file("expected/xpurt_coloc2m_b157.json")
-if golden_path is None:
-    raise SystemExit("This checkout does not ship expected/xpurt_coloc2m_b157.json -- "
-                     "that golden lives in the curated public tree.")
-g = json.load(open(golden_path))
-for name, cell in g["headline_cells"].items():
-    if name.startswith("_"):
-        continue
-    print(f'{name:<32} {cell["moonshine_end_ms"]:>9,.2f} ms   '
-          f'windows {cell["windows_landed"]:<6} '
-          f'{"PASSES" if cell["real_time_ok"] else "FAILS"}')
-print()
-print("cells", g["totals"]["cells"], "| dispatches per schedule",
-      f'{g["totals"]["dispatches_per_schedule"]:,}',
-      "| machine overlaps", g["totals"]["machine_overlaps"])''')
+code('''sweep = lab.schedule_sweep()
+lab.show_headline_schedules(sweep)''')
 md("""Read both Moonshine's completion time and the number of detector windows met:
 
 """ + fence(
-    "best_heuristic_makespan           4,251.12 ms   windows 1 of 4  FAILS\n"
-    "only_heuristic_landing_all_four   6,076.00 ms   windows 4 of 4  FAILS\n"
-    "cpsat_none_plain                  3,649.06 ms   windows 4 of 4  PASSES\n"
-    "cpsat_none_compact                3,272.91 ms   windows 4 of 4  PASSES\n"
-    "cpsat_dram_plain                  5,412.25 ms   windows 4 of 4  FAILS\n"
-    "cpsat_dram_compact                3,992.30 ms   windows 4 of 4  PASSES\n\n"
+    "best_heuristic_makespan           4,251.12 ms   windows 1 of 4 FAILS\n"
+    "only_heuristic_landing_all_four   6,076.00 ms   windows 4 of 4 FAILS\n"
+    "cpsat_none_plain                  3,649.06 ms   windows 4 of 4 PASSES\n"
+    "cpsat_none_compact                3,272.91 ms   windows 4 of 4 PASSES\n"
+    "cpsat_dram_plain                  5,412.25 ms   windows 4 of 4 FAILS\n"
+    "cpsat_dram_compact                3,992.30 ms   windows 4 of 4 PASSES\n\n"
     "cells 44 | dispatches per schedule 2,285 | machine overlaps 0"))
-code("lab.schedule_comparison_figure(g)")
+code("lab.schedule_comparison_figure(sweep)")
 md("""Compare the CP-SAT schedules in the top panel. With measured DRAM contention,
 compaction moves Moonshine's completion from 5,412.25 ms to **3,992.30 ms**, saving
 1,419.95 ms and bringing it within the four-second target. Both schedules have
@@ -1601,14 +1661,8 @@ frames per second. A passing schedule meets all four, or 1.0 fps. The experiment
 reports a capacity estimate of 2.62 fps.
 
 </details>""")
-code('''for c in g["compaction"][:4]:
-    print(f'{c["scheduler"]:<22} {c["contention"]:<5} '
-          f'{c["recovered_ms"]:>10,.3f} ms  {c["dispatches_moved"]:>5,} moved  {c["result"]}')
-print(f'\\n{len(g["refused"])} cells were REFUSED, not reported:')
-for r in g["refused"]:
-    print(f'  {r["scheduler"]} {r["contention"]}/{r["compaction"]}: '
-          f'{r["exclusion_violations"]} exclusion violations, '
-          f'withheld makespan {r["withheld_makespan_ms"]:,.2f} ms')''')
+code('''lab.show_compaction(sweep)
+lab.show_refused_cells(sweep)''')
 md("""The validation report rejects four configurations with forbidden device assignments
 involving 74 dispatches. They place `linear_s8` on a core marked infeasible by the
 dispatch graph and `permute4_s8` on the hart without the P-extension. Those kernels
@@ -1635,34 +1689,20 @@ Rerun the FIFO configuration with no memory contention and no compaction. Allow
 about half a minute for this heuristic run. The full 44-configuration sweep takes
 hours because it includes CP-SAT solves.
 
-Set `XPURT_ROOT` to an XPU-RT checkout and `XPURT_PY` to a Python interpreter with
-`ortools` before running these cells. Both are separate from the tutorial repository.
-If they are unavailable, you can use the saved results in 5.2.
+The solve needs three things this repository does not carry: an XPU-RT checkout, an
+interpreter with `ortools`, and that checkout's git history -- the sweep checks XPU-RT
+against the revision the recorded numbers came from before it solves anything, and it
+cannot check a tree that was copied rather than cloned. The cell names whichever of the
+three it cannot find, and 5.2 above carries the whole result without any of them.
 
 The first cell prepares the configuration's working directory. The supplied sweep
 has a path problem and can exit successfully without producing a schedule. If it
 prints `the sweep produced NO schedule`, continue with the second cell, which applies
 the workaround. Check the schedule output to confirm that the solve succeeded.""")
-code('''import os, glob
-sweep = lab.repo_file("scripts/12_xpurt_coloc_sweep.sh")
-root, py = os.environ.get("XPURT_ROOT"), os.environ.get("XPURT_PY")
-cell_dir = None
-if not sweep:
-    print("STUB: no scripts/12_xpurt_coloc_sweep.sh in this checkout -- nothing was run.")
-elif not (root and py and os.path.isdir(root) and os.access(py, os.X_OK)):
-    print("Not run: set XPURT_ROOT to an XPU-RT checkout and XPURT_PY to an "
-          "interpreter that has ortools. 5.2 above needs neither.")
-else:
-    repo = sweep.parent.parent
-    lab.sh(f"cd {repo} && STAGE=heur POLICIES=fifo CONT_ARMS=none COMPACT_ARMS=plain "
-           f"JOBS=1 {sweep}", timeout=900, quiet=True)
-    got = glob.glob(f"{repo}/out/b157/schedules/none/plain/*_metrics.json")
-    cell_dir = f"{repo}/out/b157/work/fifo_none_plain"
-    print("the sweep produced a schedule" if got else
-          "the sweep produced NO schedule -- the base-path trap above. "
-          "The next cell runs the same solve the way that works.")''')
-md("""Run the solver using the script inside `cell_dir`, where the previous cell prepared
-the input data. The solver runs only if that directory exists.
+code('''farm = lab.run_sweep_cell(policy="fifo")''')
+md("""Run the solver using the copy of the script inside the configuration's own working
+directory, where the previous cell prepared the input data. The solve runs only if that
+directory exists.
 
 <details>
 <summary>Why the script path matters</summary>
@@ -1676,25 +1716,7 @@ Calling the script inside the configuration's working directory lets it find the
 input files prepared there.
 
 </details>""")
-code('''if cell_dir and os.path.isdir(cell_dir):
-    spec = lab.repo_file(
-        "fpga/pynq-z2/xpurt/networks_pynqz1_coloc2m_sdp_b4_T1000.json")
-    inject = lab.repo_file("scripts/lib/b157_inject")
-    r = lab.sh(
-        f"cd {cell_dir} && env -u XPURT_NO_COMPACT -u XPURT_COMPACT "
-        f"PYTHONPATH={inject} XPURT_CPSAT_PYTHON={py} XPURT_CPSAT_WORKERS=1 "
-        f"{py} {cell_dir}/scripts/run_xpurt_schedule.py "
-        f"--networks-json {spec} --scheduler fifo --profiled",
-        timeout=900, quiet=True)
-    for line in r.stdout.splitlines():
-        if "makespan_us" in line:
-            print(line.strip())
-    row = next(x for x in g["rows"] if x["policy"] == "fifo"
-               and x["contention"] == "none" and x["compaction"] == "plain")
-    print(f'golden says moonshine_end_ms={row["moonshine_end_ms"]}, '
-          f'late_detector_dispatches={row["late_detector_dispatches"]}')
-else:
-    print("No cell farm to run in -- 5.2 carries the result without it.")''')
+code('''lab.solve_in_sweep_cell(farm, sweep, policy="fifo")''')
 md("""The recorded FIFO run matched the saved completion time and late-dispatch count:
 
 """ + fence("makespan_us=6339.28  op_deadline_miss=21 (dispatches, NOT instances)  "

@@ -93,6 +93,7 @@ def sh(cmd: str, timeout: int = 600, cwd: str | None = None, quiet: bool = False
     t0 = time.time()
     chunks: list[str] = []
     shown = 0
+    progressed = False      # whether a `... N lines` progress line needs clearing
     proc = subprocess.Popen(
         ["bash", "-lc", cmd],
         cwd=cwd,
@@ -116,6 +117,7 @@ def sh(cmd: str, timeout: int = 600, cwd: str | None = None, quiet: bool = False
                     # filling the cell.
                     sys.stdout.write(f"\r    ... {len(chunks)} lines, {time.time()-t0:.0f} s")
                     sys.stdout.flush()
+                    progressed = True
             if time.time() - t0 > timeout:
                 proc.kill()
                 print(f"\n[timed out after {timeout} s -- killed]")
@@ -137,16 +139,25 @@ def sh(cmd: str, timeout: int = 600, cwd: str | None = None, quiet: bool = False
         except OSError:
             log = None   # a read-only home is not a reason to lose the result
 
-    if not quiet and not full and len(chunks) > head + tail:
-        elided = len(chunks) - head - tail
-        warn = sum(1 for ln in chunks if "warning:" in ln)
-        err = sum(1 for ln in chunks if "error:" in ln)
-        counts = f"  ({warn} warning lines, {err} error lines)" if warn or err else ""
-        sys.stdout.write("\r" + " " * 48 + "\r")
-        print(f"    ... {elided} lines elided{counts}")
-        if log:
-            print(f"    full output: {log}")
-        print("".join(chunks[-tail:]), end="")
+    # Everything the live loop above did not print, because it stops at `head`.
+    #
+    # The condition here used to be `len(chunks) > head + tail`, and that silently DROPPED
+    # every line after the first `head` of any output shorter than head + tail: a 16-line
+    # result printed 12 lines, no notice, and the other 4 reachable only through
+    # `Result.stdout`. Measured on a tutorial seat, 2026-09-26, on the Kconfig cell in 1.6.
+    rest = [] if full else chunks[shown:]
+    if rest and not quiet:
+        elided = max(len(rest) - tail, 0)
+        if progressed:
+            sys.stdout.write("\r" + " " * 48 + "\r")
+        if elided:
+            warn = sum(1 for ln in chunks if "warning:" in ln)
+            err = sum(1 for ln in chunks if "error:" in ln)
+            counts = f"  ({warn} warning lines, {err} error lines)" if warn or err else ""
+            print(f"    ... {elided} lines elided{counts}")
+            if log:
+                print(f"    full output: {log}")
+        print("".join(rest[-tail:]), end="")
 
     if not quiet:
         print(f"[rc={rc}  {dt:.1f} s]")
@@ -301,7 +312,39 @@ def board_put(path: str | Path, name: str | None = None, verbose: bool = True) -
 
 
 # --------------------------------------------------------------------------------------
+# Reading a guest's console.
+#
+# Every Zephyr guest in this notebook reports through tagged console lines -- `CAM_FRAME`,
+# `DUO_TRACE_HART`, `MB_PEXT_OP`. Three cells used to repeat the same two steps: decode the
+# bytes the card returned, then keep the lines whose tag matters. The tags are the lesson,
+# so they stay in the cell; the decoding and the filtering do not, so they live here.
 # --------------------------------------------------------------------------------------
+def console_text(result: BoardResult) -> str:
+    """The guest's console as text, from `board("get", "console.out", binary=True)`."""
+    return result.stdout.decode("utf-8", "replace") if result.stdout else ""
+
+
+def show_console_lines(console: str, *tags: str) -> None:
+    """Print the console lines carrying one of these tags, in the order the guest printed them."""
+    for line in console.splitlines():
+        if line.startswith(tags):
+            print(line)
+
+
+def console_field(console: str, tag: str, field: str, cast=str):
+    """One `field=value` off the first console line carrying `tag`.
+
+    A guest prints its numbers as `key=value` pairs on a tagged line, so a cell that wants
+    one of them wants this and not a regular expression. Raises if the line or the field is
+    absent, because the silent alternative is a number quietly read off the wrong line.
+    """
+    line = next((l for l in console.splitlines() if l.startswith(tag)), None)
+    if line is None:
+        raise LookupError(f"this console has no {tag!r} line")
+    for word in line.split():
+        if word.startswith(f"{field}="):
+            return cast(word.split("=", 1)[1])
+    raise LookupError(f"the {tag!r} line has no {field}= field: {line}")
 
 
 # --------------------------------------------------------------------------------------
@@ -375,6 +418,54 @@ def trace_summary(path: str | Path, top: int = 10) -> None:
     for name, v in self_.most_common(top):
         print(f"{name:<26}{v:>12,}{100 * v / total:>7.1f}%{calls[name]:>9,}")
 
+
+
+def fetch_drained_lanes(drained: BoardResult, dest: Path | None = None) -> list[Path]:
+    """Bring each drained trace lane across from the card, and say what arrived.
+
+    The card declares each lane's compressed length before sending it, and this prints that
+    next to the bytes that actually landed, because a short read across the tunnel and a
+    short trace look identical in a file listing.
+    """
+    d = json.loads(drained.stdout)
+    print(f'{d["lanes"]} lanes, {d["bytes"]:,} bytes of trace, '
+          f'{d["gz_bytes"]:,} bytes compressed')
+    here = []
+    for lane in d["drained"]:
+        got = board("get", lane["name"], binary=True, verbose=False).stdout
+        path = Path(dest or Path.cwd()) / lane["name"]
+        path.write_bytes(got)
+        here.append(path)
+        print(f'  hart {lane["hart"]}: {lane["name"]}, {len(got):,} B '
+              f'(the card declared {lane["gz_bytes"]:,})')
+    return here
+
+
+def lane_table(asset: str = "lane_timeline.json") -> dict:
+    """The measured per-lane table from a decoded two-hart capture."""
+    path = Path(asset)
+    if not path.exists():
+        path = ASSETS / asset
+    return json.loads(path.read_text())
+
+
+def show_lane_table(lanes: dict) -> None:
+    """What each hart did with the one window: events, time in the model, time idle.
+
+    Both lanes are bounded by one wall clock, so the two numbers to read together are
+    each lane's share of the window and how far apart the two lanes stop.
+    """
+    for pid, lane in lanes["lanes"].items():
+        print(f'pid {pid}  {lane["name"]}')
+        print(f'    {lane["events"]:>7,} events, {lane["distinct"]} distinct frames')
+        print(f'    in the model {lane["model_time_pct"]:5.1f}% of the window, '
+              f'spin/console/idle {lane["idle_time_pct"]:5.1f}%')
+    print(f'\nmodel work on the two lanes ends {lanes["ends_together_s"]:.2f} s apart '
+          f'= {lanes["ends_together_pct"]:.1f}% of the window')
+    gates = lanes["gates"]
+    print("checks:", ", ".join(f"{k} {'pass' if v else 'FAIL'}"
+                               for k, v in gates.items() if isinstance(v, bool)),
+          f'-- {len(gates["failures"])} failures')
 
 
 def show_perfetto(trace_path: str | Path) -> None:
@@ -788,6 +879,19 @@ def show_llm_kernel(run: str | Path, around: str = "", lines: int = 22) -> None:
 # --------------------------------------------------------------------------------------
 # Reading a recorded board run (Unit 2).
 # --------------------------------------------------------------------------------------
+def plain_name(label: str) -> str:
+    """A run or scheduler name with the internal experiment tag stripped off it.
+
+    Recorded artifacts name their arms after the lab that produced them -- `b189_pext`,
+    `cpsat_warmbest_b157`. Nothing an attendee reads should carry that, and the tag is not
+    part of what the row says, so it comes off at the point of printing rather than by
+    rewriting recorded files.
+    """
+    import re
+
+    return re.sub(r"(^b\d+_)|(_b\d+$)", "", label)
+
+
 def show_board_provenance(board: dict, arm: str = "pext") -> None:
     """Where these cycle counts came from, and the console one arm printed."""
     print(f'{board["script"]}, {board["measured"]} on {board["measured_on"]},')
@@ -809,7 +913,7 @@ def show_board_arms(board: dict, fast: str = "pext", slow: str = "scalar") -> No
     print(f'{"ms at 40 MHz":<24}{p["ms_at_clk"]:>14,.2f}{s["ms_at_clk"]:>15,.2f}')
     print()
     for arm in (p, s):
-        print(f'{arm["run_name"]:<14} custom-0 instructions in the image '
+        print(f'{plain_name(arm["run_name"]):<14} custom-0 instructions in the binary '
               f'{arm["custom0_instructions_in_elf"]:>3}   '
               f'output vs golden: {arm["gate"]["board_vs_golden_bytes_differ"]} of 192 bytes '
               f'differ, max |d| = {arm["gate"]["max_abs_err"]}')
@@ -886,6 +990,216 @@ def show_model_shapes(asset: str = "moonshine_shape.json") -> None:
     print()
     print(f'  About {per_utt:,.0f} dispatches for one utterance, against'
           f' {d["dispatches_per_run"]} for one frame of the detector.')
+
+
+# --------------------------------------------------------------------------------------
+# Reading an XPU-RT solve, and the recorded co-location sweep (Unit 5).
+#
+# Two things used to sit in the cells here: paths assembled out of environment variables,
+# and a glob over an output directory. Both are plumbing, and both were wrong in a way a
+# cell cannot show -- the notebook kernel is started by systemd with a bare environment,
+# so nothing in /etc/profile.d has run in it and `os.environ` has no XPURT_ROOT on a seat
+# that has XPU-RT installed. Resolving that once, here, is what lets a cell ask its
+# question.
+# --------------------------------------------------------------------------------------
+#: Where the instance's XPU-RT install announces itself. A login shell reads this; the
+#: notebook kernel never does, so these helpers read it directly.
+XPURT_PROFILE = Path("/etc/profile.d/xpurt.sh")
+
+#: The schedule 5.1 solves. XPU-RT names every artifact after the networks file it was
+#: given, so this one name fixes both the metrics file and the plot.
+XPURT_SCHEDULE = "networks_b154_gate_cpsat_profiled"
+
+#: The recorded 44-cell sweep 5.2 reads instead of re-solving.
+SWEEP_GOLDEN = "expected/xpurt_coloc2m_b157.json"
+
+
+def _xpurt_exports() -> dict:
+    """XPURT_* as the instance's profile script sets them, whether or not it has run."""
+    out: dict[str, str] = {}
+    if XPURT_PROFILE.exists():
+        for line in XPURT_PROFILE.read_text().splitlines():
+            line = line.strip()
+            if line.startswith("export ") and "=" in line:
+                k, _, v = line[len("export "):].partition("=")
+                out[k.strip()] = v.strip().strip('"\'')
+    return out
+
+
+def xpurt_root() -> Path | None:
+    """The XPU-RT checkout to solve in, or None if this machine has none."""
+    for cand in (os.environ.get("XPURT_ROOT"), _xpurt_exports().get("XPURT_ROOT"),
+                 "/opt/xpurt/XPU-RT"):
+        if cand and Path(cand, "scripts").is_dir():
+            return Path(cand)
+    return None
+
+
+def xpurt_python() -> Path | None:
+    """An interpreter that has ortools, which is never the one running this notebook.
+
+    XPU-RT solves the CP-SAT model in a subprocess and looks for ortools in that
+    subprocess, so the interpreter matters even in cells that import nothing.
+    """
+    ex = _xpurt_exports()
+    for cand in (os.environ.get("XPURT_PY"), os.environ.get("XPURT_PYTHON"),
+                 ex.get("XPURT_PYTHON"), ex.get("XPURT_CPSAT_PYTHON"),
+                 "/opt/xpurt/venv/bin/python"):
+        if cand and os.access(cand, os.X_OK):
+            return Path(cand)
+    return None
+
+
+def solved_metrics(name: str = XPURT_SCHEDULE) -> dict:
+    """The metrics file the solve just wrote, read back from the XPU-RT tree."""
+    root = xpurt_root()
+    if root is None:
+        raise FileNotFoundError("no XPU-RT tree on this machine, so no solve to read")
+    return json.loads((root / "schedules" / f"scheduled_{name}_metrics.json").read_text())
+
+
+def check_solved_makespan(want_us: float, name: str = XPURT_SCHEDULE) -> bool:
+    """Did the solve on this instance land the makespan the notebook quotes?
+
+    The operator durations were measured on silicon, so this number is a property of the
+    SoC and not of the instance: it is the same on four vCPUs and on a workstation.
+    """
+    return expect("makespan_us", round(solved_metrics(name)["makespan_us"], 2), want_us)
+
+
+def schedule_plot(name: str = XPURT_SCHEDULE):
+    """The placement the solve found, as the picture XPU-RT drew of it."""
+    from IPython.display import Image
+
+    root = xpurt_root()
+    if root is None:
+        raise FileNotFoundError("no XPU-RT tree on this machine, so no plot to show")
+    return Image(filename=str(root / "plots" / f"{name}.png"))
+
+
+def schedule_sweep(rel: str = SWEEP_GOLDEN) -> dict:
+    """The recorded co-location sweep: all 44 cells, the refusals and the compaction table.
+
+    Reading it is what makes 5.2 need no solver, no XPU-RT and no artifacts.
+    """
+    path = repo_file(rel)
+    if path is None:
+        raise SystemExit(f"This checkout does not ship {rel} -- the recorded sweep lives "
+                         "in the curated tree the seats carry.")
+    return json.loads(path.read_text())
+
+
+def show_headline_schedules(sweep: dict) -> None:
+    """Where each scheduler lands Moonshine, and whether the detector still made its frames."""
+    for name, cell in sweep["headline_cells"].items():
+        if name.startswith("_"):
+            continue
+        print(f'{name:<32} {cell["moonshine_end_ms"]:>9,.2f} ms   '
+              f'windows {cell["windows_landed"]:<6} '
+              f'{"PASSES" if cell["real_time_ok"] else "FAILS"}')
+    print()
+    print("cells", sweep["totals"]["cells"], "| dispatches per schedule",
+          f'{sweep["totals"]["dispatches_per_schedule"]:,}',
+          "| machine overlaps", sweep["totals"]["machine_overlaps"])
+
+
+def show_compaction(sweep: dict, rows: int = 4) -> None:
+    """What the left-shift pass recovered, and how many dispatches it had to move."""
+    for c in sweep["compaction"][:rows]:
+        print(f'{plain_name(c["scheduler"]):<22} {c["contention"]:<5} '
+              f'{c["recovered_ms"]:>10,.3f} ms  {c["dispatches_moved"]:>5,} moved  '
+              f'{c["result"]}')
+    print()
+
+
+def show_refused_cells(sweep: dict) -> None:
+    """The cells whose makespan is withheld, and the violation that withheld it."""
+    print(f'{len(sweep["refused"])} cells were REFUSED, not reported:')
+    for r in sweep["refused"]:
+        print(f'  {plain_name(r["scheduler"])} {r["contention"]}/{r["compaction"]}: '
+              f'{r["exclusion_violations"]} exclusion violations, '
+              f'withheld makespan {r["withheld_makespan_ms"]:,.2f} ms')
+
+
+def golden_row(sweep: dict, policy: str = "fifo", contention: str = "none",
+               compaction: str = "plain") -> dict:
+    """The recorded row for one cell of the sweep, to check a live solve against."""
+    return next(r for r in sweep["rows"] if r["policy"] == policy
+                and r["contention"] == contention and r["compaction"] == compaction)
+
+
+def run_sweep_cell(policy: str = "fifo", contention: str = "none",
+                   compaction: str = "plain") -> Path | None:
+    """Run one cell of the co-location sweep, and say what it produced.
+
+    Four things have to be present and they fail separately, so each one is named rather
+    than collapsed into "not provisioned": the sweep script, an XPU-RT tree, an
+    interpreter with ortools, and a tree whose revision can be checked against the pin
+    every number in the recorded sweep was produced with.
+
+    Returns the cell's own directory -- the symlink farm the sweep solves inside -- when
+    there is one, so the next step can solve in it.
+    """
+    script = repo_file("scripts/12_xpurt_coloc_sweep.sh")
+    if script is None:
+        print("Not run: this checkout does not ship the sweep script. "
+              "The recorded sweep above carries the whole result.")
+        return None
+    root, py = xpurt_root(), xpurt_python()
+    if root is None:
+        print("Not run: no XPU-RT checkout on this machine. Clone XPU-RT and set "
+              "XPURT_ROOT to it.")
+        return None
+    if py is None:
+        print("Not run: no interpreter with ortools on this machine. Set XPURT_PY to one.")
+        return None
+    if not (root / ".git").exists() and os.environ.get("XPURT_ALLOW_ANY_REV") != "1":
+        print(f"Not run: {root} has no git history, and the sweep checks XPU-RT against a\n"
+              f"         pinned revision before it solves anything -- a number from another\n"
+              f"         revision is not the one the recorded sweep holds. A clone of XPU-RT\n"
+              f"         at that revision runs this cell.")
+        return None
+    repo = script.parent.parent
+    sh(f"cd {repo} && XPURT_ROOT={root} XPURT_PY={py} STAGE=heur POLICIES={policy} "
+       f"CONT_ARMS={contention} COMPACT_ARMS={compaction} JOBS=1 {script}",
+       timeout=900, quiet=True)
+    out = repo / "out" / "b157"
+    wrote = sorted((out / "schedules" / contention / compaction).glob("*_metrics.json"))
+    farm = out / "work" / f"{policy}_{contention}_{compaction}"
+    print("the sweep produced a schedule" if wrote else
+          "the sweep produced NO schedule -- the base-path trap above. "
+          "The next cell runs the same solve the way that works.")
+    return farm if farm.is_dir() else None
+
+
+def solve_in_sweep_cell(farm: Path | None, sweep: dict, policy: str = "fifo",
+                        contention: str = "none", compaction: str = "plain") -> None:
+    """Solve the same cell from inside its own farm, and check it against the recorded row.
+
+    `run_xpurt_schedule.py` takes its base path from where the script itself sits, so
+    naming the copy inside the farm is the whole difference: the data is in the farm.
+    """
+    if farm is None or not Path(farm).is_dir():
+        print("No cell farm to run in -- the recorded sweep above carries the result "
+              "without it.")
+        return
+    spec = repo_file("fpga/pynq-z2/xpurt/networks_pynqz1_coloc2m_sdp_b4_T1000.json")
+    inject = repo_file("scripts/lib/b157_inject")
+    py = xpurt_python()
+    if not (spec and inject and py):
+        print("No spec, path shim or ortools interpreter on this machine -- nothing was run.")
+        return
+    r = sh(f"cd {farm} && env -u XPURT_NO_COMPACT -u XPURT_COMPACT "
+           f"PYTHONPATH={inject} XPURT_CPSAT_PYTHON={py} XPURT_CPSAT_WORKERS=1 "
+           f"{py} {farm}/scripts/run_xpurt_schedule.py "
+           f"--networks-json {spec} --scheduler {policy} --profiled",
+           timeout=900, quiet=True)
+    for line in r.stdout.splitlines():
+        if "makespan_us" in line:
+            print(line.strip())
+    row = golden_row(sweep, policy, contention, compaction)
+    print(f'golden says moonshine_end_ms={row["moonshine_end_ms"]}, '
+          f'late_detector_dispatches={row["late_detector_dispatches"]}')
 
 
 # --------------------------------------------------------------------------------------

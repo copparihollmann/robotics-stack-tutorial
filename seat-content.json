@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-27T06:18:10Z",
+  "generated_at": "2026-09-27T06:38:59Z",
   "generated_by": "content_validate.py",
-  "source_commit": "33f83a9f8f889105bf71349c9c03dcb2eebedd95+working-tree",
-  "note": "fix: camera backend",
+  "source_commit": "8238ea33ec87",
+  "note": "3.2 offers the embedded Perfetto viewer alongside download-and-drag; 3.6 folded in",
   "files": [
     {
       "path": "work/README.md",
@@ -47,11 +47,11 @@
     },
     {
       "path": "work/iiswc_tutorial.ipynb",
-      "bytes": 107506,
-      "sha256": "f313d69732988cf32611da2820de7d2fd881a4de5256970e075b24c0a71d71f5",
-      "cells": 150,
+      "bytes": 107543,
+      "sha256": "28d9a39cc844972d6c8797fc5ed55229902c9694959a78f464fe614c27dd38e3",
+      "cells": 149,
       "nbformat": 4,
-      "source_chars": 75834,
+      "source_chars": 75935,
       "schema_checked": true
     },
     {
@@ -124,8 +124,8 @@
     },
     {
       "path": "work/tools/build_notebook.py",
-      "bytes": 85060,
-      "sha256": "74eda36cb6a7fd3facf86e8e408f7c277747290ba712d5c56ad6b41342644932"
+      "bytes": 85149,
+      "sha256": "68dfb874c5213606d3e75fe0752fd00abd9060dab2546adf3c5f8259bbda9f60"
     }
   ],
   "repo": {

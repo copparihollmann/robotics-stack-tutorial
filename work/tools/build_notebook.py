@@ -1171,8 +1171,25 @@ Six of the eight busiest functions are compiler routines for floating-point arit
 no floating-point unit, so it implements the control loop's `float` and `double`
 operations in software. These routines account for much of the recorded execution time.
 
-In JupyterLab's file browser, right-click `rocket_tacit_trace.perfetto.json` and choose
-**Download**. Drag the downloaded file into the Perfetto tab you opened in 3.1.""")
+You can open the timeline in either of two ways.
+
+To use the Perfetto tab you opened in 3.1, right-click `rocket_tacit_trace.perfetto.json`
+in JupyterLab's file browser and choose **Download**. Drag the downloaded file into that
+tab.
+
+To stay in the notebook, run the next cell instead. It puts the viewer in a frame below
+the cell and hands it the trace directly, so no file is saved on your laptop. The frame
+loads the viewer from the same site, so it needs the same internet connection.""")
+code('''lab.show_perfetto(t)''')
+md("""The viewer reports its progress above the embedded timeline:
+
+""" + fence(
+    "fetch -> HTTP 200\n"
+    "trace in the page: 1989396 bytes\n"
+    "viewer loaded\n"
+    "handed to the viewer -- answer Yes in the frame below") + """
+
+When Perfetto asks whether this notebook may open the file, choose **Yes**.""")
 
 md("""### 3.3 Compare trace start points
 
@@ -1346,21 +1363,6 @@ rate. Use a recording in which the core stays busy to estimate the buffer size f
 your planned capture.
 
 </details>""")
-
-md("""### 3.6 Optional: view the supplied trace in the notebook
-
-The next cell opens the supplied trace from 3.2 in an embedded Perfetto viewer. The
-notebook transfers the trace from your instance to your browser automatically.""")
-code('''lab.show_perfetto(t)''')
-md("""The viewer reports its progress above the embedded timeline:
-
-""" + fence(
-    "fetch -> HTTP 200\n"
-    "trace in the page: 1989396 bytes\n"
-    "viewer loaded\n"
-    "handed to the viewer -- answer Yes in the frame below") + """
-
-When Perfetto asks whether this notebook may open the file, choose **Yes**.""")
 
 # ======================================================================================
 # Units 4 and 5

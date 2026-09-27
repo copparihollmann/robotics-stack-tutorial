@@ -53,10 +53,20 @@
 #include <stdint.h>
 
 #include "ospi_cam.h"   /* the register map, struct ospi_regs, struct ospi_frame_result */
+#include <ospi_camera/camera.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Configure the sensor, settle auto-exposure and capture a complete DMA frame.
+ * The device supplies the register base and sensor-i2c bus. A failed armed DMA
+ * sets out->reset_required: keep buf alive until the SoC is reset. Calls to this
+ * operation are serialized; do not issue sensor/diagnostic operations concurrently.
+ */
+int ospi_camera_take_photo(const struct device *dev, uint8_t *buf, size_t len,
+			   struct ospi_camera_capture *out,
+			   const char **stage, const char **detail);
 
 /* What one capture produced.  This is struct ospi_frame_result with the one derived bit the
  * callers all recompute spelled out: saw_eof.  A transfer that ends on an EOF marker sent a

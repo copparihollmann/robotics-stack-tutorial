@@ -2,12 +2,8 @@
  *
  * ospi_camera -- the Zephyr driver for ucbbar,ospi-hm01b0.  See ../include/ospi_camera.h.
  *
- * THIS FILE ADDS NO REGISTER SEQUENCE OF ITS OWN.  Every write to the capture core and every
- * I2C transfer to the sensor is either a call into fpga/pynq-z2/sw/cam/ospi_cam.c or a block
- * moved verbatim out of samples/cam_capture, and each of those blocks is labelled below with
- * where it came from.  That is deliberate: those sequences are measured, and two of them
- * (the DMA_LEN cap, the grouped-parameter-hold release) exist because a plausible-looking
- * shorter version silently produced a wrong frame or a dead guest on real silicon.
+ * The photo operation delegates sensor setup and bounded DMA to the embedded ospi-camera
+ * backend. The existing register-level diagnostic operations remain available below.
  *
  * WHAT INIT DOES, AND WHAT IT MUST NOT DO.  It checks that the I2C controller the node's
  * sensor-i2c phandle names is ready, and nothing else.  It writes no register.  The bring-up
@@ -39,7 +35,38 @@ struct ospi_camera_config {
 
 struct ospi_camera_data {
 	struct cam_i2c bus;
+	struct ospi_camera_context photo;
+	struct k_mutex photo_lock;
 };
+
+int ospi_camera_take_photo(const struct device *dev, uint8_t *buf, size_t len,
+			   struct ospi_camera_capture *out,
+			   const char **stage, const char **detail)
+{
+	if (dev == NULL || out == NULL || stage == NULL || detail == NULL) {
+		return -EINVAL;
+	}
+	*out = (struct ospi_camera_capture){0};
+	*stage = "buffer";
+	*detail = "expected an aligned buffer in Rocket DRAM";
+	uintptr_t addr = (uintptr_t)buf;
+	if (addr < 0x80000000UL || addr >= 0x90000000UL || (addr & 7U) ||
+	    len < 8 || len > 0x90000000UL - addr) {
+		return -EINVAL;
+	}
+	if (!device_is_ready(dev)) {
+		*stage = "device";
+		*detail = "camera device not ready";
+		return -ENODEV;
+	}
+	struct ospi_camera_data *data = dev->data;
+
+	k_mutex_lock(&data->photo_lock, K_FOREVER);
+	int rc = ospi_camera_capture_dma(&data->photo, buf, (uint32_t)len,
+					out, stage, detail);
+	k_mutex_unlock(&data->photo_lock);
+	return rc;
+}
 
 /* ---- the two I2C callbacks ospi_cam.h asks its caller for -------------------------------
  *
@@ -188,7 +215,9 @@ static int api_sensor_set(const struct device *dev, uint16_t reg, uint8_t val,
 static int api_set_mclk_div(const struct device *dev, uint8_t div, uint8_t *readback, uint32_t *hz)
 {
 	const struct ospi_camera_config *cfg = dev->config;
+	struct ospi_camera_data *data = dev->data;
 
+	data->photo.mclk_div = div;
 	ospi_wr(cfg->base, OSPI_MCLKDIV, div);
 	if (readback != NULL) {
 		*readback = (uint8_t)ospi_rd(cfg->base, OSPI_MCLKDIV);
@@ -240,9 +269,11 @@ static int api_flush_to_dram(const struct device *dev, uint64_t *acc)
 	volatile const uint64_t *p = (const uint64_t *)0x88000000UL;
 	uint64_t sum = 0;
 
+	__asm__ volatile("fence rw,rw" ::: "memory");
 	for (uint32_t i = 0; i < (4u * 1024u * 1024u) / 8u; i += 8) {
 		sum += p[i];
 	}
+	__asm__ volatile("fence rw,rw" ::: "memory");
 	if (acc != NULL) {
 		*acc = sum;
 	}
@@ -298,6 +329,13 @@ static int ospi_camera_init(const struct device *dev)
 	data->bus.write = ospi_camera_i2c_write;
 	data->bus.write_read = ospi_camera_i2c_write_read;
 	data->bus.ctx = (void *)dev;
+	data->photo = (struct ospi_camera_context){
+		.base = cfg->base,
+		.sensor_bus = cfg->sensor_bus,
+		.mclk_div = 2,
+		.timeout_ms = CONFIG_OSPI_HM01B0_MAX_POLLS,
+	};
+	k_mutex_init(&data->photo_lock);
 	return 0;
 }
 

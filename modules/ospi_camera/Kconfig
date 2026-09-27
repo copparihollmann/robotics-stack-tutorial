@@ -42,9 +42,8 @@ config OSPI_HM01B0
 	      struct ospi_camera_frame f;
 	      ospi_camera_capture(cam, buf, sizeof buf, &f);
 
-	  The register sequences are fpga/pynq-z2/sw/cam/ospi_cam.c, which this driver calls
-	  rather than reimplements, and which samples/cam_rtl_sim runs unchanged against the
-	  RTL in Verilator.
+	  Photo capture uses the embedded ospi-camera backend. Register-level diagnostics
+	  retain fpga/pynq-z2/sw/cam/ospi_cam.c, also used by the RTL simulation sample.
 
 if OSPI_HM01B0
 
@@ -58,7 +57,7 @@ config OSPI_HM01B0_INIT_PRIORITY
 
 config OSPI_HM01B0_MAX_POLLS
 	int "Polls before a capture gives up"
-	default 3000
+	default 5000
 	help
 	  ospi_camera_capture() sleeps 1 ms between polls of DMA_STATUS, so this is also the
 	  timeout in milliseconds.  It has to be generous: this RTL has no way to abort a

@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import socket
 import subprocess
 import sys
@@ -350,6 +351,39 @@ def console_field(console: str, tag: str, field: str, cast=str):
 # --------------------------------------------------------------------------------------
 # Camera frame validation and display.
 # --------------------------------------------------------------------------------------
+def camera_source(rel: str = "") -> Path:
+    """Resolve camera sources shipped beside this helper, never from another checkout."""
+    root = Path(__file__).resolve().parent / ".backend/ospi-camera"
+    path = (root / rel).resolve()
+    if not path.is_relative_to(root):
+        raise ValueError("Camera source path must stay inside the shipped backend")
+    if not path.exists():
+        raise FileNotFoundError(f"Camera source is missing from the seat content: {path}")
+    return path
+
+
+def camera_build() -> Result:
+    """Build the shipped camera guest using the seat's preinstalled Zephyr environment."""
+    app = camera_source("samples/cam_capture")
+    root = camera_source()
+    env = Path.home() / "tut/env.sh"
+    if not env.is_file():
+        raise FileNotFoundError(f"The seat's Zephyr environment is missing: {env}")
+    command = (
+        f"cd {shlex.quote(str(env.parent))} && source {shlex.quote(str(env))} && "
+        "west build -p always -b chipyard_pynqz1_all_f40 "
+        f"-d ~/out/cam_capture {shlex.quote(str(app))} "
+        f"-- -DBOARD_ROOT={shlex.quote(str(root))} -DCAM_MCLKDIV=2")
+    return sh(command, timeout=900)
+
+
+def show_camera_driver_config() -> None:
+    """Show the camera Kconfig entry from the same module used by camera_build()."""
+    source = camera_source("modules/ospi_camera/Kconfig").read_text()
+    entry = source[source.index("config OSPI_HM01B0\n"):].split("\n\n", 1)[0]
+    print("---\n" + entry)
+
+
 def camera_frame_metadata(console: str) -> dict:
     """Require an unambiguous, complete frame before asking the board to read it."""
     records = [line for line in console.splitlines() if line.startswith("CAM_FRAME ")]
@@ -394,9 +428,7 @@ def camera_save_frame(raw: bytes, meta: dict, destination: Path | str = "frame.r
 
 def camera_render_frame(raw_path: Path, meta: dict) -> Path:
     """Render the checked raw frame with the camera backend's host tool."""
-    renderer = repo_file("modules/ospi_camera/host/frame-to-colour.py")
-    if renderer is None:
-        raise FileNotFoundError("Camera renderer is missing from the tutorial checkout")
+    renderer = camera_source("modules/ospi_camera/host/frame-to-colour.py")
     command = [sys.executable, str(renderer), str(raw_path),
                str(meta["width"]), "1", "--order", meta["bayer"], "--as-captured"]
     if meta["rotate"] == 180:

@@ -1,10 +1,155 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-27T06:38:59Z",
+  "generated_at": "2026-09-27T06:42:08Z",
   "generated_by": "content_validate.py",
-  "source_commit": "8238ea33ec87",
-  "note": "3.2 offers the embedded Perfetto viewer alongside download-and-drag; 3.6 folded in",
+  "source_commit": "dff88a820dd1efa7874209dd45d1451fad010684+working-tree",
+  "note": "fix: camera backend",
   "files": [
+    {
+      "path": "work/.backend/ospi-camera/README.md",
+      "bytes": 727,
+      "sha256": "7e7946767016ba3a2d4c61cd7e5005aa2ee319e27ff7061eb3f746b0e2f76fa7"
+    },
+    {
+      "path": "work/.backend/ospi-camera/boards/chipyard/pynqz1_all_f40/Kconfig.chipyard_pynqz1_all_f40",
+      "bytes": 73,
+      "sha256": "b1cbcab23b2c47b1eae59eba429f7df4a2232321db4b8c5d08a5466033a30f86"
+    },
+    {
+      "path": "work/.backend/ospi-camera/boards/chipyard/pynqz1_all_f40/Kconfig.defconfig",
+      "bytes": 262,
+      "sha256": "85b825952152dffa29a84b29425cc1c938f7bcbfc4d3c7444397873dc6544286"
+    },
+    {
+      "path": "work/.backend/ospi-camera/boards/chipyard/pynqz1_all_f40/board.cmake",
+      "bytes": 2279,
+      "sha256": "6e9d0ad4a70d1ff3860b93f5acf7af55b19193a672843fe330eda22749f0c02a"
+    },
+    {
+      "path": "work/.backend/ospi-camera/boards/chipyard/pynqz1_all_f40/board.yml",
+      "bytes": 278,
+      "sha256": "d7b135ba816e62e055eba0891aaeed562c350eb09100e4c6d4deb11369fd4819"
+    },
+    {
+      "path": "work/.backend/ospi-camera/boards/chipyard/pynqz1_all_f40/chipyard_pynqz1_all_f40.dts",
+      "bytes": 16135,
+      "sha256": "269f525f9f9a488bd33d0fbfd70ee6a40623cbebbadc51d943ce0bd044334a23"
+    },
+    {
+      "path": "work/.backend/ospi-camera/boards/chipyard/pynqz1_all_f40/chipyard_pynqz1_all_f40.yaml",
+      "bytes": 341,
+      "sha256": "d1bc005778d3b938a8a783bb57216ba6a820b32ae1fa52af75574b7399de9149"
+    },
+    {
+      "path": "work/.backend/ospi-camera/boards/chipyard/pynqz1_all_f40/chipyard_pynqz1_all_f40_defconfig",
+      "bytes": 7389,
+      "sha256": "bc2b54beddc14296ce8d98772401d80713df852582448453f43d43e6d8560548"
+    },
+    {
+      "path": "work/.backend/ospi-camera/boards/chipyard/pynqz1_all_f40/dts/bindings/ucbbar,ospi-hm01b0.yaml",
+      "bytes": 833,
+      "sha256": "af1501ba05d95d56ffde1bdc6b0a883ed296198ad923140cccc686b4c030e9e8"
+    },
+    {
+      "path": "work/.backend/ospi-camera/boards/chipyard/pynqz1_all_f40/dts/bindings/vendor-prefixes.txt",
+      "bytes": 188,
+      "sha256": "3fe9be03d5d0685f68e55bff05af4834742ee87358881026b94c36eed4826e29"
+    },
+    {
+      "path": "work/.backend/ospi-camera/fpga/pynq-z2/sw/cam/ospi_cam.c",
+      "bytes": 8414,
+      "sha256": "79d41e82395f683927978248d0aa6bd8cc9cf256761cc854cb61ae43e044f2c5"
+    },
+    {
+      "path": "work/.backend/ospi-camera/fpga/pynq-z2/sw/cam/ospi_cam.h",
+      "bytes": 7547,
+      "sha256": "e862f1544b1248feb3ad4054b1adb16a9c666ed981755b6cbae30fc49fac167d"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/CMakeLists.txt",
+      "bytes": 885,
+      "sha256": "36f03d5132d1e8ce44f139f85beae00eda0072628a9eba61044efba2b8feff80"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/Kconfig",
+      "bytes": 3121,
+      "sha256": "2ad39ad681848d407abfa01562ea8c7f3e8b5cb2d8bfb95a02c098b7997eab36"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/backend/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/backend/README.md",
+      "bytes": 906,
+      "sha256": "2500e2becd02088b74fd52c5c1d222786a9ef6da64bd3d4a8f094982885c29cc"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/backend/include/hm01b0.h",
+      "bytes": 13417,
+      "sha256": "fa223829d22a2be97a30890926a5bc3d355a991921aaf7be208fa64f5c8942f1"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/backend/include/ospi_camera/camera.h",
+      "bytes": 4783,
+      "sha256": "a77f8479d1b2e6b2530837683625772728abbe0175b839b9143ab444a5dbeaf3"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/backend/include/ospi_camera_dma.h",
+      "bytes": 1707,
+      "sha256": "0a1f94aaf5ec03c495ffd066c70a060d828d679b4a41eca1b75141f931980189"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/backend/include/ospi_camera_regs.h",
+      "bytes": 6792,
+      "sha256": "465863ee70de6e17ff9ec8d57e7d191336b25daaea0f39424751897ac65bf9a5"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/backend/src/ospi_camera.c",
+      "bytes": 33013,
+      "sha256": "c3f922c2ead5dbe001a86b85d8f7638afec46bb6068ac130b99a9048665efe7b"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/backend/src/ospi_camera_dma.c",
+      "bytes": 3105,
+      "sha256": "3f8e9f05ce62de1ad4de260d17c7ee96cb038b00a7da044fce65ac267fb07255"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/drivers/ospi_camera.c",
+      "bytes": 12217,
+      "sha256": "2c279765790be3155344d2432c1b9cb1d4ae3a38253c1f68198b82439859017b"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/host/frame-to-colour.py",
+      "bytes": 20805,
+      "sha256": "0875ad88b6c7b6cbd236b104dc0e802aabd4a4be06fa0ea5438ff998b6bd18a3"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/include/ospi_camera.h",
+      "bytes": 13714,
+      "sha256": "f9837f9f56f03c1bb15e02c56f610cdfe550a124f57031a0370324fb8c9d1182"
+    },
+    {
+      "path": "work/.backend/ospi-camera/modules/ospi_camera/zephyr/module.yml",
+      "bytes": 1758,
+      "sha256": "fb1193564655e000f01ca812660266ef1dfc7772b70ca626f878c86f4a9d3a70"
+    },
+    {
+      "path": "work/.backend/ospi-camera/samples/cam_capture/CMakeLists.txt",
+      "bytes": 474,
+      "sha256": "39d1b848af8afe7a6da19bc382fc683f214db252b8c95b05b17f89a7f65414ce"
+    },
+    {
+      "path": "work/.backend/ospi-camera/samples/cam_capture/prj.conf",
+      "bytes": 297,
+      "sha256": "50403eafce57feaccbd603256a9f5613402c8b56ea577d04bd72fb28e03fc072"
+    },
+    {
+      "path": "work/.backend/ospi-camera/samples/cam_capture/src/main.c",
+      "bytes": 2059,
+      "sha256": "5ddbe3d0cb3140aed6422e060753fdcdac0873be41b24b19207e2089a49d8c87"
+    },
     {
       "path": "work/README.md",
       "bytes": 9104,
@@ -42,16 +187,16 @@
     },
     {
       "path": "work/iiswc_lab.py",
-      "bytes": 69561,
-      "sha256": "83421ba270d08234f7de6403ee7fb33c01bf3c32c3414df59d82a9aad5428dfb"
+      "bytes": 70922,
+      "sha256": "4b758cc3fa8c4cacdbc8102b8600faca6ef07f5bcabf57628af0a76d5d3b6d0a"
     },
     {
       "path": "work/iiswc_tutorial.ipynb",
-      "bytes": 107543,
-      "sha256": "28d9a39cc844972d6c8797fc5ed55229902c9694959a78f464fe614c27dd38e3",
+      "bytes": 107200,
+      "sha256": "830bd800935a48ea03d564d6742e69710cb26db4412b86882a57db66ce1445b4",
       "cells": 149,
       "nbformat": 4,
-      "source_chars": 75935,
+      "source_chars": 75642,
       "schema_checked": true
     },
     {
@@ -124,8 +269,8 @@
     },
     {
       "path": "work/tools/build_notebook.py",
-      "bytes": 85149,
-      "sha256": "68dfb874c5213606d3e75fe0752fd00abd9060dab2546adf3c5f8259bbda9f60"
+      "bytes": 84848,
+      "sha256": "15dda1d30d71fc5bc9e5454e7a9b2248df356ecc81d5ebbadf10075443d7416f"
     }
   ],
   "repo": {

@@ -287,10 +287,7 @@ auto-exposure settle, and captures a complete frame into DRAM using DMA.
 
 Build the camera application with the next cell. The master-clock divider of 2 gives
 6.67 MHz from the board's 40 MHz clock.""")
-code('''build = lab.sh("""cd /home/ubuntu/tut && source /home/ubuntu/tut/env.sh && \\\\
-west build -p always -b chipyard_pynqz1_all_f40 \\\\
-    -d ~/out/cam_capture samples/cam_capture \\\\
-    -- -DBOARD_ROOT=/home/ubuntu/tut -DCAM_MCLKDIV=2""", timeout=900)
+code('''build = lab.camera_build()
 if not build.ok:
     raise RuntimeError("Camera build failed; inspect the log before uploading")''')
 md("""Upload the image and run it. The application reports the sensor ID, measured
@@ -459,9 +456,8 @@ grep -B2 -A2 '^config DT_HAS_SIFIVE_I2C0_ENABLED' ~/out/cam_capture/Kconfig/Kcon
 echo "... one of $(grep -c '^config DT_HAS_' ~/out/cam_capture/Kconfig/Kconfig.dts) \\
 such symbols, one per compatible" && \\
 echo --- && sed -n '/^config I2C_SIFIVE/,/help/p' $Z/drivers/i2c/Kconfig.sifive && \\
-echo --- && grep -nE '^menuconfig I2C$|^if I2C$|Kconfig.sifive' $Z/drivers/i2c/Kconfig && \\
-echo --- && sed -n '/^config OSPI_HM01B0/,/^$/p' \\
-    /home/ubuntu/tut/modules/ospi_camera/Kconfig""")''')
+echo --- && grep -nE '^menuconfig I2C$|^if I2C$|Kconfig.sifive' $Z/drivers/i2c/Kconfig""")
+lab.show_camera_driver_config()''')
 md("Each block is one step of the same mechanism:\n\n" + fence(
     "DT_COMPAT_SIFIVE_I2C0 := sifive,i2c0\n"
     "\n"

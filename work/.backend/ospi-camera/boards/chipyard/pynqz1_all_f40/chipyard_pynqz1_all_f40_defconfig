@@ -1,0 +1,129 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# 0x5A5A0038, EVERY INTERFACE AT ONCE (Lab B137).  THIS FILE IS
+# chipyard_pynqz1_panel_f40_defconfig, BYTE FOR BYTE BELOW THIS HEADER, and that is the
+# claim to check with `diff` rather than to trust: the two SoCs differ by the camera's
+# capture peripheral and by TACIT's absence, and NEITHER of those is a Kconfig symbol.
+#
+#   the camera            has no Zephyr driver.  samples/cam_capture drives ospi@10080000
+#                         through fpga/pynq-z2/sw/cam/ospi_cam.c and polls, exactly as it
+#                         does on chipyard_pynqz1_cam, whose defconfig also adds nothing
+#                         for it.  It is devicetree, not Kconfig.
+#   TACIT's absence       costs nothing here either.  No Zephyr driver ever bound the trace
+#                         encoder; samples/tacit_boot writes its MMIO registers directly and
+#                         is built for the TACIT boards, which still exist.
+#
+# THE CLOCK IS THE SAME 40 MHz and must stay so: 0x5A5A0038 is timed and built at
+# FCLK0 = 40.0000 MHz exactly, like 0x5A5A0035 and 0x5A5A0037.
+# CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC also sets the SiFive UART's baud divisor, so a 34483
+# guest here reads 133,779 baud against the host's 115,200 and GARBLES the console while
+# running mtime 16 % fast.  The long note on that value further down is
+# chipyard_pynqz1_micrgb_f40_defconfig's and applies unchanged.
+#
+# WHAT IS *NOT* IN THIS FILE, because it does not belong here: the PLIC renumbering.  That
+# is devicetree (chipyard_pynqz1_all_f40.dts) and is the other half of why this board
+# exists.  A defconfig cannot get the console's interrupt wrong; a DTS can.
+CONFIG_PRIVILEGED_STACK_SIZE=2048
+CONFIG_REBOOT=y
+CONFIG_UART_HTIF=n
+CONFIG_CONSOLE=y
+CONFIG_UART_CONSOLE=y
+CONFIG_SERIAL=y
+CONFIG_PRINTK=y
+CONFIG_EARLY_CONSOLE=y
+CONFIG_STACK_SENTINEL=y
+CONFIG_XIP=n
+CONFIG_RISCV_PMP=n
+CONFIG_SMP=y
+CONFIG_IDLE_STACK_SIZE=1024
+CONFIG_PINCTRL=n
+CONFIG_UART_SIFIVE_PORT_0=y
+
+# Two harts, not one -- same as chipyard_pynqz1_smp, and for the same reason.
+#
+# PynqZ2RocketBigLittlePextTacitConfig is PynqZ2RocketBigLittleTacitConfig plus
+# WithPExtOnTiles(0), so the hardware still has exactly two harts: cpu@0 (big, 16 KB L1s,
+# sv39, and the MBP datapath) and cpu@1 (little, 4 KB L1s, no MMU, NO MBP datapath).
+#
+# With CONFIG_SMP=y and MP_MAX_NUM_CPUS=1 Zephyr compiles the secondary-hart path out of
+# reset.S entirely, so hart 1 spins in wfi forever and the image is silently single-core.
+# That would also make the heterogeneity test vacuous: with hart 1 never running, nothing
+# would ever prove the extension is absent there.
+CONFIG_MP_MAX_NUM_CPUS=2
+
+# CHANGED vs arty: this config has NO FPU.
+# The generated DTS reports riscv,isa = "rv64imaczicsr_zifencei_zihpm_xrocket" for BOTH
+# harts -- no f, no d. MBP is in the custom-0 opcode space and does not appear in the ISA
+# string at all (there is no standard extension letter for it), so the two harts remain
+# indistinguishable to anything that reads riscv,isa. That is deliberate and it is why
+# samples/pext_hart_proof has to EXECUTE an instruction to tell them apart.
+CONFIG_FPU=n
+
+# THE ONE LINE THIS BOARD EXISTS FOR: the PL runs at 40.0000 MHz, not 34.4828.
+#
+# WHICH SILICON: 0x5A5A0030 (fpga/pynq-z2/tcl/build_rocket.tcl, variant roccmoonf40) --
+# 0x5A5A002E's SoC, engine RTL pinned byte for byte, TIMED AND BUILT at FCLK0 = 40 MHz.
+# Lab B79 swept FCLK0 over ten values with a bit-identical post-synthesis netlist:
+# 40.0000 MHz (1000/25) is the HIGHEST that closes -- WNS +0.717, WHS +0.024, 0 failing
+# endpoints of 93,776 -- and 41.6667 (1000/24) misses by -0.267 ns on 2 endpoints.
+# archive/runs/b79_fclk0_ceiling/FALSIFIED.md.
+#
+# 40 MHz IS EXACT ON THIS PS7, which is why this number is round where 34483 is not.
+# FCLK0 = IO PLL / (DIVISOR0 * DIVISOR1) with both divisors integers and the IO PLL at
+# 50 MHz * 20 = 1000 MHz; 1000/40 = 25 = 5*5 lands exactly, where 1000/35 = 28.571 does not
+# and yields DIVISOR0=29 -> 34,482,761 Hz. So here the timed clock, the clock PYNQ's
+# Clocks.fclk0_mhz setter lands on, and the 40,000,000 Hz the labs divide cycles by are one
+# number, with no rounding between them.
+#
+# WHY THE PL EVER RAN AT 34.4828, and why that reason is stale: the depth-3 DOT8 and the
+# 32x32 QMUL were priced OUT OF CONTEXT at 23.879-24.972 ns (PEXT_FEASIBILITY.md 2.6) and
+# judged not to fit 25 ns. That estimate was sound and stopped being the binding constraint
+# the moment the SoC was placed: B79 read the routed checkpoint and the P-extension cone is
+# 4.03 ns FURTHER from binding than the L2 InclusiveCache MSHR scheduler, which is the real
+# limiter at every frequency from 34.5 to 50 MHz and never yields to it.
+#
+# mtime ticks at the digital-top clock divided by CONFIG_RTC_CLOCK_DIVIDER_VALUE (1000), so
+# 40 MHz -> 40 kHz here. This value ALSO sets the SiFive UART's baud divisor:
+# SIFIVE_PERIPHERAL_CLOCK_FREQUENCY = SYS_CLOCK_HW_CYCLES_PER_SEC * RTC_CLOCK_DIVIDER_VALUE
+#   40000 -> divisor 40000000/115200 - 1 = 346 -> 40000000/347 = 115,274 baud  (+0.06%)
+#   34483 on this PL -> divisor 298      -> 40000000/299 = 133,779 baud (+16.1%)  GARBLED
+# THAT SECOND ROW IS THE HAZARD THIS BOARD EXISTS TO REMOVE. It does not fail silently and
+# it does not crash: it produces a console full of noise, which FPGA_END_TO_END.md section
+# 4.1 warns does not look like a clock problem, plus an mtime running 16 % fast while
+# mcycle stays right -- wall-clock numbers wrong, cycle counts right. So a console full of
+# noise on a 40 MHz load is a symptom OF THIS and not of the board.
+CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=40000
+CONFIG_SYS_CLOCK_TICKS_PER_SEC=1000
+
+CONFIG_TIMING_FUNCTIONS=y
+CONFIG_SPEED_OPTIMIZATIONS=y
+CONFIG_RISCV_ISA_EXT_V_LAZY=n
+
+# The microphone. CONFIG_AUDIO_DMIC_PDM_MMIO is default-y once the devicetree node is
+# enabled, so only the two framework symbols need saying.
+CONFIG_AUDIO=y
+CONFIG_AUDIO_DMIC=y
+
+# The RGB LEDs, which are six pins on a stock sifive GPIO controller at 0x1001_0000.
+#
+# CONFIG_GPIO_SIFIVE is default-y once DT_HAS_SIFIVE_GPIO0_ENABLED is true, which the
+# gpio@10010000 node in the DTS makes it, so only the framework symbol needs saying. That
+# is the whole software cost of this feature: Zephyr has shipped drivers/gpio/gpio_sifive.c
+# and dts/bindings/gpio/sifive,gpio0.yaml since 2017 and neither needed a patch. Contrast
+# the microphone, which needed patches/0011 to add a driver and a binding.
+CONFIG_GPIO=y
+
+# THE I2C BUS -- the one line this file adds to chipyard_pynqz1_micrgb_f40_defconfig.
+#
+# CONFIG_I2C_SIFIVE is default-y once DT_HAS_SIFIVE_I2C0_ENABLED is true, which the
+# enabled i2c@10040000 node in the DTS makes it, so only the framework symbol needs saying
+# -- exactly as CONFIG_GPIO above does for the GPIO controller.  chipyard_pynqz1_cam sets
+# the same single line for the same controller.
+#
+# THE DISPLAY IS NOT ENABLED HERE, deliberately.  CONFIG_DISPLAY and
+# CONFIG_CHARACTER_FRAMEBUFFER stay off by default, so the SSD1306 driver is not built into
+# an image that has no use for it (samples/moonshine_live, samples/mic_led_record).  The
+# ssd1306@3c node in the DTS is `zephyr,deferred-init`, so its presence costs an image that
+# does not ask for CONFIG_DISPLAY nothing at all.  samples/oled_status turns both on in its
+# own prj.conf, which is where an application's choices belong.
+CONFIG_I2C=y

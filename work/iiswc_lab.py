@@ -1378,6 +1378,15 @@ def show_board_verdict(run: str | Path) -> None:
             if j.get("replay") else "a live LLM run")
     if not (b.get("before") or {}).get("op_cycles"):
         print(f"{run.name}: {kind}, scored on spike alone (the board step did not run)")
+        be, af = j.get("before") or {}, j.get("after") or {}
+        if be.get("cycles") and af.get("cycles"):
+            print(f"\n{'arm':<10}{'spike cycles':>14}{'per output':>13}{'vs reference':>14}   correctness")
+            for name, a in (("before", be), ("after", af)):
+                err = a.get("golden_max_abs_err")
+                note = "-" if err is None else ("bit-exact" if err == 0 else f"max |d| = {err:g}")
+                print(f"{name:<10}{a['cycles']:>14,}{a.get('cycles_per_output') or 0:>13.1f}"
+                      f"{be['cycles'] / a['cycles']:>13.2f}x   {note}")
+            print("\nspike estimate only: it does not model memory timing, so the board usually measures less")
         return
     print(f"{run.name}: {kind}, measured on {b.get('board', '?')} ({b.get('magic', '?')}, "
           f"{(b.get('fclk_hz') or 0) / 1e6:.0f} MHz)\n")

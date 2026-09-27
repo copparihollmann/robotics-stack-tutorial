@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-27T08:00:11Z",
+  "generated_at": "2026-09-27T09:29:54Z",
   "generated_by": "content_validate.py",
-  "source_commit": "1968f222e59295050d0543431256ae265cef4779+working-tree",
-  "note": "Unit 4: the ModelBlaster lab",
+  "source_commit": "df1589024cb34266cf6fe5e224a3f0167308cddf+working-tree",
+  "note": "Unit 4: spike estimate without a board",
   "files": [
     {
       "path": "work/.backend/ospi-camera/README.md",
@@ -192,8 +192,8 @@
     },
     {
       "path": "work/iiswc_lab.py",
-      "bytes": 92323,
-      "sha256": "29666de9284a4abb714174f511d60868dcc06d085d0e45befe98a135ecedd0fd"
+      "bytes": 93029,
+      "sha256": "38cdcd081d7542938117b27672ee128c225d920988d74547f35d2cb808dd2791"
     },
     {
       "path": "work/iiswc_tutorial.ipynb",

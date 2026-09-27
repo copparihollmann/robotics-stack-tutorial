@@ -8,7 +8,9 @@
 #
 # name                  remote                                              rev / branch
 
-zephyr-chipyard-sw      https://github.com/ucb-bar/zephyr-chipyard-sw.git   400791302d0   (rose-2-dev)
+zephyr-chipyard-sw      https://github.com/ucb-bar/zephyr-chipyard-sw.git   eab2a73b6c5   (iiswc-pext-target-guide)
+#   eab2a73b6c5 is rose-2-dev's 400791302d0 with one commit: ModelBlaster 99b9e84 -> 60a0784
+#   (ucb-bar/ModelBlaster iiswc-pext-target-guide), the MBP optimization guide for pext.
 #    ^^^ FETCHABLE.  This pin was blocker #1 and this comment used to say a fresh clone could
 #    not check it out.  That stopped being true and the file went on saying it; re-verified
 #    2026-09-26 (B185):

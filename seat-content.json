@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-27T06:11:44Z",
+  "generated_at": "2026-09-27T06:18:10Z",
   "generated_by": "content_validate.py",
-  "source_commit": "59b65a3fdab8",
-  "note": "camera section: display the frame as captured; setup cell reloads the helper module",
+  "source_commit": "33f83a9f8f889105bf71349c9c03dcb2eebedd95+working-tree",
+  "note": "fix: camera backend",
   "files": [
     {
       "path": "work/README.md",
@@ -42,16 +42,16 @@
     },
     {
       "path": "work/iiswc_lab.py",
-      "bytes": 66272,
-      "sha256": "6fe90ca1bfcda62bc8905b999499a0a51fc0cbce52bc309f18797881521d7cab"
+      "bytes": 69561,
+      "sha256": "83421ba270d08234f7de6403ee7fb33c01bf3c32c3414df59d82a9aad5428dfb"
     },
     {
       "path": "work/iiswc_tutorial.ipynb",
-      "bytes": 109470,
-      "sha256": "3896baf7b12c1be468e4d1d3f1d4cc45aea33becce9498bc472589c88f9d756d",
+      "bytes": 107506,
+      "sha256": "f313d69732988cf32611da2820de7d2fd881a4de5256970e075b24c0a71d71f5",
       "cells": 150,
       "nbformat": 4,
-      "source_chars": 77396,
+      "source_chars": 75834,
       "schema_checked": true
     },
     {
@@ -124,14 +124,14 @@
     },
     {
       "path": "work/tools/build_notebook.py",
-      "bytes": 86679,
-      "sha256": "61965f47667701d17ef5ef57a228be28b45ffe347e6c8194a019ff2766feceb8"
+      "bytes": 85060,
+      "sha256": "74eda36cb6a7fd3facf86e8e408f7c277747290ba712d5c56ad6b41342644932"
     }
   ],
   "repo": {
     "url": "https://github.com/ucb-bar/robotics-stack-tutorial.git",
     "ref": "main",
-    "commit": "942764d6d31b31e29c1391b1456affce68f1e379",
+    "commit": "b7f703cef79e8067c1b6fddf876085a4d9d4326b",
     "mount": "repo",
     "guide": [
       [

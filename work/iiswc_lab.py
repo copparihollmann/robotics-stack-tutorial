@@ -348,6 +348,64 @@ def console_field(console: str, tag: str, field: str, cast=str):
 
 
 # --------------------------------------------------------------------------------------
+# Camera frame validation and display.
+# --------------------------------------------------------------------------------------
+def camera_frame_metadata(console: str) -> dict:
+    """Require an unambiguous, complete frame before asking the board to read it."""
+    records = [line for line in console.splitlines() if line.startswith("CAM_FRAME ")]
+    if len(records) != 1:
+        raise ValueError(f"Expected one CAM_FRAME record, found {len(records)}")
+    fields = dict(part.split("=", 1) for part in records[0].split()[1:] if "=" in part)
+    required = ("ok", "rc", "addr", "phys", "width", "height", "bytes", "sum", "saweof")
+    try:
+        meta = {key: int(fields[key], 0) for key in required}
+    except (KeyError, ValueError) as exc:
+        raise ValueError(f"Invalid CAM_FRAME record: {records[0]}") from exc
+    if meta["ok"] != 1 or meta["rc"] != 0 or meta["saweof"] != 1:
+        raise ValueError("Camera did not report a complete successful frame")
+    width, height, count = meta["width"], meta["height"], meta["bytes"]
+    if not (4 <= width <= 511 and 2 <= height <= 511 and width % 2 == 0 and height % 2 == 0
+            and count == width * height and 0 < count < 256 * 1024):
+        raise ValueError("Invalid camera geometry or byte count")
+    if not (0x80000000 <= meta["addr"] <= 0x90000000 - count and meta["addr"] % 8 == 0):
+        raise ValueError("Camera buffer is outside aligned Rocket DRAM")
+    if meta["phys"] != 0x10000000 + meta["addr"] - 0x80000000:
+        raise ValueError("Camera's Rocket and ARM addresses disagree")
+    if not 0 <= meta["sum"] <= count * 255:
+        raise ValueError("Invalid camera checksum")
+    # The camera backend fixes IMAGE_ORIENTATION to zero on this shield.
+    meta["bayer"] = fields.get("bayer", "BGGR")
+    meta["rotate"] = int(fields.get("rotate", "180"))
+    if meta["bayer"] not in {"BGGR", "RGGB", "GBRG", "GRBG"} or meta["rotate"] not in {0, 180}:
+        raise ValueError("Unsupported camera orientation or Bayer pattern")
+    return meta
+
+
+def camera_save_frame(raw: bytes, meta: dict, destination: Path | str = "frame.raw") -> Path:
+    """Reject truncated/stale DRAM before writing or rendering a frame."""
+    if not isinstance(raw, bytes) or len(raw) != meta["bytes"]:
+        raise ValueError("Frame readback length differs from the guest")
+    if sum(raw) != meta["sum"]:
+        raise ValueError("Frame checksum differs from the guest; DRAM may be stale")
+    path = Path(destination).resolve()
+    path.write_bytes(raw)
+    return path
+
+
+def camera_render_frame(raw_path: Path, meta: dict) -> Path:
+    """Render the checked raw frame with the camera backend's host tool."""
+    renderer = repo_file("modules/ospi_camera/host/frame-to-colour.py")
+    if renderer is None:
+        raise FileNotFoundError("Camera renderer is missing from the tutorial checkout")
+    command = [sys.executable, str(renderer), str(raw_path),
+               str(meta["width"]), "1", "--order", meta["bayer"], "--as-captured"]
+    if meta["rotate"] == 180:
+        command.append("--rotate180")
+    subprocess.run(command, check=True, timeout=60, capture_output=True)
+    return raw_path.with_name(raw_path.stem + "-colour.png")
+
+
+# --------------------------------------------------------------------------------------
 # Did my run match?
 # --------------------------------------------------------------------------------------
 def expect(label: str, got, want, tol: float | None = None) -> bool:

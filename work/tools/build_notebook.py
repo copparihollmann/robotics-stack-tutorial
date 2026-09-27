@@ -282,125 +282,83 @@ counter should restart at `up 0:00`.""")
 
 md("""### 1.4 Take a picture with the board's camera
 
-The board's shield carries an image sensor. The application starts a hardware capture
-unit, which writes a frame into the board's DRAM. When the capture finishes, the
-application reports the frame's address and size.
+The shield carries an HM01B0 image sensor. The camera driver configures it, lets
+auto-exposure settle, and captures a complete frame into DRAM using DMA.
 
-Build the camera application with the next cell. Allow about twenty seconds.""")
-code('''lab.sh("""cd /home/ubuntu/tut && source /home/ubuntu/tut/env.sh && \\
-west build -p always -b chipyard_pynqz1_all_f40 \\
-    -d ~/out/cam_capture samples/cam_capture \\
-    -- -DBOARD_ROOT=/home/ubuntu/tut -DCAM_MCLKDIV=2""", timeout=900)''')
-md("The camera build reports its memory use:\n\n" + fence(
-    "Memory region         Used Size  Region Size  %age Used\n"
-    "             RAM:      595768 B       256 MB      0.22%\n"
-    "        IDT_LIST:           0 B         4 KB      0.00%") + """
-
-Upload the image and run it. The application measures the sensor's pixel clock for a
-second, captures a frame, and reports the result.""")
-code('''lab.board_put("/home/ubuntu/out/cam_capture/zephyr/zephyr.bin")
-lab.board("run", "zephyr", timeout=300)''')
-md("""The recorded run uploaded 54,096 bytes and returned about 7,700 console bytes after
-roughly forty seconds. The next cell extracts the lines that describe the capture.""")
+Build the camera application with the next cell. The master-clock divider of 2 gives
+6.67 MHz from the board's 40 MHz clock.""")
+code('''build = lab.sh("""cd /home/ubuntu/tut && source /home/ubuntu/tut/env.sh && \\\\
+west build -p always -b chipyard_pynqz1_all_f40 \\\\
+    -d ~/out/cam_capture samples/cam_capture \\\\
+    -- -DBOARD_ROOT=/home/ubuntu/tut -DCAM_MCLKDIV=2""", timeout=900)
+if not build.ok:
+    raise RuntimeError("Camera build failed; inspect the log before uploading")''')
+md("""Upload the image and run it. The application reports the sensor ID, measured
+frame dimensions, and the address and checksum of the captured bytes.""")
+code('''pushed = lab.board_put("/home/ubuntu/out/cam_capture/zephyr/zephyr.bin")
+if not pushed.ok:
+    raise RuntimeError(f"Camera upload failed: {pushed}")
+ran = lab.board("run", "zephyr", timeout=300)
+if not ran.ok:
+    raise RuntimeError(f"Camera guest failed to run: {ran}")''')
+md("""Read the capture results. If the application reports `CAM_ERROR`, check its stage
+and reason. A failure marked `reset_required=1` needs a SoC reset before another
+capture; the board's `run` command performs one.""")
 code('''c = lab.board("get", "console.out", binary=True, verbose=False)
+if not c.ok:
+    raise RuntimeError(f"Could not read the camera console: {c}")
 console = lab.console_text(c)
-lab.show_console_lines(console, "CAM_SHIELD", "CAM_SENSOR", "CAM_STREAM", "CAM_GEOM",
-                       "CAM_FRAME ", "CAM_RESULT")''')
-md("""Card 3 reported the following capture. Your pixel values and frame sum will depend
-on what the camera sees.
+lab.show_console_lines(console, "CAM_SHIELD", "CAM_SENSOR", "CAM_GEOM",
+                       "CAM_FRAME ", "CAM_ERROR", "CAM_RESULT")''')
+md("""Successful output has the following form. Addresses and pixel statistics depend
+on the build and the scene; these lines illustrate the fields to check.
 
 """ + fence(
     "CAM_SHIELD present=1\n"
-    "CAM_SENSOR rc=0 model_id=0x01b0 ok=1\n"
-    "CAM_STREAM mode_rc=0 mode_select=1 readback_rc=0 ms=1001 pclk=3336669 fvld=17 "
-    "lvld=5197 pclk_hz=3333335 fps_x1000=16983 lines_per_frame=305 ...\n"
-    "CAM_GEOM src=lastheight width=326 height=324 bytes=105624 lines_per_frame=305 ...\n"
-    "CAM_FRAME ok=1 rc=0 addr=0x8000d480 phys=0x1000d480 width=326 height=324 "
-    "bytes=105624 ... min=0 max=255 mean_x100=8696 sum=9185093 saweof=1\n"
+    "CAM_SENSOR model_id=0x01b0 ok=1\n"
+    "CAM_GEOM src=lastframe width=326 height=324 bytes=105624\n"
+    "CAM_FRAME ok=1 rc=0 addr=<Rocket address> phys=<ARM address> width=326 height=324 "
+    "bytes=105624 min=<min> max=<max> sum=<checksum> saweof=1 ... bayer=BGGR rotate=180\n"
     "CAM_RESULT shield=1 ok=1") + """
 
 Check three fields in your output:
 
 - `model_id=0x01b0` confirms that the sensor answered on the control bus.
-- `saweof=1` confirms that the capture unit saw the sensor mark the end of the frame.
-- `bytes=105624` gives the stored frame size: 324 rows of 326 bytes.
+- `saweof=1` confirms that the transfer ended at the sensor's end-of-frame marker.
+- `bytes=105624` gives the usual stored frame size: 324 rows of 326 bytes.
 
-The application adds all the frame bytes and reports the total as `sum`. You will
-compare it with the sum of the downloaded bytes in 1.5.
-
-<details>
-<summary>How to interpret the capture checks</summary>
-
-The sensor uses separate connections for control and pixel data. It can answer a
-control request while sending no pixels, so the model ID alone cannot confirm a capture.
-
-The end-of-frame marker tells the capture unit when the sensor has finished the frame.
-A capture that stops at a byte limit can have the same size while containing an
-incomplete frame.
-
-Each row contains 324 sensor pixels and two padding bytes. The stored frame therefore
-occupies 326 x 324 = 105,624 bytes. The next section removes the padding before
-displaying the image.
-
-</details>""")
+Each row contains two leading dummy bytes from the sensor and 324 active pixels.
+The application adds every raw byte and reports the total as `sum`. The next section
+checks that total before displaying the image.""")
 
 md("""### 1.5 Download and display the frame
 
 The frame is stored in the board's DRAM. The `camera` operation reads it from the
 address reported by the application, and `get` transfers the bytes to your instance.
-The next cell saves them as `frame.raw` and compares their sum with the application's
-reported sum.""")
-code('''lab.board("camera")
+Save the frame only after its length and checksum agree with the capture report.""")
+code('''frame = lab.camera_frame_metadata(console)
+pulled = lab.board("camera")
+if not pulled.ok:
+    raise RuntimeError(f"Camera memory read failed: {pulled}")
 f = lab.board("get", "frame.raw", binary=True, verbose=False)
-raw = f.stdout
-open("frame.raw", "wb").write(raw)
+if not f.ok:
+    raise RuntimeError(f"Could not fetch the camera frame: {f}")
+raw_path = lab.camera_save_frame(f.stdout, frame)
+print(f"{frame['bytes']:,} bytes, checksum {frame['sum']:,}: verified")''')
+md("""The sensor sends a BGGR Bayer mosaic: each pixel measures one colour channel.
+The renderer removes the dummy bytes, reconstructs RGB at full resolution, and
+rotates the image 180 degrees for the sensor's mounting. It applies no brightness
+or colour correction, so the display retains the captured scene's exposure.""")
+code('''from IPython.display import Image, display
 
-said = lab.console_field(console, "CAM_FRAME ", "sum", int)
-print(f"{len(raw):,} bytes here, guest said sum={said:,}, these bytes sum to {sum(raw):,}")''')
-md("""Check that the two sums agree. This recorded frame produced:
+picture = lab.camera_render_frame(raw_path, frame)
+display(Image(filename=str(picture)))''')
+md("""You should see a 324 x 324 colour image for a complete 326 x 324 raw frame.
+The original bytes remain in `frame.raw`; the displayed image is `frame-colour.png`.
 
-""" + fence("105,624 bytes here, guest said sum=9,185,093, these bytes sum to 9,185,093") + """
-
-The next cell converts the raw frame into a colour image. It removes the two padding
-bytes at the start of each row, combines each 2x2 pixel group, and rotates the image
-180 degrees to account for the sensor's mounting.
-
-<details>
-<summary>How the sensor values become RGB pixels</summary>
-
-Each sensor pixel contributes one byte through a colour filter. Blue samples occupy
-even rows and even columns, red samples occupy odd rows and odd columns, and green
-samples occupy the other two positions in each 2x2 group.
-
-The code takes the red and blue samples and averages the two green samples to make
-one RGB pixel. This produces a 162 x 162 image from the 324 x 324 sensor area. The
-bytes are displayed as the sensor delivered them, with no brightness or colour
-correction.
-
-</details>""")
-code('''import numpy as np, matplotlib.pyplot as plt
-
-STRIDE, W, H = 326, 324, 324
-m = np.frombuffer(raw, np.uint8).reshape(H, STRIDE)[:, 2:2 + W]   # drop the two pad bytes
-B = m[0::2, 0::2].astype(np.uint16)
-G = (m[0::2, 1::2].astype(np.uint16) + m[1::2, 0::2]) // 2
-R = m[1::2, 1::2].astype(np.uint16)
-rgb = np.rot90(np.dstack([R, G, B]).astype(np.uint8), 2)          # sensor mounted inverted
-
-plt.figure(figsize=(4, 4))
-plt.imshow(rgb)
-plt.axis("off")
-plt.title(f"{rgb.shape[1]}x{rgb.shape[0]} from your card", fontsize=9)
-plt.show()''')
-md("""You should see a 162 x 162 colour image of the scene in front of the camera. The frame
-is shown exactly as the sensor delivered it, so it will look as bright or as dim as the
-light in the room. Isolated bright or coloured pixels are the sensor's hot pixels.
-
-The detector in Unit 2 uses the same colour-filter pattern and rotation, and adds a
-brightness and colour correction of its own before scaling the image to 64 x 64. The
-deployment tools check that the host and board versions of that correction produce
-identical bytes, because the detector needs the same preprocessing during training and
-deployment.""")
+Unit 2's detector applies its own brightness and colour correction before preparing
+64 x 64 inputs. Its preprocessing is checked between host and board; the displayed
+PNG is not the detector's input.""")
 
 md("""### 1.6 Inspect the hardware description and enabled drivers
 
@@ -444,8 +402,9 @@ The application you ran in 1.4 takes the camera as a Zephyr device:
 
 ```c
 const struct device *cam = DEVICE_DT_GET(DT_ALIAS(camera0));
-struct ospi_camera_frame f;
-ospi_camera_capture(cam, frame, sizeof frame, &f);
+struct ospi_camera_capture f;
+const char *stage, *detail;
+ospi_camera_take_photo(cam, frame, sizeof frame, &f, &stage, &detail);
 ```
 
 The driver is not part of Zephyr. It is an out-of-tree module: a directory holding a
@@ -612,8 +571,8 @@ instruction streams stay comparable.
 <summary>Why the cache flush depends on the target</summary>
 
 On the board, the trace encoder writes into DRAM. The application flushes the L2 cache
-so the ARM processor can read the updated memory. The camera application uses the same
-flush before reporting the frame's address.
+so the ARM processor can read the updated memory. The camera application makes its frame
+visible by evicting L2 with a sweep through unused DRAM.
 
 Spike writes the trace to a file and has no cache controller at `0x2010000`. Accessing
 that address in the simulator causes a store access fault. The configuration fragment
